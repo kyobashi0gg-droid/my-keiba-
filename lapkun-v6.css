@@ -1,0 +1,24 @@
+/* MY KEIBA LAB v6 - sticky identifiers + metric emphasis + consultation preview */
+.v6-table th.v6-sticky-no,.v6-table td.v6-sticky-no{position:sticky;left:0;min-width:54px;width:54px;max-width:54px;background:#fff;z-index:6}
+.v6-table th.v6-sticky-name,.v6-table td.v6-sticky-name{position:sticky;left:54px;min-width:144px;width:144px;max-width:144px;background:#fff;z-index:6;box-shadow:8px 0 12px -12px rgba(30,58,41,.65)}
+.v6-table thead th.v6-sticky-no,.v6-table thead th.v6-sticky-name{background:#f4f7f5;z-index:12}
+.v6-table td.v6-sticky-name{white-space:normal;line-height:1.35}
+.v6-table .v6-metric-head{background:#edf8f1;color:#176f47;text-align:center;border-top:2px solid #bfe3cc}
+.v6-table .v6-time-head{min-width:86px}.v6-table .v6-rank-head{min-width:72px}
+.v6-table .v6-group-start{border-left:2px solid #cbe6d4}.v6-table .v6-group-end{border-right:2px solid #cbe6d4}
+.v6-table .v6-metric-cell{background:#fbfefc;text-align:center}
+.v6-time-pill{display:inline-flex;min-width:44px;justify-content:center;align-items:center;padding:5px 7px;border-radius:9px;background:#edf7f0;border:1px solid #d5eadc;color:#294f3a;font-weight:1000;font-variant-numeric:tabular-nums}
+.v6-missing{color:#a1aaa4;font-weight:800}
+.v6-rank-badge{display:inline-flex;align-items:baseline;justify-content:center;gap:1px;min-width:34px;padding:5px 7px;border-radius:999px;font-weight:1000;border:1px solid transparent;font-variant-numeric:tabular-nums}
+.v6-rank-badge small{font-size:8px;font-weight:900}.v6-rank-badge.one{background:#fff3bf;border-color:#ecd36e;color:#8b6500}.v6-rank-badge.two{background:#e8f2ff;border-color:#c8def7;color:#2f6da9}.v6-rank-badge.three{background:#e8f7ee;border-color:#c4e5d0;color:#15794b}.v6-rank-badge.other{background:#f2f5f3;border-color:#e1e7e3;color:#617068}
+.v6-metric-guide{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 2px 8px;padding:8px 10px;border:1px solid #dce9df;border-radius:12px;background:#f8fcf9;color:#607067;font-size:10px}.v6-metric-guide>span:first-child{font-weight:900;color:#2f6145}.v6-metric-guide small{margin-left:auto;color:#87948c}.v6-guide-rank{padding:3px 7px;border-radius:999px;font-weight:900}.v6-guide-rank.one{background:#fff3bf;color:#8b6500}.v6-guide-rank.two{background:#e8f2ff;color:#2f6da9}.v6-guide-rank.three{background:#e8f7ee;color:#15794b}
+
+.v6-four{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0}.v6-four span{display:grid;gap:4px;text-align:center;border:1px solid #dfeae2;background:#f8fcf9;border-radius:11px;padding:8px 5px}.v6-four em{font-style:normal;font-size:9px;color:#7c8a81}.v6-four b{font-size:14px;color:#244c35}.v6-rank-text.one{color:#9b7200}.v6-rank-text.two{color:#2e6ca8}.v6-rank-text.three{color:#15794b}.v6-rank-text.other{color:#596961}
+
+.v6-modal{position:fixed;inset:0;z-index:210;background:rgba(25,42,32,.5);display:flex;align-items:flex-end;justify-content:center}.v6-modal[hidden]{display:none!important}.v6-panel{width:min(760px,100%);max-height:94dvh;overflow:auto;background:#fff;border-radius:26px 26px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -20px 60px rgba(35,64,46,.24);color:#1f2a24}.v6-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.v6-panel-head h2{font-size:22px;margin:1px 0 0}.v6-help{font-size:12px;line-height:1.65;color:#6e7d73;margin:10px 0}.v6-consult-text{width:100%;min-height:52dvh;max-height:62dvh;resize:vertical;border:1px solid #d8e4db;border-radius:16px;background:#f8fbf9;color:#1f2a24;padding:13px;font:11px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.v6-consult-actions{display:grid;grid-template-columns:1fr 1.5fr;gap:9px;margin-top:11px}.v6-copy-status{margin-top:10px;padding:10px 12px;border-radius:12px;font-size:11px;line-height:1.5}.v6-copy-status.ok{background:#e9f8ee;border:1px solid #cdebd7;color:#176a44}.v6-copy-status.ng{background:#fff1f1;border:1px solid #f0cccc;color:#934343}
+
+@media(max-width:560px){
+  .v6-table th.v6-sticky-name,.v6-table td.v6-sticky-name{left:48px;min-width:132px;width:132px;max-width:132px}
+  .v6-table th.v6-sticky-no,.v6-table td.v6-sticky-no{min-width:48px;width:48px;max-width:48px}
+  .v6-metric-guide small{width:100%;margin-left:0}.v6-four{grid-template-columns:repeat(2,1fr)}.v6-panel{padding-left:13px;padding-right:13px}.v6-consult-actions{grid-template-columns:1fr 1.4fr}.v6-consult-text{min-height:48dvh}
+}
