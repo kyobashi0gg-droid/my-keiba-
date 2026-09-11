@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b1612" />
-  <meta name="description" content="KTM・33ラップ・調教・人気から穴候補を整理する自分専用競馬分析ツール" />
+  <meta name="description" content="KTM・33ラップ・調教採点・人気から穴候補を整理する自分専用競馬分析ツール" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
   <title>MY KEIBA LAB</title>
@@ -21,9 +21,9 @@
   <main class="app-shell">
     <section class="hero-card">
       <div>
-        <span class="pill">第2版</span>
-        <h2>穴候補を、条件で絞る。</h2>
-        <p>KTM・33ラップ・調教採点・人気・オッズ・馬場をまとめて比較。新聞データの取込にも対応した、自分専用の予想ノートです。</p>
+        <span class="pill">第3版</span>
+        <h2>新聞PDFを、そのまま分析へ。</h2>
+        <p>プレミアム版PDFから開催場・R・馬名・予想オッズ・調教印・調教採点・前走比・馬キャラ・B着用をまとめて取り込みます。</p>
       </div>
       <div class="hero-actions">
         <button id="newRaceBtn" class="primary-btn">＋ レース追加</button>
@@ -49,7 +49,7 @@
         <span class="score-note">簡易スコア</span>
       </div>
       <div id="rankList" class="rank-list"></div>
-      <p class="analysis-help">KTM・33ラップ評価・同レース内の調教採点順位・人気・オッズ・変身材料を加点して並べます。最終判断は展開・馬場・過去走内容と合わせて行います。</p>
+      <p class="analysis-help">KTM・33ラップ評価・馬キャラとの33ラップ一致・調教採点順位・人気・オッズ・変身材料を加点。B表記だけでは初ブリンカー扱いにしません。</p>
     </section>
 
     <section class="section-head">
@@ -65,7 +65,7 @@
     <section id="emptyState" class="empty-state">
       <div class="empty-icon">◎</div>
       <h3>まだレースがありません</h3>
-      <p>「レース追加」から入力するか、「新聞 / PDF」から文字データを読み込めます。</p>
+      <p>「新聞 / PDF」からプレミアム版を選ぶと、対象レースを一括で取り込めます。</p>
       <button class="primary-btn" data-action="new-race">最初のレースを作る</button>
     </section>
   </main>
@@ -85,21 +85,27 @@
       </div>
 
       <input id="raceId" type="hidden" />
+
       <div class="form-grid two">
         <label>開催場<input id="track" required placeholder="例：中山" /></label>
         <label>R<select id="raceNo"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option selected>11</option><option>12</option></select></label>
       </div>
-      <label>レース名<input id="raceName" required placeholder="例：○○ステークス" /></label>
+
+      <label>レース名<input id="raceName" required placeholder="例：チャレンジC" /></label>
+
+
       <div class="form-grid two">
-        <label>天気<select id="weather"><option>晴</option><option>曇</option><option>小雨</option><option>雨</option><option>雪</option></select></label>
-        <label>馬場<select id="going"><option>良</option><option>稍重</option><option>重</option><option>不良</option></select></label>
+        <label>天気<select id="weather"><option>未設定</option><option>晴</option><option>曇</option><option>小雨</option><option>雨</option><option>雪</option></select></label>
+        <label>馬場<select id="going"><option>未設定</option><option>良</option><option>稍重</option><option>重</option><option>不良</option></select></label>
       </div>
+
       <label>展開・馬場メモ<textarea id="paceMemo" rows="2" placeholder="例：先行多め。雨で差し有利になりそう"></textarea></label>
 
       <div class="horses-head">
         <div><p class="eyebrow">HORSES</p><h3>出走馬データ</h3></div>
         <button id="addHorseBtn" type="button" class="secondary-btn small">＋ 馬追加</button>
       </div>
+
       <div id="horseEditor" class="horse-editor"></div>
 
       <div class="sheet-actions">
@@ -115,28 +121,34 @@
         <strong>馬データ</strong>
         <button type="button" class="remove-horse text-btn">削除</button>
       </div>
+
       <div class="form-grid two">
         <label>馬名<input class="h-name" placeholder="馬名" /></label>
         <label>人気<input class="h-pop" type="number" min="1" placeholder="例：8" /></label>
       </div>
+
       <div class="form-grid three">
-        <label>調教印<select class="h-mark"><option value="">—</option><option>◎</option><option>○</option><option>▲</option><option>△</option><option>×</option></select></label>
-        <label>調教採点<input class="h-training" type="number" step="1" placeholder="例：72" /></label>
+        <label>調教印<select class="h-mark"><option value="">—</option><option>◎</option><option>○</option><option>▲</option><option>☆</option><option>△</option><option>×</option></select></label>
+        <label>調教採点<input class="h-training" type="number" step="0.1" placeholder="例：59.0" /></label>
         <label>前走比<input class="h-diff" type="number" step="1" placeholder="+6" /></label>
       </div>
+
       <div class="form-grid three">
         <label>33ラップ評価<select class="h-lap"><option value="">—</option><option>S</option><option>A</option><option>B</option><option>C</option></select></label>
         <label>オッズ<input class="h-odds" type="number" min="1" step="0.1" placeholder="例：18.4" /></label>
         <label>脚質<select class="h-style"><option value="">—</option><option>逃げ</option><option>先行</option><option>差し</option><option>追込</option></select></label>
       </div>
+
       <div class="flag-grid">
-        <label class="check-label"><input class="h-first-blinker" type="checkbox" />初ブリンカー / 初B</label>
+        <label class="check-label"><input class="h-first-blinker" type="checkbox" />初Bを確認済み</label>
         <label class="check-label"><input class="h-trouble" type="checkbox" />前走不利あり</label>
       </div>
+
       <label>メモ<textarea class="h-note" rows="2" placeholder="好走条件、前走不利、装具、距離・コース適性など"></textarea></label>
     </article>
   </template>
 
   <script src="app.js" defer></script>
+  <script src="premium-v3.js" defer></script>
 </body>
 </html>
