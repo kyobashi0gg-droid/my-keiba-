@@ -1,4 +1,4 @@
-const CACHE = 'my-keiba-lab-v1';
+const CACHE = 'my-keiba-lab-v2';
 const ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest'];
 
 self.addEventListener('install', event => {
