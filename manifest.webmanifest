@@ -1,0 +1,10 @@
+{
+  "name": "MY KEIBA LAB",
+  "short_name": "KEIBA LAB",
+  "lang": "ja",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#08110e",
+  "theme_color": "#0b1612",
+  "description": "自分専用の競馬予想・分析メモ"
+}
