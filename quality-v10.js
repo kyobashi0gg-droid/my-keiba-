@@ -1,7 +1,4 @@
-// MY KEIBA LAB v10 - robust newspaper editorial extraction
-// PDF text order can differ from visual order. This pass finds the two plain-number
-// editorial rows (popular horse blind spot / hole qualification) by matching
-// horse number + abbreviated horse-name prefix + prose reason.
+// MY KEIBA LAB v10.1 - anchored newspaper editorial extraction
 (() => {
   if (typeof state === 'undefined') return;
 
@@ -10,71 +7,73 @@
     .replace(/[ァ-ヶ]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60))
     .toLowerCase();
 
+  const escRe = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const hasJapanese = s => /[ぁ-んァ-ヶ一-龯]/.test(String(s || ''));
 
   function namePrefixMatches(horseName, token) {
     const h = norm(horseName);
     const t = norm(token);
-    if (!h || !t) return false;
-    return h.startsWith(t) || t.startsWith(h);
+    return !!h && !!t && (h.startsWith(t) || t.startsWith(h));
   }
 
-  function isStructuredNoise(line = '') {
-    const s = String(line).trim();
-    return !s ||
-      /^#N\/A/.test(s) ||
-      /^(?:全[芝ダ　]|\.?Ⓑ|\(\)|枠\b)/.test(s) ||
-      /^人気馬の/.test(s) ||
-      /^◎\s*\d/.test(s) ||
-      /^\d{1,2}\s+[^\s]+\s+/.test(s);
+  function findHorse(race, number, token) {
+    return (race.horses || []).find(h =>
+      String(h.number || '') === String(number || '') && namePrefixMatches(h.name, token)
+    ) || null;
   }
 
-  function collectEditorialRows(page, race) {
-    const lines = String(page?.text || '')
-      .split('\n')
-      .map(x => x.trim())
-      .filter(Boolean);
+  function isContinuationNoise(line, race) {
+    const s = String(line || '').trim();
+    if (!s) return true;
+    if (/^(?:#N\/A|全[芝ダ　]|枠\b|\(\)|人気馬の|◎\s*\d)/.test(s)) return true;
+    if (/^\d{1,2}\s+[^\s]+\s+/.test(s)) return true;
+    if ((race.horses || []).some(h => norm(h.name) === norm(s))) return true;
+    return false;
+  }
+
+  function collectAnchoredRows(page, race) {
+    const lines = String(page?.text || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+    const marker = new RegExp(`^${escRe(race.track)}\\s+${escRe(String(race.raceNo))}\\s*$`);
+    let start = lines.findIndex(line => marker.test(line));
+
+    // PDF.js sometimes glues spaces differently; try a normalized fallback.
+    if (start < 0) {
+      const wanted = norm(`${race.track}${race.raceNo}`);
+      start = lines.findIndex(line => norm(line) === wanted);
+    }
+    if (start < 0) return [];
 
     const rows = [];
-    for (let i = 0; i < lines.length; i++) {
-      // Deliberately do NOT accept a leading ◎ here. Those rows belong to a
-      // different editorial block in this PDF and caused the v9 misread.
-      const m = lines[i].match(/^(\d{1,2})\s+([^\s]+)\s+(.{6,})$/);
+    for (let i = start + 1; i < Math.min(lines.length, start + 36) && rows.length < 2; i++) {
+      const m = lines[i].match(/^(\d{1,2})\s+([^\s]+)\s+(.+)$/);
       if (!m) continue;
-
-      const horse = (race.horses || []).find(h => String(h.number || '') === m[1]);
-      if (!horse || !namePrefixMatches(horse.name, m[2])) continue;
+      const horse = findHorse(race, m[1], m[2]);
+      if (!horse) continue;
 
       let reason = m[3].trim();
       if (!hasJapanese(reason)) continue;
-      if (/%|人\d+番|ﾄ\b|^[\d.()+\-]+$/.test(reason)) continue;
+      // Editorial prose, not race-stat rows.
+      if (/%|人\d+番|ﾄ\b/.test(reason)) continue;
 
-      // Pick up wrapped continuation lines, but stop at the next structured row.
       for (let j = i + 1; j < Math.min(lines.length, i + 4); j++) {
         const next = lines[j].trim();
-        if (isStructuredNoise(next)) break;
-        if ((race.horses || []).some(h => norm(h.name) === norm(next))) break;
+        if (isContinuationNoise(next, race)) break;
         if (!hasJapanese(next)) break;
         reason += next;
       }
 
-      rows.push({ horse, reason: reason.replace(/\s+/g, ' ').trim(), index: i });
+      rows.push({ horse, reason: reason.replace(/\s+/g, ' ').trim() });
     }
-
-    // De-duplicate the same horse/reason if PDF.js emitted it twice.
-    const seen = new Set();
-    return rows.filter(row => {
-      const key = `${row.horse.number}|${row.reason}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+    return rows;
   }
 
   function applyEditorialRows(page, race) {
     if (!race) return race;
-    const rows = collectEditorialRows(page, race);
-    if (rows.length < 2) return race;
+    const rows = collectAnchoredRows(page, race);
+    if (rows.length < 2) {
+      race.v10EditorialDetected = `not-found:${rows.length}`;
+      return race;
+    }
 
     for (const h of race.horses || []) {
       h.popularBlindSpot = false;
@@ -98,5 +97,5 @@
     };
   }
 
-  window.MyKeibaQualityV10 = { collectEditorialRows, applyEditorialRows };
+  window.MyKeibaQualityV10 = { collectAnchoredRows, applyEditorialRows };
 })();
