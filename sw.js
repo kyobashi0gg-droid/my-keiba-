@@ -1,7 +1,7 @@
-const CACHE = 'my-keiba-lab-v5-0';
+const CACHE = 'my-keiba-lab-v6-0';
 const ASSETS = [
-  './', './index.html', './styles.css', './integrated-v4.css', './lapkun-v5.css',
-  './app.js', './premium-v3.js', './premium-v3-fix.js', './integrated-v4.js', './lapkun-v5.js',
+  './', './index.html', './styles.css', './integrated-v4.css', './lapkun-v5.css', './lapkun-v6.css',
+  './app.js', './premium-v3.js', './premium-v3-fix.js', './integrated-v4.js', './lapkun-v5.js', './lapkun-v6.js',
   './manifest.webmanifest'
 ];
 
