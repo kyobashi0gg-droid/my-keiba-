@@ -1,4 +1,4 @@
-// MY KEIBA LAB v10.1 - anchored newspaper editorial extraction
+// MY KEIBA LAB v10.2 - robust newspaper editorial extraction
 (() => {
   if (typeof state === 'undefined') return;
 
@@ -31,28 +31,17 @@
     return false;
   }
 
-  function collectAnchoredRows(page, race) {
-    const lines = String(page?.text || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean);
-    const marker = new RegExp(`^${escRe(race.track)}\\s+${escRe(String(race.raceNo))}\\s*$`);
-    let start = lines.findIndex(line => marker.test(line));
-
-    // PDF.js sometimes glues spaces differently; try a normalized fallback.
-    if (start < 0) {
-      const wanted = norm(`${race.track}${race.raceNo}`);
-      start = lines.findIndex(line => norm(line) === wanted);
-    }
-    if (start < 0) return [];
-
+  function collectRowsAfterMarker(lines, start, race) {
     const rows = [];
-    for (let i = start + 1; i < Math.min(lines.length, start + 36) && rows.length < 2; i++) {
+    for (let i = start + 1; i < Math.min(lines.length, start + 18) && rows.length < 2; i++) {
       const m = lines[i].match(/^(\d{1,2})\s+([^\s]+)\s+(.+)$/);
       if (!m) continue;
+
       const horse = findHorse(race, m[1], m[2]);
       if (!horse) continue;
 
       let reason = m[3].trim();
       if (!hasJapanese(reason)) continue;
-      // Editorial prose, not race-stat rows.
       if (/%|人\d+番|ﾄ\b/.test(reason)) continue;
 
       for (let j = i + 1; j < Math.min(lines.length, i + 4); j++) {
@@ -65,6 +54,50 @@
       rows.push({ horse, reason: reason.replace(/\s+/g, ' ').trim() });
     }
     return rows;
+  }
+
+  function collectAnchoredRows(page, race) {
+    const lines = String(page?.text || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+    const marker = new RegExp(`^${escRe(race.track)}\\s+${escRe(String(race.raceNo))}\\s*$`);
+    const wanted = norm(`${race.track}${race.raceNo}`);
+
+    // The PDF can contain more than one exact-looking "中山 1" marker on the same page.
+    // Try every marker and keep the one immediately followed by the two editorial rows.
+    const starts = [];
+    lines.forEach((line, index) => {
+      if (marker.test(line) || norm(line) === wanted) starts.push(index);
+    });
+
+    for (const start of starts) {
+      const rows = collectRowsAfterMarker(lines, start, race);
+      if (rows.length >= 2) return rows.slice(0, 2);
+    }
+
+    // Last-resort fallback: find a consecutive pair of editorial-looking rows anywhere
+    // on the page, still requiring horse number + abbreviated horse-name prefix.
+    const candidates = [];
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].match(/^(\d{1,2})\s+([^\s]+)\s+(.+)$/);
+      if (!m) continue;
+      const horse = findHorse(race, m[1], m[2]);
+      if (!horse) continue;
+      let reason = m[3].trim();
+      if (!hasJapanese(reason) || /%|人\d+番|ﾄ\b/.test(reason)) continue;
+      for (let j = i + 1; j < Math.min(lines.length, i + 4); j++) {
+        const next = lines[j].trim();
+        if (isContinuationNoise(next, race)) break;
+        if (!hasJapanese(next)) break;
+        reason += next;
+      }
+      candidates.push({ horse, reason: reason.replace(/\s+/g, ' ').trim(), index: i });
+    }
+
+    for (let i = 0; i < candidates.length - 1; i++) {
+      if (candidates[i + 1].index - candidates[i].index <= 4) {
+        return [candidates[i], candidates[i + 1]];
+      }
+    }
+    return [];
   }
 
   function applyEditorialRows(page, race) {
