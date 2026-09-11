@@ -1,5 +1,5 @@
-const CACHE = 'my-keiba-lab-v3';
-const ASSETS = ['./', './index.html', './styles.css', './app.js', './premium-v3.js', './manifest.webmanifest'];
+const CACHE = 'my-keiba-lab-v3-1';
+const ASSETS = ['./', './index.html', './styles.css', './app.js', './premium-v3.js', './premium-v3-fix.js', './manifest.webmanifest'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
