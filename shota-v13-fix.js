@@ -76,4 +76,12 @@
   }
 
   window.MyKeibaShotaV13 = { shotaMarkFixed, uTaroMarkFixed, fixHorse };
+
+  // v14 is loaded dynamically here so existing index.html can stay stable.
+  if (!document.querySelector('script[data-mykeiba-v14]')) {
+    const s = document.createElement('script');
+    s.src = './editorial-import-v14.js';
+    s.dataset.mykeibaV14 = '1';
+    document.head.appendChild(s);
+  }
 })();
