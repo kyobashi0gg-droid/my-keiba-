@@ -37,7 +37,7 @@
 (() => {
   if (window.__MYKEIBA_POST_STABILITY_LOADER__) return;
   window.__MYKEIBA_POST_STABILITY_LOADER__ = true;
-  for (const src of ['./race-ui-v17.js', './horse-db-v18.js']) {
+  for (const src of ['./race-ui-v17.js', './horse-db-v18.js', './horse-db-namefix-v18a.js']) {
     const script = document.createElement('script');
     script.src = src;
     script.defer = true;
