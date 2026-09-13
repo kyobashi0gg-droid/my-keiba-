@@ -1,5 +1,5 @@
 // MY KEIBA LAB v22 - 馬DB33適合を穴スコア + ラップ君相談へ反映
-// v23以降は芝/ダート・距離帯の条件別サマリーを優先し、v25以降は度外視判定も相談文へ載せる。
+// v23以降は芝/ダート・距離帯、v26以降は良/道悪を実戦判定に使用。v25以降は度外視判定も相談文へ載せる。
 (() => {
   if (window.__MYKEIBA_DB_SCORE_CONSULT_V22__) return;
   window.__MYKEIBA_DB_SCORE_CONSULT_V22__ = true;
@@ -107,6 +107,7 @@
     const race = currentRaceFromDetail();
     if (!race) return;
 
+    const going = window.MyKeibaHorseDBGoingV26?.raceGoing?.(race) || '';
     const rows = (race.horses || []).map(h => {
       const hit = fitCache.get(key(race, h));
       if (!hit) return null;
@@ -114,7 +115,7 @@
     }).filter(Boolean);
     if (!rows.length) return;
 
-    text.value += `\n\n■馬DB 33適合\n馬番|馬名|使用条件|好走33帯|今回適合|穴スコア加点\n${rows.join('\n')}\n・条件別DB33: 芝/ダートを分離し、距離帯を優先。データ不足時は同一馬場→全体へフォールバック。\n・DB33判定: 帯内◎=+2点 / ±0.3以内○=+1点 / △=加点なし`;
+    text.value += `\n\n■馬DB 33適合\n今回馬場: ${going || '未設定（馬場別では絞らない）'}\n馬番|馬名|使用条件|好走33帯|今回適合|穴スコア加点\n${rows.join('\n')}\n・条件別DB33: 芝/ダート → 距離帯 → 良/道悪を優先。該当データ不足時は距離帯→同一馬場→全体へフォールバック。\n・DB33判定: 帯内◎=+2点 / ±0.3以内○=+1点 / △=加点なし`;
 
     const excuseBlocks = (race.horses || []).map(h => {
       const hit = fitCache.get(key(race, h));
@@ -160,6 +161,15 @@
     const btn = e.target?.closest?.('button');
     if (btn && /ラップ君に相談/.test(btn.textContent || '')) setTimeout(schedule, 0);
   }, true);
+
+  // 当日の馬場状態を変更したら、DB33判定を即座に再計算する。
+  document.addEventListener('change', e => {
+    if (e.target?.id === 'going' || /going|馬場/.test(e.target?.name || '')) setTimeout(schedule, 0);
+  }, true);
+  document.addEventListener('submit', e => {
+    if (e.target?.id === 'raceForm') setTimeout(schedule, 0);
+  }, true);
+
   window.addEventListener('mykeiba:horse-db-updated', async () => { await rebuildFitCache(); refreshIntegratedHomeIfSafe(); schedule(); });
   window.addEventListener('mykeiba:resume', schedule, { passive:true });
   window.addEventListener('pageshow', schedule, { passive:true });
