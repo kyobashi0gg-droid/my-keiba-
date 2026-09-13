@@ -1,5 +1,5 @@
 // MY KEIBA LAB v24 - 条件別33帯の見える化
-// 馬DB詳細で「芝/ダート × 距離帯」の33帯を一覧表示する。通常画面は軽量のまま、詳細を開いた時だけ計算。
+// 馬DB詳細で「芝/ダート × 距離帯」の33帯を一覧表示。v25では度外視候補を除外して集計する。
 (() => {
   if (window.__MYKEIBA_HORSE_DB_CONDITION_VISUAL_V24__) return;
   window.__MYKEIBA_HORSE_DB_CONDITION_VISUAL_V24__ = true;
@@ -24,6 +24,7 @@
   function bucketRows(runs) {
     const cond = window.MyKeibaHorseDBConditionV23;
     const summaryApi = window.MyKeibaHorseDBSummaryV20;
+    const exApi = window.MyKeibaHorseDBExcuseV25;
     if (!cond?.runCondition || !summaryApi?.summarizeRuns) return [];
 
     const groups = new Map();
@@ -37,10 +38,15 @@
 
     const orderSurface = { '芝':0, 'ダート':1 };
     const orderBand = { '短距離':0, 'マイル〜中距離':1, '中長距離':2 };
-    return [...groups.values()].map(g => ({
-      ...g,
-      summary: summaryApi.summarizeRuns(g.runs),
-    })).filter(g => g.summary?.lapCount > 0)
+    return [...groups.values()].map(g => {
+      const classified = exApi?.classifyRuns ? exApi.classifyRuns(g.runs) : { usable:g.runs, excluded:[] };
+      return {
+        ...g,
+        usableRuns: classified.usable,
+        excluded: classified.excluded,
+        summary: summaryApi.summarizeRuns(classified.usable),
+      };
+    }).filter(g => g.summary?.lapCount > 0)
       .sort((a,b) => (orderSurface[a.surface] ?? 9) - (orderSurface[b.surface] ?? 9)
         || (orderBand[a.band] ?? 9) - (orderBand[b.band] ?? 9));
   }
@@ -69,23 +75,26 @@
     const rows = bucketRows(runs);
     if (!rows.length) return;
 
-    const overall = window.MyKeibaHorseDBSummaryV20?.summarizeRuns?.(runs);
+    const exApi = window.MyKeibaHorseDBExcuseV25;
+    const classified = exApi?.classifyRuns ? exApi.classifyRuns(runs) : { usable:runs, excluded:[] };
+    const overall = window.MyKeibaHorseDBSummaryV20?.summarizeRuns?.(classified.usable);
     const box = document.createElement('section');
     box.className = 'v24-condition-zones';
     box.innerHTML = `
       <div class="v24-head">
-        <div><strong>条件別33帯</strong><small>芝/ダート × 距離帯</small></div>
+        <div><strong>条件別33帯</strong><small>芝/ダート × 距離帯${classified.excluded.length ? ` ・ 度外視${classified.excluded.length}走除外` : ''}</small></div>
         <span>全体 ${fmtZone(overall)}</span>
       </div>
       <div class="v24-zone-list">
         ${rows.map(x => `
           <div class="v24-zone-row">
-            <div><b>${bucketLabel(x.surface, x.band)}</b><small>対象 ${x.summary.lapCount}走 / 3着以内 ${x.summary.goodCount}走</small></div>
+            <div><b>${bucketLabel(x.surface, x.band)}</b><small>対象 ${x.summary.lapCount}走 / 3着以内 ${x.summary.goodCount}走${x.excluded.length ? ` / 度外視${x.excluded.length}` : ''}</small></div>
             <strong>${fmtZone(x.summary)}</strong>
             <em class="${x.summary.goodCount >= 2 ? 'ok' : 'ref'}">${x.summary.goodCount >= 2 ? '採用候補' : '参考'}</em>
           </div>`).join('')}
       </div>
-      <p>条件別が十分ならレース判定で優先使用し、不足時は同一馬場 → 全体へ補完します。</p>`;
+      ${classified.excluded.length ? `<div class="v25-excluded"><strong>度外視候補</strong>${classified.excluded.slice(0,6).map(x => `<span>${String(x.run.date || '').replace(/-/g,'.')} ${x.run.raceName || ''} ・ ${x.reason}</span>`).join('')}</div>` : ''}
+      <p>明確な不利・展開不向きの凡走だけを集計から除外。条件別が十分なら優先し、不足時は同一馬場 → 全体へ補完します。</p>`;
 
     const summaryBox = body.querySelector('.v20-summary-box');
     if (summaryBox) summaryBox.insertAdjacentElement('afterend', box);
@@ -97,6 +106,7 @@
     .v24-condition-zones{margin:0 0 14px;padding:12px;border:1px solid #d5e8dc;border-radius:16px;background:#fbfdfb}
     .v24-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}.v24-head>div{display:grid;gap:2px}.v24-head strong{font-size:15px;color:#245f3f}.v24-head small{font-size:10px;color:#77847d}.v24-head>span{font-size:10px;color:#607168;background:#eef6f1;padding:4px 7px;border-radius:999px;white-space:nowrap}
     .v24-zone-list{display:grid;gap:7px}.v24-zone-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:9px 0;border-top:1px solid #e8f0eb}.v24-zone-row:first-child{border-top:0}.v24-zone-row>div{display:grid;gap:2px}.v24-zone-row b{font-size:12px;color:#2f493b}.v24-zone-row small{font-size:9px;color:#7a867f}.v24-zone-row>strong{font-size:14px;color:#1f6742;white-space:nowrap}.v24-zone-row em{font-style:normal;font-size:9px;font-weight:900;padding:3px 6px;border-radius:999px;white-space:nowrap}.v24-zone-row em.ok{background:#e0f3e7;color:#256443}.v24-zone-row em.ref{background:#f1f2f1;color:#707b75}
+    .v25-excluded{display:grid;gap:3px;margin-top:9px;padding:8px;border-radius:10px;background:#fff8ed}.v25-excluded strong{font-size:10px;color:#8a6020}.v25-excluded span{font-size:9px;color:#7b6a50}
     .v24-condition-zones p{margin:8px 0 0;font-size:9px;line-height:1.5;color:#78857e}
   `;
   document.head.appendChild(style);
@@ -118,7 +128,6 @@
   window.addEventListener('mykeiba:resume', schedule, { passive:true });
   window.addEventListener('pageshow', schedule, { passive:true });
 
-  // モーダル生成を拾うが、計算は開いている1頭分だけ。
   const observer = new MutationObserver(schedule);
   observer.observe(document.body, { childList:true, subtree:true });
   schedule();
