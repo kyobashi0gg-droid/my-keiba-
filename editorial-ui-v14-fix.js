@@ -48,6 +48,7 @@
     './venue-going-v27.js',
     './horse-db-fit-v21.js',
     './horse-db-score-consult-v22.js',
+    './editorial-db-match-v27.js',
     './horse-db-condition-ui-v23.js',
     './horse-db-condition-visual-v24.js'
   ]) {
