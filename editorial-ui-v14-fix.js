@@ -37,7 +37,16 @@
 (() => {
   if (window.__MYKEIBA_POST_STABILITY_LOADER__) return;
   window.__MYKEIBA_POST_STABILITY_LOADER__ = true;
-  for (const src of ['./race-ui-v17.js', './horse-db-v18.js', './horse-db-name-fix-v19.js', './horse-db-summary-v20.js', './horse-db-fit-v21.js', './horse-db-score-consult-v22.js']) {
+  for (const src of [
+    './race-ui-v17.js',
+    './horse-db-v18.js',
+    './horse-db-name-fix-v19.js',
+    './horse-db-summary-v20.js',
+    './horse-db-condition-v23.js',
+    './horse-db-fit-v21.js',
+    './horse-db-score-consult-v22.js',
+    './horse-db-condition-ui-v23.js'
+  ]) {
     const script = document.createElement('script');
     script.src = src;
     script.defer = true;
