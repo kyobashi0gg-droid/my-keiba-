@@ -1,5 +1,5 @@
 // MY KEIBA LAB v22 - 馬DB33適合を穴スコア + ラップ君相談へ反映
-// v23以降は芝/ダート・距離帯の条件別サマリーを優先する。
+// v23以降は芝/ダート・距離帯の条件別サマリーを優先し、v25以降は度外視判定も相談文へ載せる。
 (() => {
   if (window.__MYKEIBA_DB_SCORE_CONSULT_V22__) return;
   window.__MYKEIBA_DB_SCORE_CONSULT_V22__ = true;
@@ -40,6 +40,8 @@
             text: fitApi.fitText(avg33, summary),
             basis: conditioned?.basis || '全体',
             condition: conditioned?.condition || null,
+            excluded: conditioned?.excluded || [],
+            excludedRuns: conditioned?.excludedRuns || 0,
           });
         }
       }
@@ -89,6 +91,14 @@
     return summary.zoneMin === summary.zoneMax ? `${summary.zoneMin}` : `${summary.zoneMin}〜${summary.zoneMax}`;
   }
 
+  function excuseLine(item) {
+    const run = item?.run || {};
+    const date = String(run.date || '—').replace(/-/g, '.');
+    const raceName = run.raceName || 'レース名不明';
+    const finish = run.finish ? `${run.finish}着` : '着順—';
+    return `${date} ${raceName} / ${finish} / ${item?.reason || '理由不明'}`;
+  }
+
   function appendConsultDbSection() {
     const modal = document.querySelector('#v6Consult');
     const text = modal?.querySelector('#v6ConsultText');
@@ -105,6 +115,17 @@
     if (!rows.length) return;
 
     text.value += `\n\n■馬DB 33適合\n馬番|馬名|使用条件|好走33帯|今回適合|穴スコア加点\n${rows.join('\n')}\n・条件別DB33: 芝/ダートを分離し、距離帯を優先。データ不足時は同一馬場→全体へフォールバック。\n・DB33判定: 帯内◎=+2点 / ±0.3以内○=+1点 / △=加点なし`;
+
+    const excuseBlocks = (race.horses || []).map(h => {
+      const hit = fitCache.get(key(race, h));
+      if (!hit?.excluded?.length) return null;
+      const detail = hit.excluded.map(excuseLine).map(x => `  ・${x}`).join('\n');
+      return `${h.number || '—'}番 ${h.name}：度外視${hit.excluded.length}走\n${detail}`;
+    }).filter(Boolean);
+
+    if (excuseBlocks.length) {
+      text.value += `\n\n■馬DB 度外視判定\n${excuseBlocks.join('\n')}\n・上記はレース総評＋通過順＋着順から、明確な不利・展開不向きと判定した凡走。条件別33帯の集計から除外済み。\n・度外視理由は能力不足と同一視せず、今回条件で再現する不利かどうかも別途検討すること。`;
+    }
   }
 
   function refreshIntegratedHomeIfSafe() {
