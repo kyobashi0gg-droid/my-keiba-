@@ -1,4 +1,4 @@
-const CACHE = 'my-keiba-lab-v25-0';
+const CACHE = 'my-keiba-lab-v25-1';
 const ASSETS = [
   './', './index.html', './styles.css', './integrated-v4.css', './lapkun-v5.css', './lapkun-v6.css', './editorial-v8.css',
   './app.js', './data-model-v16.js', './premium-v3.js', './premium-v3-fix.js', './integrated-v4.js', './lapkun-v5.js', './lapkun-v6.js', './lapkun-v7-fix.js', './editorial-v8.js', './quality-v9.js', './quality-v10.js', './hole-manual-v11.js', './odds-v12.js', './shota-v13-fix.js', './stability-v15.js', './editorial-import-v14.js', './editorial-ui-v14-fix.js', './race-ui-v17.js', './horse-db-v18.js', './horse-db-namefix-v18a.js', './horse-db-name-fix-v19.js', './horse-db-summary-v20.js', './horse-db-excuse-v25.js', './horse-db-condition-v23.js', './horse-db-fit-v21.js', './horse-db-score-consult-v22.js', './horse-db-condition-ui-v23.js', './horse-db-condition-visual-v24.js',
