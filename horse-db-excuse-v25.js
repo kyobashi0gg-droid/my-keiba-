@@ -1,5 +1,5 @@
-// MY KEIBA LAB v25 - レース総評による度外視走フィルタ
-// 馬DBのレース総評・通過順・着順を組み合わせ、明確な不利/展開不向きの凡走だけを33帯集計から除外する。
+// MY KEIBA LAB v25.1 - レース総評による度外視走フィルタ
+// 誤除外を避けるため、レース総評に根拠がある明確な不利/展開不向きだけを33帯集計から除外する。
 (() => {
   if (window.__MYKEIBA_HORSE_DB_EXCUSE_V25__) return;
   window.__MYKEIBA_HORSE_DB_EXCUSE_V25__ = true;
@@ -14,7 +14,6 @@
 
   function finishNo(v) {
     const s = String(v ?? '').trim();
-    if (/^(消|取消|除外|中止|失格|競走中止)$/i.test(s)) return null;
     const n = num(s);
     return n != null && n > 0 ? n : null;
   }
@@ -50,23 +49,23 @@
     const frontCut = fs != null ? Math.max(3, Math.ceil(fs * 0.25)) : 3;
     const backCut = fs != null ? Math.max(6, Math.ceil(fs * 0.60)) : 7;
 
-    // 前が止まる流れで前方にいた凡走 → 展開不向き候補
-    if ((review.includes('前潰れ') || review.includes('ハイ')) && pos <= frontCut) {
-      return review.includes('前潰れ') ? '前潰れ×前方' : 'ハイ×前方';
-    }
-    // 前残りで後方にいた凡走 → 展開不向き候補
+    // 「前潰れ」と明記され、実際に前方にいた凡走だけ。
+    if (review.includes('前潰れ') && pos <= frontCut) return '前潰れ×前方';
+
+    // 「前残り」と明記され、実際に後方にいた凡走だけ。
     if (review.includes('前残り') && pos >= backCut) return '前残り×後方';
+
+    // 「ハイ」だけでは度外視にしない。ペース表記は評価語でもあり誤除外が多いため。
     return '';
   }
 
   function excuseReason(run) {
-    const finishRaw = String(run?.finish ?? '').trim();
-    if (/^(消|取消|除外|中止|失格|競走中止)$/i.test(finishRaw)) return `非完走:${finishRaw}`;
-
     const f = finishNo(run?.finish);
-    // 好走自体は度外視扱いにしない。好走33帯を不必要に削らないため。
+    // 好走は度外視扱いにしない。
     if (f != null && f <= 3) return '';
 
+    // 着順欄の「消・中止」等だけでは除外しない。
+    // DB取込時の列ズレや表記揺れで誤認する可能性があるため、必ずレース総評を根拠にする。
     const explicit = explicitTrouble(run?.review);
     if (explicit) return explicit;
     return paceMismatch(run);
