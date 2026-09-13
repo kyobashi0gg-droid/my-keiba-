@@ -1,5 +1,6 @@
 // MY KEIBA LAB v23 - 馬DB 条件別33サマリー
 // 芝/ダートを分離し、距離帯（〜1400 / 1500〜2000 / 2100〜）で優先集計。データ不足時は段階的にフォールバックする。
+// v25以降はレース総評から明確な度外視候補を除外して集計する。
 (() => {
   if (window.__MYKEIBA_HORSE_DB_CONDITION_V23__) return;
   window.__MYKEIBA_HORSE_DB_CONDITION_V23__ = true;
@@ -62,13 +63,19 @@
     return api?.summarizeRuns ? api.summarizeRuns(runs) : null;
   }
 
+  function usableRuns(runs) {
+    const ex = window.MyKeibaHorseDBExcuseV25;
+    return ex?.filterUsableRuns ? ex.filterUsableRuns(runs || []) : (runs || []);
+  }
+
   function summaryForRace(runs, race) {
-    const all = runs || [];
+    const rawAll = runs || [];
+    const ex = window.MyKeibaHorseDBExcuseV25?.classifyRuns?.(rawAll) || { usable: rawAll, excluded: [] };
+    const all = ex.usable;
     const rc = raceCondition(race);
     const sameSurface = rc.surface ? all.filter(r => runCondition(r).surface === rc.surface) : [];
     const sameBand = rc.band ? sameSurface.filter(r => runCondition(r).band === rc.band) : [];
 
-    // 条件別は最低3走、かつ好走2走以上を優先採用。
     let selected = all;
     let basis = '全体';
     if (validLapCount(sameBand) >= 3 && goodCount(sameBand) >= 2) {
@@ -81,13 +88,16 @@
       selected = sameSurface; basis = `${rc.surface}（参考）`;
     }
 
-    const summary = summarize(selected) || summarize(all);
+    const summary = summarize(selected) || summarize(all) || summarize(rawAll);
     return {
       summary,
       basis,
       condition: rc,
       selectedRuns: selected.length,
-      totalRuns: all.length,
+      totalRuns: rawAll.length,
+      usableRuns: all.length,
+      excludedRuns: ex.excluded.length,
+      excluded: ex.excluded,
       surfaceRuns: sameSurface.length,
       bandRuns: sameBand.length,
       fallback: basis === '全体' || /参考/.test(basis),
@@ -98,12 +108,13 @@
     if (!x) return '条件別 —';
     const s = x.summary;
     const zone = s?.zoneMin == null ? '—' : s.zoneMin === s.zoneMax ? `${s.zoneMin}` : `${s.zoneMin}〜${s.zoneMax}`;
-    return `${x.basis} / 好走33帯 ${zone} / 対象${s?.lapCount ?? 0}走 / 好走${s?.goodCount ?? 0}走`;
+    const exc = x.excludedRuns ? ` / 度外視${x.excludedRuns}走` : '';
+    return `${x.basis} / 好走33帯 ${zone} / 対象${s?.lapCount ?? 0}走 / 好走${s?.goodCount ?? 0}走${exc}`;
   }
 
   const style = document.createElement('style');
   style.textContent = `.v23-basis{display:block;margin-top:3px;font-size:10px;color:#4f725f;font-weight:800}`;
   document.head.appendChild(style);
 
-  window.MyKeibaHorseDBConditionV23 = { surfaceOf, bandOf, raceCondition, runCondition, summaryForRace, basisLabel };
+  window.MyKeibaHorseDBConditionV23 = { surfaceOf, bandOf, raceCondition, runCondition, summaryForRace, basisLabel, usableRuns };
 })();
