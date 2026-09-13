@@ -42,6 +42,7 @@
     './horse-db-v18.js',
     './horse-db-name-fix-v19.js',
     './horse-db-summary-v20.js',
+    './horse-db-excuse-v25.js',
     './horse-db-condition-v23.js',
     './horse-db-fit-v21.js',
     './horse-db-score-consult-v22.js',
