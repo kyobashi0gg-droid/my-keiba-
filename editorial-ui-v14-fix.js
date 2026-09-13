@@ -33,12 +33,14 @@
   observer.observe(document.body, { childList: true, subtree: true });
 })();
 
-// v17は stability-v15 適用後に読み込み、Android復帰時の監視制御も引き継ぐ。
+// v17/v18は stability-v15 適用後に読み込み、Android復帰時の監視制御も引き継ぐ。
 (() => {
-  if (window.__MYKEIBA_V17_LOADER__) return;
-  window.__MYKEIBA_V17_LOADER__ = true;
-  const script = document.createElement('script');
-  script.src = './race-ui-v17.js';
-  script.defer = true;
-  document.head.appendChild(script);
+  if (window.__MYKEIBA_POST_STABILITY_LOADER__) return;
+  window.__MYKEIBA_POST_STABILITY_LOADER__ = true;
+  for (const src of ['./race-ui-v17.js', './horse-db-v18.js']) {
+    const script = document.createElement('script');
+    script.src = src;
+    script.defer = true;
+    document.head.appendChild(script);
+  }
 })();
