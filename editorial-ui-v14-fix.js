@@ -38,6 +38,7 @@
   if (window.__MYKEIBA_POST_STABILITY_LOADER__) return;
   window.__MYKEIBA_POST_STABILITY_LOADER__ = true;
   for (const src of [
+    './race-number-repair-v28.js',
     './race-ui-v17.js',
     './horse-db-v18.js',
     './horse-db-name-fix-v19.js',
