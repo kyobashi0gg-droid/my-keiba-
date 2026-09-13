@@ -1,5 +1,5 @@
 // MY KEIBA LAB v23 - 馬DB 条件別33サマリー
-// 芝/ダートを分離し、距離帯（〜1400 / 1500〜2000 / 2100〜）で優先集計。データ不足時は段階的にフォールバックする。
+// 芝/ダート → 距離帯 → 良/道悪の順で優先。データ不足時は段階的にフォールバック。
 // v25以降はレース総評から明確な度外視候補を除外して集計する。
 (() => {
   if (window.__MYKEIBA_HORSE_DB_CONDITION_V23__) return;
@@ -38,13 +38,15 @@
     let surface = surfaceOf(course);
     let distance = distanceOf(course);
     if (distance == null) distance = distanceOf(race?.distance);
-    return { surface, distance, band: bandOf(distance) };
+    const going = window.MyKeibaHorseDBGoingV26?.raceGoing?.(race) || '';
+    return { surface, distance, band: bandOf(distance), going };
   }
 
   function runCondition(run) {
     const surface = surfaceOf(run?.surface || run?.trackType || run?.course || '');
     const distance = distanceOf(run?.distance);
-    return { surface, distance, band: bandOf(distance) };
+    const going = window.MyKeibaHorseDBGoingV26?.runGoing?.(run) || '';
+    return { surface, distance, band: bandOf(distance), going };
   }
 
   function validLapCount(runs) {
@@ -68,6 +70,14 @@
     return ex?.filterUsableRuns ? ex.filterUsableRuns(runs || []) : (runs || []);
   }
 
+  function strongEnough(runs) {
+    return validLapCount(runs) >= 3 && goodCount(runs) >= 2;
+  }
+
+  function referenceEnough(runs) {
+    return validLapCount(runs) >= 2;
+  }
+
   function summaryForRace(runs, race) {
     const rawAll = runs || [];
     const ex = window.MyKeibaHorseDBExcuseV25?.classifyRuns?.(rawAll) || { usable: rawAll, excluded: [] };
@@ -75,16 +85,27 @@
     const rc = raceCondition(race);
     const sameSurface = rc.surface ? all.filter(r => runCondition(r).surface === rc.surface) : [];
     const sameBand = rc.band ? sameSurface.filter(r => runCondition(r).band === rc.band) : [];
+    const sameGoingBand = rc.going ? sameBand.filter(r => runCondition(r).going === rc.going) : [];
+    const sameGoingSurface = rc.going ? sameSurface.filter(r => runCondition(r).going === rc.going) : [];
 
     let selected = all;
     let basis = '全体';
-    if (validLapCount(sameBand) >= 3 && goodCount(sameBand) >= 2) {
+
+    if (rc.going && strongEnough(sameGoingBand)) {
+      selected = sameGoingBand; basis = `${rc.surface}・${rc.band}・${rc.going}`;
+    } else if (strongEnough(sameBand)) {
       selected = sameBand; basis = `${rc.surface}・${rc.band}`;
-    } else if (validLapCount(sameSurface) >= 3 && goodCount(sameSurface) >= 2) {
+    } else if (rc.going && strongEnough(sameGoingSurface)) {
+      selected = sameGoingSurface; basis = `${rc.surface}・${rc.going}`;
+    } else if (strongEnough(sameSurface)) {
       selected = sameSurface; basis = rc.surface;
-    } else if (validLapCount(sameBand) >= 2) {
+    } else if (rc.going && referenceEnough(sameGoingBand)) {
+      selected = sameGoingBand; basis = `${rc.surface}・${rc.band}・${rc.going}（参考）`;
+    } else if (referenceEnough(sameBand)) {
       selected = sameBand; basis = `${rc.surface}・${rc.band}（参考）`;
-    } else if (validLapCount(sameSurface) >= 2) {
+    } else if (rc.going && referenceEnough(sameGoingSurface)) {
+      selected = sameGoingSurface; basis = `${rc.surface}・${rc.going}（参考）`;
+    } else if (referenceEnough(sameSurface)) {
       selected = sameSurface; basis = `${rc.surface}（参考）`;
     }
 
@@ -100,6 +121,8 @@
       excluded: ex.excluded,
       surfaceRuns: sameSurface.length,
       bandRuns: sameBand.length,
+      goingBandRuns: sameGoingBand.length,
+      goingSurfaceRuns: sameGoingSurface.length,
       fallback: basis === '全体' || /参考/.test(basis),
     };
   }
