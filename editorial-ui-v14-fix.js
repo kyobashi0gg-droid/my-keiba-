@@ -32,3 +32,13 @@
   const observer = new MutationObserver(() => setTimeout(placeButton, 0));
   observer.observe(document.body, { childList: true, subtree: true });
 })();
+
+// v17は stability-v15 適用後に読み込み、Android復帰時の監視制御も引き継ぐ。
+(() => {
+  if (window.__MYKEIBA_V17_LOADER__) return;
+  window.__MYKEIBA_V17_LOADER__ = true;
+  const script = document.createElement('script');
+  script.src = './race-ui-v17.js';
+  script.defer = true;
+  document.head.appendChild(script);
+})();
