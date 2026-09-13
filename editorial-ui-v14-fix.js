@@ -3,41 +3,29 @@
   function placeButton() {
     const grid = document.querySelector('.v4-action-grid');
     const btn = document.querySelector('#v14EditorialImport');
-    if (!grid || !btn) return;
-
+    if (!grid || !btn) return false;
     btn.classList.remove('secondary-btn');
     btn.classList.add('v4-secondary', 'v14-v4-btn');
     if (btn.parentElement !== grid) grid.appendChild(btn);
+    return true;
   }
 
   const style = document.createElement('style');
-  style.textContent = `
-    #v14EditorialImport.v14-v4-btn {
-      border-color:#d5c2eb;
-      background:#f7f1ff;
-      color:#64458d;
-      min-height:72px;
-      white-space:normal;
-      line-height:1.35;
-    }
-    #v14EditorialImport.v14-v4-btn.v14-active {
-      background:#eee1ff;
-      border-color:#b99cdd;
-      color:#59377f;
-    }
-  `;
+  style.textContent = `#v14EditorialImport.v14-v4-btn{border-color:#d5c2eb;background:#f7f1ff;color:#64458d;min-height:72px;white-space:normal;line-height:1.35}#v14EditorialImport.v14-v4-btn.v14-active{background:#eee1ff;border-color:#b99cdd;color:#59377f}`;
   document.head.appendChild(style);
 
   placeButton();
-  const observer = new MutationObserver(() => setTimeout(placeButton, 0));
-  observer.observe(document.body, { childList: true, subtree: true });
+  [120,500,1200].forEach(ms => setTimeout(placeButton, ms));
+  window.addEventListener('pageshow', placeButton, {passive:true});
+  window.addEventListener('mykeiba:resume', placeButton, {passive:true});
 })();
 
-// v17以降は stability-v15 適用後に読み込み、Android復帰時の監視制御も引き継ぐ。
+// v28.2: 動的scriptのdefer頼みを廃止。Android Chromeで実行順が前後しないよう1本ずつ読み込む。
 (() => {
   if (window.__MYKEIBA_POST_STABILITY_LOADER__) return;
   window.__MYKEIBA_POST_STABILITY_LOADER__ = true;
-  for (const src of [
+
+  const sources = [
     './race-number-repair-v28.js',
     './race-ui-v17.js',
     './horse-db-v18.js',
@@ -52,10 +40,22 @@
     './editorial-db-match-v27.js',
     './horse-db-condition-ui-v23.js',
     './horse-db-condition-visual-v24.js'
-  ]) {
-    const script = document.createElement('script');
-    script.src = src;
-    script.defer = true;
-    document.head.appendChild(script);
+  ];
+
+  function loadOne(src) {
+    return new Promise(resolve => {
+      if ([...document.scripts].some(s => s.getAttribute('src') === src)) return resolve();
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = false;
+      script.onload = () => resolve();
+      script.onerror = () => { console.warn('module load failed', src); resolve(); };
+      document.head.appendChild(script);
+    });
   }
+
+  (async () => {
+    for (const src of sources) await loadOne(src);
+    window.dispatchEvent(new CustomEvent('mykeiba:modules-ready'));
+  })();
 })();
