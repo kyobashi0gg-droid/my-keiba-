@@ -45,7 +45,8 @@
     './horse-db-condition-v23.js',
     './horse-db-fit-v21.js',
     './horse-db-score-consult-v22.js',
-    './horse-db-condition-ui-v23.js'
+    './horse-db-condition-ui-v23.js',
+    './horse-db-condition-visual-v24.js'
   ]) {
     const script = document.createElement('script');
     script.src = src;
