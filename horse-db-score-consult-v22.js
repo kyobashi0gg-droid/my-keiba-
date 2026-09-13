@@ -1,4 +1,5 @@
 // MY KEIBA LAB v22 - 馬DB33適合を穴スコア + ラップ君相談へ反映
+// v23以降は芝/ダート・距離帯の条件別サマリーを優先する。
 (() => {
   if (window.__MYKEIBA_DB_SCORE_CONSULT_V22__) return;
   window.__MYKEIBA_DB_SCORE_CONSULT_V22__ = true;
@@ -7,7 +8,7 @@
     ? window.MyKeibaDataV16.normalizeHorseName(v)
     : String(v || '').replace(/[\s　・･]/g, '').trim();
 
-  const fitCache = new Map(); // raceId|horseName -> { grade, summary, avg33, text }
+  const fitCache = new Map();
   let rebuilding = false;
 
   function key(race, horse) { return `${race?.id || ''}|${norm(horse?.name)}`; }
@@ -17,6 +18,7 @@
     if (rebuilding) return;
     const summaryApi = window.MyKeibaHorseDBSummaryV20;
     const fitApi = window.MyKeibaHorseDBFitV21;
+    const conditionApi = window.MyKeibaHorseDBConditionV23;
     if (!summaryApi?.allSummaries || !fitApi?.fitJudge || !fitApi?.raceAvg33) return;
     rebuilding = true;
     try {
@@ -28,19 +30,22 @@
         for (const horse of race.horses || []) {
           const db = summaries.find(s => norm(s.horse?.name) === norm(horse.name));
           if (!db) continue;
-          const judge = fitApi.fitJudge(avg33, db.summary);
+          const conditioned = conditionApi?.summaryForRace ? conditionApi.summaryForRace(db.runs, race) : null;
+          const summary = conditioned?.summary || db.summary;
+          const judge = fitApi.fitJudge(avg33, summary);
           fitCache.set(key(race, horse), {
             grade: judge.grade,
-            summary: db.summary,
+            summary,
             avg33,
-            text: fitApi.fitText(avg33, db.summary),
+            text: fitApi.fitText(avg33, summary),
+            basis: conditioned?.basis || '全体',
+            condition: conditioned?.condition || null,
           });
         }
       }
     } catch {} finally { rebuilding = false; }
   }
 
-  // 既存穴スコアへDB33適合を軽く加点。KTM等の既存ロジックはそのまま。
   if (typeof valueScore === 'function' && !window.__MYKEIBA_V22_SCORE_WRAPPED__) {
     window.__MYKEIBA_V22_SCORE_WRAPPED__ = true;
     const baseValueScore = valueScore;
@@ -95,20 +100,17 @@
     const rows = (race.horses || []).map(h => {
       const hit = fitCache.get(key(race, h));
       if (!hit) return null;
-      return `${h.number || '—'}|${h.name}|好走33帯 ${fmtZone(hit.summary)}|${hit.text}|加点 +${bonusOfGrade(hit.grade)}`;
+      return `${h.number || '—'}|${h.name}|${hit.basis}|好走33帯 ${fmtZone(hit.summary)}|${hit.text}|加点 +${bonusOfGrade(hit.grade)}`;
     }).filter(Boolean);
     if (!rows.length) return;
 
-    text.value += `\n\n■馬DB 33適合\n馬番|馬名|好走33帯|今回適合|穴スコア加点\n${rows.join('\n')}\n・DB33判定: 帯内◎=+2点 / ±0.3以内○=+1点 / △=加点なし`;
+    text.value += `\n\n■馬DB 33適合\n馬番|馬名|使用条件|好走33帯|今回適合|穴スコア加点\n${rows.join('\n')}\n・条件別DB33: 芝/ダートを分離し、距離帯を優先。データ不足時は同一馬場→全体へフォールバック。\n・DB33判定: 帯内◎=+2点 / ±0.3以内○=+1点 / △=加点なし`;
   }
 
   function refreshIntegratedHomeIfSafe() {
     const active = document.querySelector('.v4-nav.active');
     const detail = document.querySelector('#v4Detail');
-    if (active?.dataset.tab === 'home' && (!detail || detail.hidden)) {
-      // 既存renderV4は閉包内なので、ホームタブの既存クリック処理を利用。
-      active.click();
-    }
+    if (active?.dataset.tab === 'home' && (!detail || detail.hidden)) active.click();
   }
 
   let scheduled = false;
@@ -130,9 +132,7 @@
   }
 
   const style = document.createElement('style');
-  style.textContent = `
-    .v22-score-note{font-size:10px;color:#2c7350;font-weight:800}
-  `;
+  style.textContent = `.v22-score-note{font-size:10px;color:#2c7350;font-weight:800}`;
   document.head.appendChild(style);
 
   document.addEventListener('click', e => {
@@ -147,5 +147,5 @@
   observer.observe(document.body, { childList:true, subtree:true });
 
   initial();
-  window.MyKeibaDbScoreConsultV22 = { rebuildFitCache, bonusOfGrade, schedule };
+  window.MyKeibaDbScoreConsultV22 = { rebuildFitCache, bonusOfGrade, schedule, fitCache };
 })();
