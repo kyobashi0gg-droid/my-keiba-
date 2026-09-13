@@ -110,9 +110,7 @@
       const t = doc.querySelector(sel)?.textContent?.trim();
       if (t && /[ァ-ヶーA-Za-z]/.test(t) && t.length <= 40) { name = t; break; }
     }
-    if (!name) {
-      name = fullText.match(/(?:馬名|競走馬名)\s*[:：]?\s*([ァ-ヶヴーA-Za-z0-9・･]{2,30})/)?.[1] || '';
-    }
+    if (!name) name = fullText.match(/(?:馬名|競走馬名)\s*[:：]?\s*([ァ-ヶヴーA-Za-z0-9・･]{2,30})/)?.[1] || '';
     if (!name) {
       const title = doc.title?.trim() || '';
       name = title.split(/[|｜:：\-–—]/)[0].replace(/競走馬|データベース|馬情報/g, '').trim();
@@ -190,14 +188,7 @@
     const identity = horseIdentity(doc, fullText, file.name);
     const runs = dedupeRuns(parseRunTables(doc));
     const dates = runs.map(r => r.date).filter(v => /^20\d{2}-\d{2}-\d{2}$/.test(v)).sort();
-    return {
-      fileName: file.name,
-      ...identity,
-      runs,
-      newestDate: dates.at(-1) || '',
-      oldestDate: dates[0] || '',
-      parsedAt: new Date().toISOString(),
-    };
+    return { fileName: file.name, ...identity, runs, newestDate: dates.at(-1) || '', oldestDate: dates[0] || '', parsedAt: new Date().toISOString() };
   }
 
   function runId(horseKey, run) {
@@ -218,23 +209,14 @@
       const preferredKey = item.registrationNo ? `reg:${item.registrationNo}` : `name:${nameKey}`;
       const horseKey = existing?.key || preferredKey;
       let added = 0;
-
       for (const run of item.runs) {
         const record = { ...run, id: runId(horseKey, run), horseKey, sourceFile: item.fileName, importedAt: item.parsedAt };
         const old = await reqPromise(rs.get(record.id));
         if (!old) added++;
         rs.put({ ...(old || {}), ...record });
       }
-
-      const horse = {
-        ...(existing || {}), key: horseKey, name: item.name, nameKey,
-        registrationNo: item.registrationNo || existing?.registrationNo || '',
-        lastImportedAt: item.parsedAt, sourceFile: item.fileName,
-        latestRunDate: item.newestDate || existing?.latestRunDate || '',
-        dbSchemaVersion: 18,
-      };
+      const horse = { ...(existing || {}), key: horseKey, name: item.name, nameKey, registrationNo: item.registrationNo || existing?.registrationNo || '', lastImportedAt: item.parsedAt, sourceFile: item.fileName, latestRunDate: item.newestDate || existing?.latestRunDate || '', dbSchemaVersion: 18 };
       hs.put(horse);
-
       await new Promise((resolve, reject) => { tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error); });
       const tx2 = db.transaction([HORSES, RUNS], 'readwrite');
       const count = await reqPromise(tx2.objectStore(RUNS).index('horseKey').count(horseKey));
@@ -255,35 +237,42 @@
     } finally { db.close(); }
   }
 
+  async function listHorses() {
+    const db = await openDb();
+    try {
+      const tx = db.transaction(HORSES, 'readonly');
+      const rows = await reqPromise(tx.objectStore(HORSES).getAll());
+      return (rows || []).sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'ja'));
+    } finally { db.close(); }
+  }
+
+  async function getRuns(horseKey) {
+    const db = await openDb();
+    try {
+      const tx = db.transaction(RUNS, 'readonly');
+      const rows = await reqPromise(tx.objectStore(RUNS).index('horseKey').getAll(horseKey));
+      return (rows || []).sort((a,b) => String(b.date || '').localeCompare(String(a.date || '')));
+    } finally { db.close(); }
+  }
+
   function installUi() {
     if (document.querySelector('#v18HorseDbImport')) return;
     const grid = document.querySelector('.v4-action-grid');
     if (!grid) return;
-
     const input = document.createElement('input');
     input.type = 'file'; input.id = 'v18HorseDbFile'; input.hidden = true; input.multiple = true;
     input.accept = '.mht,.mhtml,.html,.htm,.txt,text/html,message/rfc822';
     document.body.appendChild(input);
-
     const btn = document.createElement('button');
     btn.id = 'v18HorseDbImport'; btn.type = 'button'; btn.className = 'v4-secondary v18-db-btn';
-    btn.textContent = '馬DB取込';
-    btn.onclick = () => input.click();
-    grid.appendChild(btn);
-
+    btn.textContent = '馬DB取込'; btn.onclick = () => input.click(); grid.appendChild(btn);
     input.onchange = async () => {
       const files = [...input.files]; input.value = '';
       if (!files.length) return;
       showModal('解析中…', '<p class="v18-note">MHT/HTMLを端末内で解析しています。</p>', false);
-      try {
-        pendingImports = [];
-        for (const f of files) pendingImports.push(await parseFile(f));
-        renderPreview();
-      } catch (e) {
-        showModal('取込できませんでした', `<p class="v18-error">${esc(e?.message || 'ファイル解析に失敗しました')}</p>`, false);
-      }
+      try { pendingImports = []; for (const f of files) pendingImports.push(await parseFile(f)); renderPreview(); }
+      catch (e) { showModal('取込できませんでした', `<p class="v18-error">${esc(e?.message || 'ファイル解析に失敗しました')}</p>`, false); }
     };
-
     dbStats().then(s => { btn.textContent = `馬DB取込 (${s.horses}頭)`; }).catch(() => {});
   }
 
@@ -304,10 +293,7 @@
     modal.querySelector('#v18Title').textContent = title;
     modal.querySelector('#v18Body').innerHTML = html;
     modal.querySelector('#v18Actions').innerHTML = actions ? '<button type="button" class="v4-secondary" id="v18Cancel">キャンセル</button><button type="button" class="v4-primary" id="v18Commit">DBに登録</button>' : '';
-    if (actions) {
-      modal.querySelector('#v18Cancel').onclick = () => modal.querySelector('#v18Close').click();
-      modal.querySelector('#v18Commit').onclick = commitPending;
-    }
+    if (actions) { modal.querySelector('#v18Cancel').onclick = () => modal.querySelector('#v18Close').click(); modal.querySelector('#v18Commit').onclick = commitPending; }
     modal.hidden = false;
   }
 
@@ -332,9 +318,62 @@
       if (mainBtn) mainBtn.textContent = `馬DB取込 (${stats.horses}頭)`;
       window.dispatchEvent(new CustomEvent('mykeiba:horse-db-updated', { detail: stats }));
       pendingImports = [];
-    } catch (e) {
-      showModal('DB登録エラー', `<p class="v18-error">${esc(e?.message || '保存に失敗しました')}</p>`, false);
+      mountDbSection();
+    } catch (e) { showModal('DB登録エラー', `<p class="v18-error">${esc(e?.message || '保存に失敗しました')}</p>`, false); }
+  }
+
+  let mountQueued = false;
+  async function mountDbSection() {
+    if (mountQueued || document.hidden) return;
+    mountQueued = true;
+    requestAnimationFrame(async () => {
+      mountQueued = false;
+      const view = document.querySelector('[data-view="horses"]');
+      if (!view) return;
+      const search = view.querySelector('#v4HorseSearch');
+      if (!search) return;
+      const q = normalizeName(search.value).toLowerCase();
+      let horses = [];
+      try { horses = await listHorses(); } catch { return; }
+      if (!view.isConnected) return;
+      const filtered = horses.filter(h => !q || normalizeName(h.name).toLowerCase().includes(q));
+      let section = view.querySelector('#v18DbHorseSection');
+      if (!section) {
+        section = document.createElement('section');
+        section.id = 'v18DbHorseSection';
+        section.className = 'v18-db-section';
+        search.insertAdjacentElement('afterend', section);
+      }
+      section.innerHTML = `
+        <div class="v18-db-section-head"><strong>登録DB</strong><span>${filtered.length}/${horses.length}頭</span></div>
+        <div class="v18-db-list">${filtered.length ? filtered.slice(0,100).map(h => `
+          <button type="button" class="v18-db-horse-card" data-v18-horse-key="${esc(h.key)}">
+            <div><strong>${esc(h.name || '馬名未取得')}</strong><small>${h.registrationNo ? `血統登録番号 ${esc(h.registrationNo)} ・ ` : ''}過去走 ${Number(h.runCount || 0)}走${h.latestRunDate ? ` ・ 最新 ${esc(h.latestRunDate)}` : ''}</small></div><span>DB</span>
+          </button>`).join('') : '<div class="v18-db-empty">登録DBに該当馬がありません。</div>'}</div>`;
+      section.querySelectorAll('[data-v18-horse-key]').forEach(btn => btn.onclick = () => openHorseDetail(btn.dataset.v18HorseKey));
+    });
+  }
+
+  async function openHorseDetail(key) {
+    const horses = await listHorses();
+    const horse = horses.find(h => h.key === key);
+    if (!horse) return;
+    const runs = await getRuns(key);
+    const rows = runs.slice(0,30).map(r => `<div class="v18-run-row"><strong>${esc(r.date || '日付—')} ${esc(r.raceName || '')}</strong><small>${[r.track, r.surface, r.distance ? `${r.distance}m` : '', r.going, r.finish ? `${r.finish}着` : '', r.lap33 ? `33 ${r.lap33}` : '', r.trainingScore ? `調教 ${r.trainingScore}` : ''].filter(Boolean).map(esc).join(' ・ ')}</small></div>`).join('');
+    showModal(horse.name || '競走馬DB', `<div class="v18-horse-summary"><strong>過去走 ${Number(horse.runCount || runs.length)}走</strong><small>${horse.registrationNo ? `血統登録番号 ${esc(horse.registrationNo)}<br>` : ''}${horse.latestRunDate ? `最新走 ${esc(horse.latestRunDate)}` : ''}</small></div>${rows || '<p class="v18-note">過去走データがありません。</p>'}`, false);
+  }
+
+  function bindDbView() {
+    document.addEventListener('input', e => { if (e.target?.id === 'v4HorseSearch') mountDbSection(); }, true);
+    document.addEventListener('click', e => { if (e.target?.closest?.('[data-tab="horses"], [data-v4-tab="horses"]')) setTimeout(mountDbSection, 0); }, true);
+    window.addEventListener('mykeiba:horse-db-updated', mountDbSection);
+    window.addEventListener('mykeiba:resume', mountDbSection, { passive: true });
+    const view = document.querySelector('[data-view="horses"]');
+    if (view) {
+      const observer = new MutationObserver(mountDbSection);
+      observer.observe(view, { childList: true });
     }
+    mountDbSection();
   }
 
   function installStyle() {
@@ -345,6 +384,7 @@
       .v18-panel{width:min(680px,100%);max-height:85vh;overflow:auto;background:#fff;border-radius:22px 22px 14px 14px;padding:18px;box-shadow:0 18px 60px rgba(0,0,0,.22)}
       .v18-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.v18-head h2{margin:2px 0 12px;font-size:20px}.v18-preview-row{padding:11px 0;border-bottom:1px solid #e6ece8;display:grid;gap:3px}.v18-preview-row strong{font-size:15px}.v18-preview-row small{font-size:11px;color:#6d7a72}
       .v18-note,.v18-success,.v18-error{font-size:12px;line-height:1.65;padding:10px 12px;border-radius:12px;margin:12px 0}.v18-note{background:#f5f7f6;color:#516158}.v18-success{background:#edf8f1;color:#21603c}.v18-error{background:#fff0f0;color:#9b3333}.v18-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}.v18-actions button{min-width:110px}
+      .v18-db-section{margin:12px 0 16px}.v18-db-section-head{display:flex;justify-content:space-between;align-items:center;margin:0 2px 8px;color:#315541;font-size:12px}.v18-db-list{display:grid;gap:8px}.v18-db-horse-card{width:100%;border:1px solid #d9e6de;background:#f7fbf8;border-radius:14px;padding:12px;text-align:left;display:flex;justify-content:space-between;gap:10px;align-items:center;color:#243d31}.v18-db-horse-card>div{display:grid;gap:4px}.v18-db-horse-card strong{font-size:15px}.v18-db-horse-card small{font-size:11px;color:#6b7a72;line-height:1.5}.v18-db-horse-card>span{background:#daf0e2;color:#22603d;border-radius:999px;padding:5px 8px;font-size:10px;font-weight:900}.v18-db-empty{padding:12px;border:1px dashed #cfdad3;border-radius:12px;color:#748078;font-size:12px}.v18-horse-summary{display:grid;gap:5px;padding:10px 0 12px}.v18-horse-summary small{color:#66766d;line-height:1.6}.v18-run-row{display:grid;gap:3px;padding:10px 0;border-top:1px solid #edf1ee}.v18-run-row strong{font-size:13px}.v18-run-row small{font-size:11px;color:#68766f;line-height:1.5}
       @media(min-width:700px){.v18-modal{align-items:center}.v18-panel{border-radius:22px}}
     `;
     document.head.appendChild(style);
@@ -352,8 +392,9 @@
 
   installStyle();
   installUi();
-  window.addEventListener('pageshow', installUi, { passive: true });
+  bindDbView();
+  window.addEventListener('pageshow', () => { installUi(); mountDbSection(); }, { passive: true });
   window.addEventListener('mykeiba:resume', installUi, { passive: true });
 
-  window.MyKeibaHorseDBV18 = { openDb, dbStats, parseFile };
+  window.MyKeibaHorseDBV18 = { openDb, dbStats, parseFile, listHorses, getRuns, mountDbSection };
 })();
