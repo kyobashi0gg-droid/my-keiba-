@@ -171,6 +171,7 @@
   }, true);
 
   window.addEventListener('mykeiba:horse-db-updated', async () => { await rebuildFitCache(); refreshIntegratedHomeIfSafe(); schedule(); });
+  window.addEventListener('mykeiba:race-going-updated', async () => { await rebuildFitCache(); refreshIntegratedHomeIfSafe(); schedule(); });
   window.addEventListener('mykeiba:resume', schedule, { passive:true });
   window.addEventListener('pageshow', schedule, { passive:true });
 
