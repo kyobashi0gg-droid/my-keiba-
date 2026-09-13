@@ -45,6 +45,7 @@
     './horse-db-excuse-v25.js',
     './horse-db-condition-v23.js',
     './horse-db-going-v26.js',
+    './venue-going-v27.js',
     './horse-db-fit-v21.js',
     './horse-db-score-consult-v22.js',
     './horse-db-condition-ui-v23.js',
