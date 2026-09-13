@@ -123,7 +123,8 @@
   const aliases = {
     date: ['日付','年月日','開催日','日程'], raceName: ['レース名','競走名','レース'], finish: ['着順','着'],
     fieldSize: ['頭数','出走頭数'], lap33: ['33ラップ','33lap','33'], track: ['競馬場','開催場','場'],
-    surface: ['芝ダ','芝・ダ','芝ダート','馬場種別'], distance: ['距離'], going: ['馬場状態','馬場'],
+    surface: ['芝ダ','芝・ダ','芝ダート','馬場種別','コース種別'], distance: ['距離'],
+    going: ['馬場状態','馬場','馬場コンディション','コンディション','芝馬場','ダート馬場','馬場状態芝','馬場状態ダート'],
     odds: ['単勝オッズ','オッズ','単勝'], agari: ['上がり3f','上り3f','上がり','上り'], positions: ['通過順','通過'],
     pace: ['ペース'], review: ['レース総評','総評'], weight: ['馬体重'], jockey: ['騎手'], trainingScore: ['調教採点','採点']
   };
@@ -133,6 +134,7 @@
     for (const [key, names] of Object.entries(aliases)) {
       if (names.some(n => x === n.toLowerCase().replace(/[\s　()（）・･／/]/g, ''))) return key;
     }
+    if (/馬場.*状態|状態.*馬場|コンディション/.test(x) && !/種別/.test(x)) return 'going';
     return '';
   }
 
@@ -141,6 +143,51 @@
     const m = s.match(/(20\d{2})[\/.年-](\d{1,2})[\/.月-](\d{1,2})/);
     if (m) return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
     return s;
+  }
+
+  function normalizeGoing(v) {
+    const s = String(v || '').replace(/[\s　・･／/]/g, '');
+    if (!s) return '';
+    if (/不良/.test(s)) return '不良';
+    if (/稍重|稍/.test(s)) return '稍重';
+    if (/重/.test(s)) return '重';
+    if (/良/.test(s)) return '良';
+    return '';
+  }
+
+  function normalizeSurface(v) {
+    const s = String(v || '').replace(/[\s　・･／/]/g, '');
+    if (/ダート|ダ|ﾀﾞ/i.test(s)) return 'ダ';
+    if (/芝/.test(s)) return '芝';
+    return '';
+  }
+
+  function inferRunCondition(cells, run) {
+    const texts = (cells || []).map(c => String(c?.textContent || '').trim()).filter(Boolean);
+    const joined = texts.join(' ');
+
+    let going = normalizeGoing(run.going);
+    let surface = normalizeSurface(run.surface);
+
+    for (const t of texts) {
+      const compact = t.replace(/[\s　・･／/]/g, '');
+      if (!going && /^(?:芝|ダート?|ﾀﾞ)?(?:良|稍重|稍|重|不良)$/.test(compact)) going = normalizeGoing(compact);
+      if (!surface && /^(?:芝|ダート?|ﾀﾞ)(?:良|稍重|稍|重|不良)?$/.test(compact)) surface = normalizeSurface(compact);
+      if (going && surface) break;
+    }
+
+    if (!going) {
+      const m = joined.match(/(?:芝|ダート?|ﾀﾞ)\s*[・･／/：:]?\s*(不良|稍重|稍|重|良)(?:\s|$)/);
+      if (m) going = normalizeGoing(m[1]);
+    }
+    if (!surface) {
+      const m = joined.match(/(?:^|\s)(芝|ダート?|ﾀﾞ)(?:\s|$|[・･／/])/);
+      if (m) surface = normalizeSurface(m[1]);
+    }
+
+    if (going) run.going = going;
+    if (surface) run.surface = surface;
+    return run;
   }
 
   function parseRunTables(doc) {
@@ -164,6 +211,7 @@
         cells.forEach((c, idx) => { if (cols[idx]) run[cols[idx]] = c.textContent.trim(); });
         if (!run.date && !run.raceName) continue;
         run.date = normalizeDate(run.date);
+        inferRunCondition(cells, run);
         out.push(run);
       }
     }
@@ -188,7 +236,8 @@
     const identity = horseIdentity(doc, fullText, file.name);
     const runs = dedupeRuns(parseRunTables(doc));
     const dates = runs.map(r => r.date).filter(v => /^20\d{2}-\d{2}-\d{2}$/.test(v)).sort();
-    return { fileName: file.name, ...identity, runs, newestDate: dates.at(-1) || '', oldestDate: dates[0] || '', parsedAt: new Date().toISOString() };
+    const goingCount = runs.filter(r => normalizeGoing(r.going)).length;
+    return { fileName: file.name, ...identity, runs, goingCount, newestDate: dates.at(-1) || '', oldestDate: dates[0] || '', parsedAt: new Date().toISOString() };
   }
 
   function runId(horseKey, run) {
@@ -223,7 +272,7 @@
       horse.runCount = count;
       tx2.objectStore(HORSES).put(horse);
       await new Promise((resolve, reject) => { tx2.oncomplete = resolve; tx2.onerror = () => reject(tx2.error); });
-      return { horse, added, total: count };
+      return { horse, added, total: count, goingCount: item.goingCount || 0 };
     } finally { db.close(); }
   }
 
@@ -298,9 +347,9 @@
   }
 
   function renderPreview() {
-    const rows = pendingImports.map(x => `<div class="v18-preview-row"><strong>${esc(x.name || '馬名未取得')}</strong><small>${x.registrationNo ? `血統登録番号 ${esc(x.registrationNo)} / ` : ''}${x.runs.length}走検出${x.oldestDate ? ` / ${esc(x.oldestDate)}〜${esc(x.newestDate)}` : ''}</small><small>${esc(x.fileName)}</small></div>`).join('');
+    const rows = pendingImports.map(x => `<div class="v18-preview-row"><strong>${esc(x.name || '馬名未取得')}</strong><small>${x.registrationNo ? `血統登録番号 ${esc(x.registrationNo)} / ` : ''}${x.runs.length}走検出${x.oldestDate ? ` / ${esc(x.oldestDate)}〜${esc(x.newestDate)}` : ''}</small><small>馬場状態 ${Number(x.goingCount || 0)}/${x.runs.length}走取得 ・ ${esc(x.fileName)}</small></div>`).join('');
     const bad = pendingImports.some(x => !x.nameKey);
-    showModal('登録内容の確認', `${rows}<p class="v18-note">同じ過去走は重複登録しません。第1版ではまず過去走の保存と同一馬判定を行い、得意33ゾーン計算は次段階で追加します。</p>${bad ? '<p class="v18-error">馬名を判定できないファイルがあります。</p>' : ''}`, !bad);
+    showModal('登録内容の確認', `${rows}<p class="v18-note">同じ過去走は重複登録しません。再取込でも既存走の馬場状態などを更新します。</p>${bad ? '<p class="v18-error">馬名を判定できないファイルがあります。</p>' : ''}`, !bad);
   }
 
   async function commitPending() {
@@ -312,7 +361,7 @@
       for (const item of pendingImports) results.push(await saveOne(item));
       const stats = await dbStats();
       const added = results.reduce((n, r) => n + r.added, 0);
-      const summary = results.map(r => `<div class="v18-preview-row"><strong>${esc(r.horse.name)}</strong><small>DB ${r.total}走 / 今回追加 ${r.added}走</small></div>`).join('');
+      const summary = results.map(r => `<div class="v18-preview-row"><strong>${esc(r.horse.name)}</strong><small>DB ${r.total}走 / 今回追加 ${r.added}走 / 馬場状態 ${r.goingCount}走取得</small></div>`).join('');
       showModal('DB登録完了', `${summary}<p class="v18-success">登録馬 ${stats.horses}頭・過去走 ${stats.runs}走。今回 ${added}走を新規追加しました。</p>`, false);
       const mainBtn = document.querySelector('#v18HorseDbImport');
       if (mainBtn) mainBtn.textContent = `馬DB取込 (${stats.horses}頭)`;
