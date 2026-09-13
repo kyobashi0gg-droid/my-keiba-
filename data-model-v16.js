@@ -126,4 +126,13 @@
     horseKey,
     schemaVersion: 16,
   };
+
+  // v17: Androidの競走馬DB検索欄を安定化。動的読込なので既存のindex構成を壊さない。
+  if (!document.querySelector('script[data-mykeiba-horse-search-v17]')) {
+    const script = document.createElement('script');
+    script.src = 'horse-search-v17.js';
+    script.defer = true;
+    script.dataset.mykeibaHorseSearchV17 = '1';
+    document.head.appendChild(script);
+  }
 })();
