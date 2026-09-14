@@ -1,5 +1,6 @@
 // MY KEIBA LAB v22 - 馬DB33適合を穴スコア + ラップ君相談へ反映
-// v28.2: DOM変化ごとの全DB再集計を廃止し、必要時のみ再計算する。
+// v37: 全馬DBの過去走配列を常駐させない。適合キャッシュ作成後に重いrunsキャッシュを即解放し、
+// 度外視情報も相談文に必要な最小項目だけ保持する。
 (() => {
   if (window.__MYKEIBA_DB_SCORE_CONSULT_V22__) return;
   window.__MYKEIBA_DB_SCORE_CONSULT_V22__ = true;
@@ -16,6 +17,20 @@
   function key(race, horse) { return `${race?.id || ''}|${norm(horse?.name)}`; }
   function bonusOfGrade(grade) { return grade === '◎' ? 2 : grade === '○' ? 1 : 0; }
 
+  function compactExcluded(items = []) {
+    return items.map(item => {
+      const run = item?.run || {};
+      return {
+        reason: item?.reason || '',
+        run: {
+          date: run.date || '',
+          raceName: run.raceName || '',
+          finish: run.finish || ''
+        }
+      };
+    });
+  }
+
   async function rebuildFitCache() {
     if (rebuilding) { rebuildQueued = true; return; }
     const summaryApi = window.MyKeibaHorseDBSummaryV20;
@@ -28,36 +43,56 @@
       const byName = new Map(summaries.map(s => [norm(s.horse?.name), s]));
       const next = new Map();
       const races = (typeof state !== 'undefined' ? state.races : window.state?.races) || [];
+      let processed = 0;
+
       for (const race of races) {
         const avg33 = fitApi.raceAvg33(race);
         for (const horse of race.horses || []) {
           const db = byName.get(norm(horse.name));
           if (!db) continue;
-          const conditioned = conditionApi?.summaryForRace ? conditionApi.summaryForRace(db.runs, race) : null;
+          const conditioned = conditionApi?.summaryForRace ? conditionApi.summaryForRace(db.runs || [], race) : null;
           const summary = conditioned?.summary || db.summary;
           const judge = fitApi.fitJudge(avg33, summary);
           next.set(key(race, horse), {
             grade: judge.grade,
-            summary,
+            summary: summary ? {
+              zoneMin: summary.zoneMin,
+              zoneMax: summary.zoneMax,
+              goodCount: summary.goodCount,
+              lapCount: summary.lapCount,
+              confidence: summary.confidence,
+              basis: summary.basis
+            } : null,
             avg33,
             text: fitApi.fitText(avg33, summary),
             basis: conditioned?.basis || '全体',
-            condition: conditioned?.condition || null,
-            excluded: conditioned?.excluded || [],
+            condition: conditioned?.condition ? {
+              surface: conditioned.condition.surface || '',
+              distanceBand: conditioned.condition.distanceBand || '',
+              goingGroup: conditioned.condition.goingGroup || ''
+            } : null,
+            excluded: compactExcluded(conditioned?.excluded || []),
             excludedRuns: conditioned?.excludedRuns || 0,
           });
+
+          // 大頭数でも一気にメインスレッドを占有しない。
+          processed++;
+          if (processed % 32 === 0) await new Promise(resolve => setTimeout(resolve, 0));
         }
       }
+
       fitCache.clear();
       for (const [k,v] of next) fitCache.set(k,v);
       window.dispatchEvent(new CustomEvent('mykeiba:db-fit-ready'));
     } catch (err) {
       console.warn('DB33 cache rebuild failed', err);
     } finally {
+      // v37: allSummaries() が保持した全馬の過去走配列をここで解放する。
+      try { summaryApi?.clearCache?.(); } catch {}
       rebuilding = false;
       if (rebuildQueued) {
         rebuildQueued = false;
-        setTimeout(rebuildFitCache, 80);
+        setTimeout(rebuildFitCache, 120);
       }
     }
   }
@@ -80,15 +115,6 @@
         return reasons;
       };
     }
-  }
-
-  function cleanupDuplicateDbSummary() {
-    const body = document.querySelector('#v4DetailBody');
-    if (!body) return;
-    const notes = [...body.querySelectorAll('.v20-race-db-note')];
-    if (notes.length <= 1) return;
-    const keep = notes.find(n => n.querySelector('.v21-fit')) || notes[0];
-    notes.forEach(n => { if (n !== keep) n.remove(); });
   }
 
   function currentRaceFromDetail() {
@@ -146,7 +172,6 @@
     viewQueued = true;
     requestAnimationFrame(() => {
       viewQueued = false;
-      cleanupDuplicateDbSummary();
       appendConsultDbSection();
     });
   }
@@ -157,12 +182,11 @@
       await rebuildFitCache();
       refreshIntegratedHomeIfSafe();
       refreshView();
-    }, 30);
+    }, 60);
   }
 
   async function initial() {
     await rebuildFitCache();
-    cleanupDuplicateDbSummary();
     refreshIntegratedHomeIfSafe();
   }
 
@@ -173,7 +197,6 @@
   document.addEventListener('click', e => {
     const btn = e.target?.closest?.('button');
     if (btn && /ラップ君に相談/.test(btn.textContent || '')) setTimeout(refreshView, 40);
-    if (e.target?.closest?.('.v4-race-card,[data-race-id],[data-v4-expand]')) setTimeout(refreshView, 60);
   }, true);
 
   document.addEventListener('change', e => {
@@ -186,7 +209,6 @@
   window.addEventListener('mykeiba:resume', refreshView, { passive:true });
   window.addEventListener('pageshow', refreshView, { passive:true });
 
-  // v28.2: body全体のMutationObserverは廃止。レース切替ごとの重いDB全再計算を防ぐ。
   initial();
   window.MyKeibaDbScoreConsultV22 = { rebuildFitCache, bonusOfGrade, schedule: refreshView, fitCache, requestRebuild };
 })();
