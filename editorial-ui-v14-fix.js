@@ -20,7 +20,7 @@
   window.addEventListener('mykeiba:resume', placeButton, {passive:true});
 })();
 
-// v28.2: 動的scriptのdefer頼みを廃止。Android Chromeで実行順が前後しないよう1本ずつ読み込む。
+// v28.2以降: Android Chromeで実行順が前後しないよう1本ずつ読み込む。
 (() => {
   if (window.__MYKEIBA_POST_STABILITY_LOADER__) return;
   window.__MYKEIBA_POST_STABILITY_LOADER__ = true;
@@ -40,7 +40,8 @@
     './horse-db-score-consult-v22.js',
     './editorial-db-match-v27.js',
     './horse-db-condition-ui-v23.js',
-    './horse-db-condition-visual-v24.js'
+    './horse-db-condition-visual-v24.js',
+    './db-rank-ui-v31.js'
   ];
 
   function loadOne(src) {
