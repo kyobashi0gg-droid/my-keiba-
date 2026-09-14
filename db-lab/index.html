@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MY KEIBA DB LAB</title>
+<style>
+:root{--g:#198754;--dg:#143d2b;--bg:#f5faf7;--line:#d8e8de;--mut:#6f8177;--card:#fff;--amber:#9a6810;--red:#9a3d48}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;background:var(--bg);color:#17261f}.wrap{max-width:820px;margin:auto;padding:18px 16px 48px}.brand{padding:14px 2px 18px}.brand small{display:block;color:var(--g);font-weight:900;letter-spacing:.14em}.brand h1{margin:5px 0 0;font-size:30px}.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;margin:0 0 14px;box-shadow:0 8px 24px rgba(22,67,45,.04)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}label{display:grid;gap:6px;font-size:12px;font-weight:800;color:#5d7468}input,select,textarea,button{font:inherit}input,select,textarea{width:100%;border:1px solid #d6e3db;border-radius:14px;padding:12px;background:#fbfdfb;color:#17261f}textarea{min-height:150px;resize:vertical}button{border:0;border-radius:14px;padding:13px 16px;font-weight:900;cursor:pointer}.primary{background:var(--g);color:#fff}.secondary{background:#eaf5ee;color:#226340}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.note{font-size:11px;line-height:1.65;color:var(--mut)}.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.pill{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:900}.p-perfect{background:#dff4e7;color:#17613a}.p-possible{background:#fff2cd;color:#805d11}.p-reverse{background:#f5dfe3;color:#8e3442}.p-mid{background:#edf1ef;color:#69776f}.result-head{display:flex;justify-content:space-between;align-items:end;gap:12px}.results{display:grid;gap:10px;margin-top:12px}.horse{border:1px solid #e2ebe6;border-radius:16px;padding:12px;background:#fff;display:grid;gap:6px}.horse-top{display:flex;justify-content:space-between;gap:10px;align-items:center}.horse b{font-size:15px}.horse small{color:var(--mut);line-height:1.55}.zone{font-weight:850;color:#315b46}.missing{color:#8a716f}.footerbar{position:sticky;bottom:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;padding:8px;background:rgba(245,250,247,.94);backdrop-filter:blur(10px);border-radius:18px}.status{font-size:11px;color:#5d7468;margin-top:8px}@media(max-width:560px){.grid{grid-template-columns:1fr}.full{grid-column:auto}.brand h1{font-size:25px}.actions{grid-template-columns:1fr}.horse-top{align-items:flex-start}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="brand"><small>PERSONAL RACING DATABASE</small><h1>MY KEIBA DB LAB</h1></header>
+
+  <section class="card">
+    <div class="grid">
+      <label>開催場<input id="track" placeholder="中山"></label>
+      <label>R<input id="raceNo" type="number" min="1" max="12" placeholder="11"></label>
+      <label class="full">レース名<input id="raceName" placeholder="セントライト記念"></label>
+      <label>芝 / ダート<select id="surface"><option value="芝">芝</option><option value="ダート">ダート</option></select></label>
+      <label>距離<input id="distance" type="number" step="100" placeholder="2200"></label>
+      <label>馬場<select id="going"><option value="">未設定</option><option>良</option><option>稍重</option><option>重</option><option>不良</option></select></label>
+      <label>今回平均33<input id="avg33" type="number" step="0.1" placeholder="0.9"></label>
+      <label class="full">出走馬（1行1頭）<textarea id="horses" placeholder="ウェイクフィールド&#10;アウダーシア&#10;バドリナート"></textarea></label>
+    </div>
+    <div class="actions"><button id="loadDb" class="secondary">登録DB馬を確認</button><button id="judge" class="primary">33適合を評価</button></div>
+    <div id="dbStatus" class="status"></div>
+  </section>
+
+  <section class="card">
+    <strong>評価印</strong>
+    <div class="legend">
+      <span class="pill p-perfect">◎ ピッタリ</span>
+      <span class="pill p-possible">○ 好走可能</span>
+      <span class="pill p-reverse">逆◎ 全く逆</span>
+      <span class="pill p-mid">— 中間</span>
+    </div>
+    <p class="note">逆◎は「消し」ではありません。WIN5で、今回33と好走33帯が大きく逆方向の馬を意図的に拾うための注目印です。度外視走はレース総評に明確な不利・展開不向きがある場合だけ除外します。</p>
+  </section>
+
+  <section class="card" id="resultCard" hidden>
+    <div class="result-head"><div><small style="color:#2d8a5b;font-weight:900;letter-spacing:.1em">DB33 RESULT</small><h2 style="margin:3px 0 0">適合評価</h2></div><span id="count" class="pill p-mid"></span></div>
+    <div id="results" class="results"></div>
+    <div class="footerbar"><button id="saveResult" class="secondary">MY KEIBA用に保存</button><button id="copyResult" class="primary">結果をコピー</button></div>
+    <div id="saveStatus" class="status"></div>
+  </section>
+</div>
+<script src="./app.js"></script>
+</body>
+</html>
