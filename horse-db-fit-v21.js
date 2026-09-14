@@ -1,5 +1,5 @@
 // MY KEIBA LAB v21 - 馬DB 33適合判定
-// 新聞の平均33とDB好走33帯を比較し、◎/○/△で表示する。
+// v36: レース全頭を開いた瞬間に集計せず、馬を開いた時だけその1頭を遅延計算する。
 (() => {
   if (window.__MYKEIBA_HORSE_DB_FIT_V21__) return;
   window.__MYKEIBA_HORSE_DB_FIT_V21__ = true;
@@ -25,9 +25,7 @@
   }
 
   function fitJudge(avg33, summary) {
-    const x = num(avg33);
-    const lo = num(summary?.zoneMin);
-    const hi = num(summary?.zoneMax);
+    const x = num(avg33), lo = num(summary?.zoneMin), hi = num(summary?.zoneMax);
     if (x == null || lo == null || hi == null) return { grade:'—', label:'判定不可', distance:null };
     if (x >= lo && x <= hi) return { grade:'◎', label:'ゾーン内', distance:0 };
     const d = x < lo ? lo - x : x - hi;
@@ -43,62 +41,57 @@
     return `今回33 ${avg >= 0 ? '+' : ''}${avg} → ${j.grade} ${j.label}${gap}`;
   }
 
-  async function getRaceContext() {
-    const body = document.querySelector('#v4DetailBody');
-    const first = body?.querySelector('[data-v4-expand]');
-    if (!body || !first) return null;
-    const horseId = first.dataset.v4Expand;
-    const races = window.state?.races || (typeof state !== 'undefined' ? state.races : []) || [];
-    const race = races.find(r => (r.horses || []).some(h => h.id === horseId));
-    return race ? { body, race } : null;
+  function races() {
+    try { if (typeof state !== 'undefined') return state.races || []; } catch {}
+    return window.state?.races || [];
   }
 
-  async function decorateRaceDetail() {
-    const ctx = await getRaceContext();
-    if (!ctx) return;
-    const { body, race } = ctx;
-    const avg33 = raceAvg33(race);
-    const api = window.MyKeibaHorseDBSummaryV20;
-    if (!api?.allSummaries) return;
-    let summaries = [];
-    try { summaries = await api.allSummaries(); } catch { return; }
-    const matched = (race.horses || []).map(h => {
-      const s = summaries.find(x => norm(x.horse?.name) === norm(h.name));
-      return s ? { horse:h, db:s } : null;
-    }).filter(Boolean);
-    if (!matched.length) return;
+  function raceForHorseId(horseId) {
+    return races().find(r => (r.horses || []).some(h => h.id === horseId)) || null;
+  }
 
-    // v20サマリー行に適合判定を追記
-    const note = body.querySelector('.v20-race-db-note');
-    if (note) {
-      const rows = [...note.querySelectorAll('.v20-race-db-row')];
-      rows.forEach(row => {
-        const b = row.querySelector('b');
-        const span = row.querySelector('span');
-        if (!b || !span || span.dataset.v21 === '1') return;
-        const name = b.textContent.replace(/^\s*\d+\s*/, '').trim();
-        const hit = matched.find(x => norm(x.horse.name) === norm(name));
-        if (!hit) return;
-        const j = fitJudge(avg33, hit.db.summary);
-        span.insertAdjacentHTML('beforeend', ` <em class="v21-fit v21-${j.grade === '◎' ? 'good' : j.grade === '○' ? 'near' : j.grade === '△' ? 'off' : 'none'}">${fitText(avg33, hit.db.summary)}</em>`);
-        span.dataset.v21 = '1';
-      });
-      const p = note.querySelector('p');
-      if (p) p.textContent = '判定基準: 好走33帯内=◎ / 帯から±0.3以内=○ / それ以上=△。';
-    }
+  let horseListCache = null;
+  async function dbHorses() {
+    if (horseListCache) return horseListCache;
+    const api = window.MyKeibaHorseDBV18;
+    if (!api?.listHorses) return [];
+    horseListCache = await api.listHorses();
+    return horseListCache;
+  }
+  function clearCache() { horseListCache = null; }
 
-    // 馬ごとの詳細欄にも表示
-    for (const x of matched) {
-      const row = body.querySelector(`[data-v4-detail-row="${CSS.escape(x.horse.id)}"]`);
-      if (!row || row.querySelector('.v21-horse-fit')) continue;
-      const host = row.querySelector('.v4-horse-detail') || row.firstElementChild;
-      if (!host) continue;
-      const j = fitJudge(avg33, x.db.summary);
+  async function decorateOneHorse(horseId) {
+    if (!horseId || document.hidden) return;
+    const body = document.querySelector('#v4DetailBody');
+    const race = raceForHorseId(horseId);
+    const horse = race?.horses?.find(h => h.id === horseId);
+    if (!body || !race || !horse) return;
+    const row = body.querySelector(`[data-v4-detail-row="${CSS.escape(horseId)}"]`);
+    if (!row || row.querySelector('.v21-horse-fit')) return;
+    const host = row.querySelector('.v4-horse-detail') || row.firstElementChild;
+    if (!host) return;
+
+    const api = window.MyKeibaHorseDBV18;
+    const summaryApi = window.MyKeibaHorseDBSummaryV20;
+    if (!api?.getRuns || !summaryApi?.summarizeRuns) return;
+
+    try {
+      const list = await dbHorses();
+      const dbHorse = list.find(h => norm(h.name) === norm(horse.name));
+      if (!dbHorse) return;
+      const runs = await api.getRuns(dbHorse.key);
+      const base = summaryApi.summarizeRuns(runs);
+      const conditioned = window.MyKeibaHorseDBConditionV23?.summaryForRace
+        ? window.MyKeibaHorseDBConditionV23.summaryForRace(runs, race)
+        : null;
+      const summary = conditioned?.summary || base;
+      const avg33 = raceAvg33(race);
+      const basis = conditioned?.basis || '全体';
       const box = document.createElement('div');
       box.className = 'v4-detail-box v21-horse-fit';
-      box.innerHTML = `<strong>DB 33適合</strong><p><b>${fitText(avg33, x.db.summary)}</b><br>好走33帯 ${x.db.summary.zoneMin}〜${x.db.summary.zoneMax} / 好走${x.db.summary.goodCount}走</p>`;
+      box.innerHTML = `<strong>DB 33適合</strong><p><b>${fitText(avg33, summary)}</b><br>${basis} / 好走33帯 ${summary.zoneMin ?? '—'}〜${summary.zoneMax ?? '—'} / 好走${summary.goodCount ?? 0}走</p>`;
       host.appendChild(box);
-    }
+    } catch {}
   }
 
   async function decorateHorseModal() {
@@ -113,29 +106,32 @@
   }
 
   const style = document.createElement('style');
-  style.textContent = `
-    .v21-fit{display:inline-block;margin-left:5px;padding:2px 6px;border-radius:999px;font-style:normal;font-weight:900;font-size:10px;white-space:nowrap}
-    .v21-good{background:#dff4e7;color:#17613a}.v21-near{background:#fff4d7;color:#8b6213}.v21-off{background:#f6e7e7;color:#914040}.v21-none{background:#eef1ef;color:#6f7a74}
-    .v21-horse-fit b{color:#22613d}.v21-rule-note{color:#66786e!important}
-  `;
+  style.textContent = `.v21-horse-fit b{color:#22613d}.v21-rule-note{color:#66786e!important}`;
   document.head.appendChild(style);
 
-  let queued = false;
+  let modalQueued = false;
   function schedule() {
-    if (queued || document.hidden) return;
-    queued = true;
+    if (modalQueued || document.hidden) return;
+    modalQueued = true;
     requestAnimationFrame(async () => {
-      queued = false;
-      await decorateRaceDetail();
+      modalQueued = false;
       await decorateHorseModal();
     });
   }
-  const observer = new MutationObserver(schedule);
-  observer.observe(document.body, { childList:true, subtree:true });
-  window.addEventListener('mykeiba:horse-db-updated', schedule);
+
+  // v36: 馬名行を開いた時だけ、その1頭分を読む。
+  document.addEventListener('click', e => {
+    const expand = e.target?.closest?.('[data-v4-expand]');
+    if (expand) {
+      const id = expand.dataset.v4Expand;
+      setTimeout(() => decorateOneHorse(id), 35);
+    }
+    if (e.target?.closest?.('[data-v18-horse-key]')) setTimeout(schedule, 30);
+  }, true);
+
+  window.addEventListener('mykeiba:horse-db-updated', () => { clearCache(); schedule(); });
   window.addEventListener('mykeiba:resume', schedule, { passive:true });
   window.addEventListener('pageshow', schedule, { passive:true });
-  schedule();
 
-  window.MyKeibaHorseDBFitV21 = { raceAvg33, fitJudge, fitText, schedule };
+  window.MyKeibaHorseDBFitV21 = { raceAvg33, fitJudge, fitText, schedule, decorateOneHorse, clearCache };
 })();
