@@ -1,6 +1,5 @@
-// MY KEIBA LAB v31.2 - DBページ取込導線 + テン/上がりソート安定化
-// 重要: ラップ4列のDOM再構築は行わない。v5/v6/v7の表示をそのまま使い、
-// ソートだけを horse.tenRank / horse.agariRank から直接行う。
+// MY KEIBA LAB v31.3 - DBページ取込導線 + テン/上がりソート
+// v34: 自前の常時イベント監視/タイマーをやめ、stability coordinator から必要時だけ呼ぶ。
 (() => {
   if (window.__MYKEIBA_DB_RANK_UI_V31__) return;
   window.__MYKEIBA_DB_RANK_UI_V31__ = true;
@@ -72,24 +71,25 @@
     const table = body?.querySelector('.v4-table');
     const race = currentRace();
     const bar = body?.querySelector('#v17SortBar');
-    if (!body || !table || !race || !bar) return;
+    if (!body || !table || !race || !bar) return false;
 
     bar.querySelectorAll('[data-v17-sort]').forEach(btn => {
       btn.onclick = e => {
         e.preventDefault();
         e.stopPropagation();
-        const mode = btn.dataset.v17Sort;
-        applyDirectSort(table, race, mode);
+        applyDirectSort(table, race, btn.dataset.v17Sort);
+        try { window.MyKeibaRankCellV32?.syncRankCells?.(); } catch {}
       };
     });
+    return true;
   }
 
   function ensureDbImportButton() {
     const view = document.querySelector('[data-view="horses"]');
-    if (!view || view.hidden) return;
-    if (view.querySelector('#v31DbImportHere')) return;
+    if (!view || view.hidden) return false;
+    if (view.querySelector('#v31DbImportHere')) return true;
     const search = view.querySelector('#v4HorseSearch');
-    if (!search) return;
+    if (!search) return false;
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.id = 'v31DbImportHere';
@@ -101,34 +101,12 @@
       else document.querySelector('#v18HorseDbImport')?.click();
     };
     search.insertAdjacentElement('afterend', btn);
+    return true;
   }
-
-  function scheduleDetail(delay=0) {
-    if (document.hidden) return;
-    setTimeout(() => requestAnimationFrame(() => {
-      try { bindRankSort(); } catch {}
-    }), delay);
-  }
-  function scheduleDb(delay=0) {
-    if (document.hidden) return;
-    setTimeout(() => requestAnimationFrame(() => {
-      try { ensureDbImportButton(); } catch {}
-    }), delay);
-  }
-
-  document.addEventListener('click', e => {
-    if (e.target?.closest?.('.v4-race-card,[data-v4-race]')) scheduleDetail(120);
-    if (e.target?.closest?.('[data-tab="horses"],[data-v4-tab="horses"]')) scheduleDb(80);
-  }, true);
-  window.addEventListener('mykeiba:modules-ready', () => { scheduleDb(); scheduleDetail(120); });
-  window.addEventListener('mykeiba:resume', () => { scheduleDb(); scheduleDetail(80); }, { passive:true });
-  window.addEventListener('pageshow', () => { scheduleDb(); scheduleDetail(80); }, { passive:true });
 
   const style = document.createElement('style');
   style.textContent = `.v31-db-import{width:100%;margin:10px 0 14px;appearance:none;border:1px solid #b9d9c8;background:#eef8f2;color:#245d3d;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:950;min-height:52px}`;
   document.head.appendChild(style);
 
-  scheduleDb(300);
-  scheduleDetail(400);
   window.MyKeibaDbRankUIV31 = { ensureDbImportButton, applyDirectSort, bindRankSort };
 })();
