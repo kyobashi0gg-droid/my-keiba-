@@ -1,5 +1,5 @@
-// MY KEIBA LAB v32 - テン順位 / 上がり順位の最終整合
-// DOM上の列ズレに影響されず、保存済み horse.tenRank / horse.agariRank を該当列へ直接反映する。
+// MY KEIBA LAB v32.1 - テン順位 / 上がり順位の最終整合
+// v34: 自前のクリック/pageshow監視をやめ、coordinator から必要時だけ同期する。
 (() => {
   if (window.__MYKEIBA_RANK_CELL_SANITIZE_V32__) return;
   window.__MYKEIBA_RANK_CELL_SANITIZE_V32__ = true;
@@ -43,76 +43,16 @@
       if (!horse) continue;
       const cells = tr.children;
       if (cells[tenIdx]) {
-        cells[tenIdx].className = `${cells[tenIdx].className} v6-metric-cell v6-rank-cell`.trim();
+        cells[tenIdx].classList.add('v6-metric-cell','v6-rank-cell');
         cells[tenIdx].innerHTML = badge(horse.tenRank);
       }
       if (cells[agariIdx]) {
-        cells[agariIdx].className = `${cells[agariIdx].className} v6-metric-cell v6-rank-cell v6-group-end`.trim();
+        cells[agariIdx].classList.add('v6-metric-cell','v6-rank-cell','v6-group-end');
         cells[agariIdx].innerHTML = badge(horse.agariRank);
       }
-    }
-
-    // ソートボタンも保存データのキーを直接使う。
-    const bar = body.querySelector('#v17SortBar');
-    if (bar) {
-      bar.querySelectorAll('[data-v17-sort]').forEach(btn => {
-        btn.onclick = e => {
-          e.preventDefault();
-          e.stopPropagation();
-          const mode = btn.dataset.v17Sort;
-          const tbody = table.tBodies?.[0];
-          if (!tbody) return;
-          const pairMap = new Map();
-          [...tbody.children].forEach(row => {
-            if (row.classList.contains('v4-horse-detail-row')) {
-              const rid = row.dataset.v4DetailRow;
-              if (!pairMap.has(rid)) pairMap.set(rid, {});
-              pairMap.get(rid).detail = row;
-            } else {
-              const rid = row.querySelector('[data-v4-expand]')?.dataset.v4Expand;
-              if (!rid) return;
-              if (!pairMap.has(rid)) pairMap.set(rid, {});
-              pairMap.get(rid).main = row;
-            }
-          });
-          const key = mode === 'agariRank' ? 'agariRank' : mode === 'tenRank' ? 'tenRank' : 'number';
-          const sorted = [...(race.horses || [])].sort((a,b) => {
-            const av = num(a?.[key]), bv = num(b?.[key]);
-            if (av == null && bv == null) return (num(a?.number) ?? 999) - (num(b?.number) ?? 999);
-            if (av == null) return 1;
-            if (bv == null) return -1;
-            return av - bv || (num(a?.number) ?? 999) - (num(b?.number) ?? 999);
-          });
-          const frag = document.createDocumentFragment();
-          for (const horse of sorted) {
-            const pair = pairMap.get(horse.id);
-            if (pair?.main) frag.appendChild(pair.main);
-            if (pair?.detail) frag.appendChild(pair.detail);
-          }
-          tbody.appendChild(frag);
-          table.dataset.v17Sort = mode;
-          bar.querySelectorAll('[data-v17-sort]').forEach(b => b.classList.toggle('active', b.dataset.v17Sort === mode));
-          syncRankCells();
-        };
-      });
     }
     return true;
   }
 
-  function schedule(delay = 0) {
-    if (document.hidden) return;
-    setTimeout(() => requestAnimationFrame(() => {
-      try { syncRankCells(); } catch {}
-    }), delay);
-  }
-
-  document.addEventListener('click', e => {
-    if (e.target?.closest?.('.v4-race-card,[data-v4-race]')) schedule(120);
-  }, true);
-  window.addEventListener('mykeiba:modules-ready', () => schedule(120));
-  window.addEventListener('mykeiba:resume', () => schedule(50), { passive:true });
-  window.addEventListener('pageshow', () => schedule(50), { passive:true });
-  schedule(350);
-
-  window.MyKeibaRankCellV32 = { syncRankCells, schedule };
+  window.MyKeibaRankCellV32 = { syncRankCells };
 })();
