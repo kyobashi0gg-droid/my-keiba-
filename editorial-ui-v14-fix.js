@@ -42,7 +42,8 @@
     './horse-db-condition-ui-v23.js',
     './horse-db-condition-visual-v24.js',
     './db-rank-ui-v31.js',
-    './rank-cell-sanitize-v32.js'
+    './rank-cell-sanitize-v32.js',
+    './nakayama11-lap-repair-v33.js'
   ];
 
   function loadOne(src) {
