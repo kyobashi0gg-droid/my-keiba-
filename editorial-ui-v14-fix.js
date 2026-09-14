@@ -21,6 +21,7 @@
 })();
 
 // Android Chromeで実行順が前後しないよう1本ずつ読み込む。
+// v39: 本体では馬DBの過去走集計・33適合計算を行わず、DB LABの外部評価だけを表示する。
 (() => {
   if (window.__MYKEIBA_POST_STABILITY_LOADER__) return;
   window.__MYKEIBA_POST_STABILITY_LOADER__ = true;
@@ -28,24 +29,21 @@
   const sources = [
     './race-number-repair-v28.js',
     './race-ui-v17.js',
+
+    // DB登録・名前修正は本体にも残す。重い過去走評価計算はDB LABへ分離。
     './horse-db-v18.js',
     './horse-db-name-fix-v19.js',
     './horse-db-pending-first-v30.js',
-    './horse-db-summary-v20.js',
-    './horse-db-excuse-v25.js',
-    './horse-db-condition-v23.js',
-    './horse-db-going-v26.js',
+
+    // レース側の軽量機能
     './venue-going-v27.js',
-    './horse-db-fit-v21.js',
-    './horse-db-score-consult-v22.js',
-    './editorial-db-match-v27.js',
-    './horse-db-condition-ui-v23.js',
-    './horse-db-condition-visual-v24.js',
     './db-rank-ui-v31.js',
     './rank-cell-sanitize-v32.js',
     './nakayama11-lap-repair-v33.js',
     './stability-coordinator-v34.js',
     './avg33-sync-v35.js',
+
+    // DB LABで計算済みの軽量結果だけを本体へ反映
     './db-result-bridge-v38.js'
   ];
 
@@ -63,6 +61,7 @@
 
   (async () => {
     for (const src of sources) await loadOne(src);
+    window.__MYKEIBA_EXTERNAL_DB_ONLY__ = true;
     window.dispatchEvent(new CustomEvent('mykeiba:modules-ready'));
   })();
 })();
