@@ -30,6 +30,7 @@
     './race-ui-v17.js',
     './horse-db-v18.js',
     './horse-db-name-fix-v19.js',
+    './horse-db-pending-first-v30.js',
     './horse-db-summary-v20.js',
     './horse-db-excuse-v25.js',
     './horse-db-condition-v23.js',
