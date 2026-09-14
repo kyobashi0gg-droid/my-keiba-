@@ -44,7 +44,8 @@
     './db-rank-ui-v31.js',
     './rank-cell-sanitize-v32.js',
     './nakayama11-lap-repair-v33.js',
-    './stability-coordinator-v34.js'
+    './stability-coordinator-v34.js',
+    './avg33-sync-v35.js'
   ];
 
   function loadOne(src) {
