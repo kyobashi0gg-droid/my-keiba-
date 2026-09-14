@@ -67,7 +67,11 @@
   let last=[];
   async function evaluate(){
     const names=$('horses').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
-    const ctx={surface:$('surface').value,band:bandOf($('distance').value),going:$('going').value}; const avg=num($('avg33').value);
+    const ctx={surface:$('surface').value,band:bandOf($('distance').value),going:$('going').value};
+    const inputAvg=num($('avg33').value);
+    const pdfAvg=num(window.MyKeibaDbLabPdfRace?.avg33);
+    const avg=inputAvg!=null?inputAvg:pdfAvg;
+    if(inputAvg==null&&pdfAvg!=null)$('avg33').value=String(pdfAvg);
     const dbHorses=await listHorses(); const byName=new Map(dbHorses.map(h=>[norm(h.name),h]));
     const out=[];
     for(const [i,name] of names.entries()){
