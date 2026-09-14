@@ -45,7 +45,8 @@
     './rank-cell-sanitize-v32.js',
     './nakayama11-lap-repair-v33.js',
     './stability-coordinator-v34.js',
-    './avg33-sync-v35.js'
+    './avg33-sync-v35.js',
+    './db-result-bridge-v38.js'
   ];
 
   function loadOne(src) {
