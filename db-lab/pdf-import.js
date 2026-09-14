@@ -56,7 +56,7 @@
   }
 
   let races=[];
-  function label(r){return `${r.track} ${r.raceNo}R ${r.raceName} / ${r.surface}${r.distance} / 平均33 ${r.avg33!==''?(Number(r.avg33)>=0?'+':'')+r.avg33:'—'}`}
+  function label(r){return `${r.track} ${r.raceNo}R ${r.raceName} / ${r.surface}${r.distance} / 平均33 ${r.avg33!==''?(Number(r.avg33)>=0?'+':'')+Math.abs(Number(r.avg33)):'—'}`}
   function applyRace(r){
     if(!r)return;
     $('track').value=r.track||'';
@@ -64,10 +64,13 @@
     $('raceName').value=r.raceName||'';
     if(r.surface)$('surface').value=r.surface;
     $('distance').value=r.distance||'';
-    $('avg33').value=r.avg33||'';
+    const avg = Number(r.avg33);
+    $('avg33').value = Number.isFinite(avg) ? String(avg) : '';
+    $('avg33').dispatchEvent(new Event('input',{bubbles:true}));
+    $('avg33').dispatchEvent(new Event('change',{bubbles:true}));
     $('horses').value=(r.horses||[]).map(h=>h.name).join('\n');
     $('pdfStatus').textContent=`${label(r)} を入力しました。馬場状態だけ当日の状態を選んでください。`;
-    window.MyKeibaDbLabPdfRace=r;
+    window.MyKeibaDbLabPdfRace={...r,avg33:Number.isFinite(avg)?String(avg):''};
   }
 
   async function importPdf(file){
