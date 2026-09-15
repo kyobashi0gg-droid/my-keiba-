@@ -23,7 +23,7 @@
 
   <section class="card" id="horseManageCard">
     <div class="db-manage-head"><div><small style="color:#2d8a5b;font-weight:900;letter-spacing:.1em">HORSE LIST</small><h2>登録馬・新規順</h2></div><span id="horseManageCount" class="pill p-mid">—頭</span></div>
-    <p class="note" style="margin:8px 0 0">新しく登録した馬を一番上に表示します。馬名を直す場合も、登録直後の馬からすぐ入力できます。</p>
+    <p class="note" style="margin:8px 0 0">新規登録は一番上に表示。新規馬は「名前OK」で確認済みにでき、重複候補や過去走の追加状況もここで確認できます。</p>
     <div id="horseRecentList" class="recent-list"></div>
     <button id="horseShowMore" class="secondary more-btn" type="button" hidden>さらに表示</button>
     <div id="horseManageStatus" class="status"></div>
@@ -73,6 +73,7 @@
   </section>
 </div>
 <script src="./horse-import.js"></script>
+<script src="./horse-import-audit.js"></script>
 <script src="./horse-manage.js"></script>
 <script src="./pdf-import.js"></script>
 <script src="./app.js"></script>
