@@ -21,7 +21,7 @@
 })();
 
 // Android Chromeで実行順が前後しないよう1本ずつ読み込む。
-// v39: 本体では馬DBの過去走集計・33適合計算を行わず、DB LABの外部評価だけを表示する。
+// v40: 本体の競走馬一覧も廃止し、DB LABへの軽量入口だけにする。
 (() => {
   if (window.__MYKEIBA_POST_STABILITY_LOADER__) return;
   window.__MYKEIBA_POST_STABILITY_LOADER__ = true;
@@ -30,10 +30,8 @@
     './race-number-repair-v28.js',
     './race-ui-v17.js',
 
-    // DB登録・名前修正は本体にも残す。重い過去走評価計算はDB LABへ分離。
-    './horse-db-v18.js',
-    './horse-db-name-fix-v19.js',
-    './horse-db-pending-first-v30.js',
+    // 競走馬DBの登録・一覧・名前修正はDB LAB側へ完全分離。
+    './horse-tab-db-lab-v40.js',
 
     // レース側の軽量機能
     './venue-going-v27.js',
