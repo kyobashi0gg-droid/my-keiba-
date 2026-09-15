@@ -111,7 +111,7 @@
     fieldSize:['頭数','出走頭数'], lap33:['33ラップ','33lap','33'], track:['競馬場','開催場','場'],
     surface:['芝ダ','芝・ダ','芝ダート','馬場種別','コース種別'], distance:['距離'], going:['馬場状態','馬場','馬場コンディション','コンディション'],
     odds:['単勝オッズ','オッズ','単勝'], agari:['上がり3f','上り3f','上がり','上り'], positions:['通過順','通過'],
-    pace:['ペース'], review:['レース総評','総評'], weight:['馬体重'], jockey:['騎手'], trainingScore:['調教採点','採点']
+    margin:['着差','タイム差','差'], pace:['ペース'], review:['レース総評','総評'], weight:['馬体重'], jockey:['騎手'], trainingScore:['調教採点','採点']
   };
 
   function headerKey(text) {
