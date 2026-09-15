@@ -7,9 +7,6 @@
   const norm = v => window.MyKeibaDataV16?.normalizeHorseName
     ? window.MyKeibaDataV16.normalizeHorseName(v)
     : String(v || '').replace(/[\s　・･]/g, '').trim();
-  const esc = (v='') => String(v)
-    .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
-    .replaceAll('"','&quot;').replaceAll("'",'&#039;');
 
   function parseSaved(text) {
     const lines = String(text || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean);
@@ -25,7 +22,8 @@
       const c = line.split('|');
       return {
         no: c[0] || '', name: c[1] || '', mark: c[2] || '—', label: c[3] || '',
-        zone: c[4] || '—', basis: c[5] || '', gap: c[6] || '', excluded: c[7] || '0'
+        zone: c[4] || '—', basis: c[5] || '', gap: c[6] || '', excluded: c[7] || '0',
+        signalCode: c[8] || '', signalDetail: c[9] || '', allZone: c[10] || '—', ability: c[11] || ''
       };
     }).filter(h => h.name);
     return { race, horses, at: localStorage.getItem('my-keiba-db-result-v2-at') || '' };
@@ -54,11 +52,15 @@
     if (mark === '◎') return 'perfect';
     if (mark === '○') return 'possible';
     if (mark === '逆◎') return 'reverse';
+    if (mark === '▲') return 'hidden';
+    if (mark === '⚠') return 'warn';
+    if (mark === '◇') return 'ability';
     return 'mid';
   }
 
   function label(h) {
-    if (h.mark === '◎') return '◎ ピッタリ';
+    if (h.label) return `${h.mark} ${h.label}`.trim();
+    if (h.mark === '◎') return '◎ コア一致';
     if (h.mark === '○') return '○ 好走可能';
     if (h.mark === '逆◎') return '逆◎ 全く逆';
     return '— 中間';
@@ -89,7 +91,7 @@
       const tag = document.createElement('span');
       tag.className = `v38-dbtag ${cls(hit.mark)}`;
       tag.textContent = label(hit);
-      tag.title = `${hit.basis || '条件未取得'} / 好走33帯 ${hit.zone || '—'}${hit.gap ? ` / 差${hit.gap}` : ''}`;
+      tag.title = `${hit.basis || '条件未取得'} / コア33 ${hit.zone || '—'}${hit.allZone&&hit.allZone!=='—'?` / 全好走33 ${hit.allZone}`:''}${hit.signalDetail?` / ${hit.signalDetail}`:''}${hit.gap ? ` / 差${hit.gap}` : ''}`;
       nameCell.appendChild(tag);
     });
 
@@ -101,11 +103,11 @@
       const table = body.querySelector('.v4-table-wrap') || body.querySelector('.v4-table');
       if (table) table.insertAdjacentElement('beforebegin', box);
     }
-    const counts = { '◎':0, '○':0, '逆◎':0, '—':0 };
+    const counts = {};
     data.horses.forEach(h => { counts[h.mark] = (counts[h.mark] || 0) + 1; });
     box.innerHTML = `<div class="v38-head"><div><small>DB LAB RESULT</small><strong>DB33 外部評価</strong></div><span>${matched}/${(race.horses||[]).length}頭</span></div>
-      <div class="v38-counts"><b class="perfect">◎ ${counts['◎']||0}</b><b class="possible">○ ${counts['○']||0}</b><b class="reverse">逆◎ ${counts['逆◎']||0}</b></div>
-      <p>DB LABで計算した結果だけを表示しています。本体では過去走DBを読み込みません。</p>`;
+      <div class="v38-counts"><b class="perfect">◎ ${counts['◎']||0}</b><b class="possible">○ ${counts['○']||0}</b><b class="hidden">▲ ${counts['▲']||0}</b><b class="warn">⚠ ${counts['⚠']||0}</b><b class="reverse">逆◎ ${counts['逆◎']||0}</b><b class="ability">◇ ${counts['◇']||0}</b></div>
+      <p>DB LABで計算済みのコア33・隠れ適合・33依存判定だけを表示しています。本体では過去走DBを読み込みません。</p>`;
   }
 
   let timer = null;
@@ -120,6 +122,9 @@
     .v38-dbtag.perfect,.v38-counts .perfect{background:#dff4e7;color:#17613a}
     .v38-dbtag.possible,.v38-counts .possible{background:#fff2cd;color:#805d11}
     .v38-dbtag.reverse,.v38-counts .reverse{background:#f5dfe3;color:#8e3442}
+    .v38-dbtag.hidden,.v38-counts .hidden{background:#e8e0ff;color:#6542a0}
+    .v38-dbtag.warn,.v38-counts .warn{background:#ffe3dc;color:#a44534}
+    .v38-dbtag.ability,.v38-counts .ability{background:#e3edf8;color:#365e87}
     .v38-dbtag.mid{background:#edf1ef;color:#69776f}
     .v38-summary{margin:12px 0;padding:13px 14px;border:1px solid #d8e8de;border-radius:18px;background:#fbfdfb}
     .v38-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.v38-head small{display:block;font-size:9px;font-weight:900;letter-spacing:.12em;color:#278154}.v38-head strong{display:block;margin-top:2px;font-size:18px;color:#173d2b}.v38-head>span{font-size:10px;font-weight:900;color:#547064}.v38-counts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.v38-counts b{padding:4px 8px;border-radius:999px;font-size:10px}.v38-summary p{margin:7px 0 0;font-size:10px;color:#718078;line-height:1.5}`;
