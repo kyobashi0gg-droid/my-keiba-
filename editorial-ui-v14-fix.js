@@ -21,7 +21,7 @@
 })();
 
 // Android Chromeで実行順が前後しないよう1本ずつ読み込む。
-// v42: DBは外部評価のまま、テン/上がりだけで軽量な展開・33ズレシミュレーションを追加。
+// v43: DBは本体で読まず、位置取り不明馬だけ壁打ち時に枠＋DBで補完する。
 (() => {
   if (window.__MYKEIBA_POST_STABILITY_LOADER__) return;
   window.__MYKEIBA_POST_STABILITY_LOADER__ = true;
@@ -45,7 +45,10 @@
     './db-result-bridge-v38.js',
 
     // テン/上がりから位置取り・展開・平均33のズレパターンを仮説化
-    './pace-sim-v42.js'
+    './pace-sim-v42.js',
+
+    // 位置取り不明馬は、ラップ君相談文で枠＋競走馬DBの確認を依頼
+    './pace-unknown-consult-v43.js'
   ];
 
   function loadOne(src) {
