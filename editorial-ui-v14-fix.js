@@ -21,7 +21,7 @@
 })();
 
 // Android Chromeで実行順が前後しないよう1本ずつ読み込む。
-// v43: DBは本体で読まず、位置取り不明馬だけ壁打ち時に枠＋DBで補完する。
+// v44: DB LABの評価結果をレース別に保持し、他レース保存で消えないようにする。
 (() => {
   if (window.__MYKEIBA_POST_STABILITY_LOADER__) return;
   window.__MYKEIBA_POST_STABILITY_LOADER__ = true;
@@ -41,8 +41,8 @@
     './stability-coordinator-v34.js',
     './avg33-sync-v35.js',
 
-    // DB LABで計算済みの軽量結果だけを本体へ反映
-    './db-result-bridge-v38.js',
+    // DB LABで保存した軽量評価をレース別に本体へ反映
+    './db-result-bridge-v44.js',
 
     // テン/上がりから位置取り・展開・平均33のズレパターンを仮説化
     './pace-sim-v42.js',
