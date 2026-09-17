@@ -21,7 +21,7 @@
 })();
 
 // Android Chromeで実行順が前後しないよう1本ずつ読み込む。
-// v40: 本体の競走馬一覧も廃止し、DB LABへの軽量入口だけにする。
+// v42: DBは外部評価のまま、テン/上がりだけで軽量な展開・33ズレシミュレーションを追加。
 (() => {
   if (window.__MYKEIBA_POST_STABILITY_LOADER__) return;
   window.__MYKEIBA_POST_STABILITY_LOADER__ = true;
@@ -42,7 +42,10 @@
     './avg33-sync-v35.js',
 
     // DB LABで計算済みの軽量結果だけを本体へ反映
-    './db-result-bridge-v38.js'
+    './db-result-bridge-v38.js',
+
+    // テン/上がりから位置取り・展開・平均33のズレパターンを仮説化
+    './pace-sim-v42.js'
   ];
 
   function loadOne(src) {
