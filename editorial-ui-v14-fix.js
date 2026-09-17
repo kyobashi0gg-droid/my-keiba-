@@ -20,52 +20,74 @@
   window.addEventListener('mykeiba:resume', placeButton, {passive:true});
 })();
 
-// Android Chromeで実行順が前後しないよう1本ずつ読み込む。
-// v44: DB LABの評価結果をレース別に保持し、他レース保存で消えないようにする。
+// Android Chrome向け軽量ローダー。
+// v45: 常時必要な処理だけ先に読み、展開シミュレーションはレース詳細を開いた時に遅延読込する。
 (() => {
   if (window.__MYKEIBA_POST_STABILITY_LOADER__) return;
   window.__MYKEIBA_POST_STABILITY_LOADER__ = true;
 
-  const sources = [
+  const coreSources = [
     './race-number-repair-v28.js',
     './race-ui-v17.js',
-
-    // 競走馬DBの登録・一覧・名前修正はDB LAB側へ完全分離。
     './horse-tab-db-lab-v40.js',
-
-    // レース側の軽量機能
     './venue-going-v27.js',
     './db-rank-ui-v31.js',
     './rank-cell-sanitize-v32.js',
     './nakayama11-lap-repair-v33.js',
     './stability-coordinator-v34.js',
     './avg33-sync-v35.js',
-
-    // DB LABで保存した軽量評価をレース別に本体へ反映
     './db-result-bridge-v44.js',
+    './db-result-compat-v45.js'
+  ];
 
-    // テン/上がりから位置取り・展開・平均33のズレパターンを仮説化
+  const detailSources = [
     './pace-sim-v42.js',
-
-    // 位置取り不明馬は、ラップ君相談文で枠＋競走馬DBの確認を依頼
     './pace-unknown-consult-v43.js'
   ];
 
+  const loaded = new Set();
+  let detailPromise = null;
+
   function loadOne(src) {
+    if (loaded.has(src) || [...document.scripts].some(s => s.getAttribute('src') === src)) {
+      loaded.add(src);
+      return Promise.resolve();
+    }
     return new Promise(resolve => {
-      if ([...document.scripts].some(s => s.getAttribute('src') === src)) return resolve();
       const script = document.createElement('script');
       script.src = src;
       script.async = false;
-      script.onload = () => resolve();
+      script.onload = () => { loaded.add(src); resolve(); };
       script.onerror = () => { console.warn('module load failed', src); resolve(); };
       document.head.appendChild(script);
     });
   }
 
+  async function loadDetailModules() {
+    if (detailPromise) return detailPromise;
+    detailPromise = (async () => {
+      for (const src of detailSources) await loadOne(src);
+      window.dispatchEvent(new CustomEvent('mykeiba:detail-modules-ready'));
+    })();
+    return detailPromise;
+  }
+
+  document.addEventListener('click', e => {
+    if (e.target?.closest?.('.v4-race-card,[data-v4-race]')) loadDetailModules();
+  }, true);
+
+  window.addEventListener('pageshow', () => {
+    const detail = document.querySelector('#v4Detail');
+    if (detail && !detail.hidden) loadDetailModules();
+  }, {passive:true});
+
   (async () => {
-    for (const src of sources) await loadOne(src);
+    for (const src of coreSources) await loadOne(src);
     window.__MYKEIBA_EXTERNAL_DB_ONLY__ = true;
     window.dispatchEvent(new CustomEvent('mykeiba:modules-ready'));
+    const detail = document.querySelector('#v4Detail');
+    if (detail && !detail.hidden) loadDetailModules();
   })();
+
+  window.MyKeibaModuleLoaderV45 = { loadDetailModules };
 })();
