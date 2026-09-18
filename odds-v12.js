@@ -1,5 +1,6 @@
 // MY KEIBA LAB v12 - 最新オッズ取込
 // スクショをChatGPTで読み取り -> 反映データを貼付 -> 単勝オッズ/人気を更新。
+// v47: 「馬番|馬名|人気|オッズ」と「馬番|馬名|オッズ|人気」の両方に対応。
 (() => {
   if (typeof state === 'undefined') return;
 
@@ -51,23 +52,56 @@
     };
   }
 
+  function splitRow(raw) {
+    const sep = raw.includes('|') ? '|' : raw.includes('\t') ? '\t' : raw.includes(',') ? ',' : null;
+    return sep ? raw.split(sep).map(x => x.trim()) : raw.split(/\s+/);
+  }
+
   function parseText(text) {
     const lines = String(text || '').replace(/\r/g, '').split('\n').map(x => x.trim()).filter(Boolean);
     let track = '';
     let raceNo = '';
+    let order = null;
     const horses = [];
 
     for (const raw of lines) {
-      if (/^MYKEIBA_ODDS/i.test(raw) || /^(?:馬番[|,\t]|#)/.test(raw)) continue;
-      const header = raw.match(/^(札幌|函館|福島|新潟|東京|中山|中京|京都|阪神|小倉)\s*[,|\t ]\s*(\d{1,2})\s*R?/i);
+      if (/^MYKEIBA_ODDS/i.test(raw) || /^#/.test(raw)) continue;
+
+      // 「中山9R カンナS」「中山 9R」「中山|9R」のいずれも認識。
+      const header = raw.match(/^(札幌|函館|福島|新潟|東京|中山|中京|京都|阪神|小倉)\s*[,|\t ]?\s*(\d{1,2})\s*R?/i);
       if (header) {
         track = header[1];
         raceNo = header[2];
         continue;
       }
-      const sep = raw.includes('|') ? '|' : raw.includes('\t') ? '\t' : raw.includes(',') ? ',' : null;
-      const parts = sep ? raw.split(sep).map(x => x.trim()) : raw.split(/\s+/);
+
+      const parts = splitRow(raw);
+      if (!parts.length) continue;
+
+      // 列見出しがある場合は、その並びをそのまま採用する。
+      if (parts.some(x => /馬番/.test(x)) && parts.some(x => /馬名/.test(x))) {
+        order = parts.map(x => {
+          if (/馬番/.test(x)) return 'number';
+          if (/馬名/.test(x)) return 'name';
+          if (/人気/.test(x)) return 'popularity';
+          if (/オッズ|単勝/.test(x)) return 'odds';
+          return '';
+        });
+        continue;
+      }
+
       if (parts.length < 3 || !/^\d{1,2}$/.test(parts[0])) continue;
+
+      if (order) {
+        const row = { number: '', name: '', odds: '', popularity: '' };
+        order.forEach((key, i) => { if (key && i < parts.length) row[key] = parts[i]; });
+        if (!row.number) row.number = parts[0] || '';
+        if (!row.name) row.name = parts[1] || '';
+        horses.push(row);
+        continue;
+      }
+
+      // 見出しなしは従来形式「馬番|馬名|オッズ|人気」を維持。
       horses.push({
         number: parts[0],
         name: parts[1],
@@ -104,7 +138,7 @@
 
     const t = normTrack(data.track);
     const rn = String(data.raceNo || '').replace(/R/ig, '').trim();
-    if (!t || !rn) return { ok: false, message: '開催場とRが見つかりません。先頭に「中山 1R」のような行を入れてください。' };
+    if (!t || !rn) return { ok: false, message: '開催場とRが見つかりません。先頭に「中山9R」のような行を入れてください。' };
     if (t !== normTrack(race.track) || rn !== String(race.raceNo)) {
       return { ok: false, message: `レースが一致しません。開いているのは ${race.track}${race.raceNo}R、貼付データは ${data.track}${data.raceNo}R です。` };
     }
@@ -197,8 +231,8 @@
       <small>LATEST ODDS IMPORT</small>
       <h3>最新オッズ取込</h3>
       <p>オッズ画面のスクショをこのチャットに送って、ラップ君が返した反映データを貼り付けます。開催場・Rを照合してから更新するので、別レースへの誤反映を防ぎます。</p>
-      <textarea id="v12OddsText" placeholder="MYKEIBA_ODDS_V1\n中山 1R\n1|ゼラニウム|3.9|3\n2|ソラニワラエバ|3.5|1"></textarea>
-      <div class="v12-format"><b>列順：</b> 馬番｜馬名｜単勝オッズ｜人気<br>人気は省略可能ですが、全頭分のオッズを入れた時だけ自動で人気順を再計算します。</div>
+      <textarea id="v12OddsText" placeholder="MYKEIBA_ODDS_V1\n中山9R カンナS\n馬番|馬名|人気|オッズ\n1|ゼラニウム|3|3.9\n2|ソラニワラエバ|1|3.5"></textarea>
+      <div class="v12-format"><b>対応列順：</b> 馬番｜馬名｜人気｜オッズ / 馬番｜馬名｜オッズ｜人気<br>見出し行があれば、その順番を自動判定します。</div>
       <div class="v12-actions"><button type="button" class="v12-cancel">キャンセル</button><button type="button" class="v12-apply">反映する</button></div>
       <div id="v12Result" class="v12-result" hidden></div>
     </div>`;
@@ -209,8 +243,8 @@
   function openDialog(race) {
     currentRaceId = race.id;
     const area = dialog.querySelector('#v12OddsText');
-    const sampleRows = (race.horses || []).slice(0, 3).map(h => `${h.number || ''}|${h.name}|${h.odds || '—'}|${h.popularity || '—'}`).join('\n');
-    area.value = `MYKEIBA_ODDS_V1\n${race.track} ${race.raceNo}R\n${sampleRows}`;
+    const sampleRows = (race.horses || []).slice(0, 3).map(h => `${h.number || ''}|${h.name}|${h.popularity || '—'}|${h.odds || '—'}`).join('\n');
+    area.value = `MYKEIBA_ODDS_V1\n${race.track}${race.raceNo}R ${race.raceName || ''}\n馬番|馬名|人気|オッズ\n${sampleRows}`;
     const out = dialog.querySelector('#v12Result');
     out.hidden = true;
     dialog.showModal();
