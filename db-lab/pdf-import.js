@@ -2,6 +2,7 @@
   const $ = id => document.getElementById(id);
   const venues = ['札幌','函館','福島','新潟','東京','中山','中京','京都','阪神','小倉'];
   const normText = v => String(v || '').replace(/\u3000/g,' ').replace(/\s+/g,' ').trim();
+  const asciiDigits = v => String(v || '').replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0)-0xFEE0));
 
   function buildRows(items, tolerance=2.5){
     const rows=[];
@@ -48,8 +49,10 @@
 
     const raceNameItem=nearest(inBox(page,60,175,48,78,t=>!/^\d{1,2}\/\d{1,2}/.test(t)&&!venues.includes(t)),58);
     const avg33=page.text.match(/([+-]?\d+(?:\.\d+)?)\s*\(平均33ラップ\)/)?.[1]||'';
-    const course=page.text.match(/\b(芝|ダ)\s*(\d{3,4})\b/);
-    const surface=course?.[1]==='ダ'?'ダート':(course?.[1]||'');
+    // 日本語の「芝/ダート」は \b の単語境界では拾えないため、全角数字・m表記も含めて直接判定する。
+    const courseText=asciiDigits(page.text).replace(/ｍ/g,'m');
+    const course=courseText.match(/(芝|ダート|ダ)\s*([0-9]{3,4})\s*m?/);
+    const surface=course?.[1]==='芝'?'芝':course?.[1]?'ダート':'';
     const distance=course?.[2]||'';
     const horses=anchors.map(x=>({number:Number(x.anchor.text),name:x.nameItem.text})).sort((a,b)=>a.number-b.number);
     return {pageNo:page.pageNo,track:trackItem.text,raceNo:raceNoItem.text,raceName:raceNameItem?.text||'新聞取込レース',surface,distance,avg33,horses};
@@ -64,6 +67,9 @@
     $('raceName').value=r.raceName||'';
     if(r.surface)$('surface').value=r.surface;
     $('distance').value=r.distance||'';
+    $('surface').dispatchEvent(new Event('change',{bubbles:true}));
+    $('distance').dispatchEvent(new Event('input',{bubbles:true}));
+    $('distance').dispatchEvent(new Event('change',{bubbles:true}));
     const avg = Number(r.avg33);
     $('avg33').value = Number.isFinite(avg) ? String(avg) : '';
     $('avg33').dispatchEvent(new Event('input',{bubbles:true}));
