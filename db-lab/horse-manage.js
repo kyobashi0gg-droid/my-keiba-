@@ -67,15 +67,15 @@
 
   function auditBadge(a){
     if(!a)return'';
-    if(a.nameMismatch)return'<span class="manage-badge warn">馬名差異・既存名保持</span>';
-    if(a.kind==='new')return'<span class="manage-badge new">新規</span>';
-    if(a.kind==='update'){
+    const badges=[];
+    if(a.kind==='new')badges.push('<span class="manage-badge new">新規</span>');
+    else if(a.kind==='update'){
       const added=Number(a.addedRuns)||0,existing=Number(a.existingUpdatedRuns)||0;
       const detail=added>0?`新規+${added}走`:existing>0?`既存${existing}走`:'';
-      return`<span class="manage-badge update">更新${detail?` ${detail}`:''}</span>`;
-    }
-    if(a.kind==='same')return'<span class="manage-badge same">既存走のみ</span>';
-    return'';
+      badges.push(`<span class="manage-badge update">更新${detail?` ${detail}`:''}</span>`);
+    } else if(a.kind==='same')badges.push('<span class="manage-badge same">既存走のみ</span>');
+    if(a.nameMismatch)badges.push('<span class="manage-badge warn">馬名差異・既存名保持</span>');
+    return badges.join('');
   }
 
   function cardHtml(h,dup,audit){
