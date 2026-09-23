@@ -18,8 +18,8 @@
   function firstPosition(v){const m=String(v||'').match(/\d+/);return m?Number(m[0]):null}
   function marginNo(v){const n=num(v);return n==null?null:Math.abs(n)}
   function isGoodRun(run){
-    const f=finishNo(run?.finish),m=marginNo(run?.margin);
-    return (f!=null&&f<=3)||(m!=null&&m<=0.3);
+    const f=finishNo(run?.finish);
+    return f!=null&&f<=3;
   }
   function dateTs(v){const t=Date.parse(String(v||''));return Number.isFinite(t)?t:0}
   function levelFromText(s){
@@ -200,7 +200,9 @@
     const ai=avgFinish(inside),ao=avgFinish(outside),gap=gapToBand(avg,band);
     const closeCount=candidates.filter(r=>{const m=marginNo(r.margin);return m!=null&&m<=.5}).length;
     if(gap!=null&&gap<=.3&&inside.length>=2&&((ai!=null&&ao!=null&&ao-ai>=1.5)||closeCount>=2)){
-      return{code:'hidden',mark:'▲',label:'隠れ適合',band,detail:ai!=null&&ao!=null?`適合時平均${round1(ai)}着 / 他${round1(ao)}着`:`3〜5着・僅差が集中`};
+      const finishes=inside.map(r=>finishNo(r.finish)).filter(x=>x!=null).join('・');
+      const picked=finishes?`適合帯 ${finishes}着`:'適合帯の着順不明';
+      return{code:'hidden',mark:'▲',label:'隠れ適合',band,detail:ai!=null&&ao!=null?`${picked} / 平均${round1(ai)}着 / 他${round1(ao)}着`:`${picked} / 3〜5着・僅差が集中`};
     }
     return null;
   }
