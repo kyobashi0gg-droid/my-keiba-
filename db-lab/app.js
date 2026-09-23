@@ -23,7 +23,7 @@
   }
   function dateTs(v){const t=Date.parse(String(v||''));return Number.isFinite(t)?t:0}
   function raceLevel(run){
-    const s=String(run?.raceName||'');
+    const s=`${run?.raceClass||run?.className||run?.grade||''} ${run?.raceName||''}`;
     if(/G\s*1|Ｇ１|GⅠ|Jpn\s*1/i.test(s))return 7;
     if(/G\s*2|Ｇ２|GⅡ|Jpn\s*2/i.test(s))return 6;
     if(/G\s*3|Ｇ３|GⅢ|Jpn\s*3/i.test(s))return 5;
