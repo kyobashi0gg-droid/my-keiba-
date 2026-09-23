@@ -69,7 +69,11 @@
     if(!a)return'';
     if(a.nameMismatch)return'<span class="manage-badge warn">馬名差異・既存名保持</span>';
     if(a.kind==='new')return'<span class="manage-badge new">新規</span>';
-    if(a.kind==='update')return`<span class="manage-badge update">更新 +${Number(a.addedRuns)||0}走</span>`;
+    if(a.kind==='update'){
+      const added=Number(a.addedRuns)||0,existing=Number(a.existingUpdatedRuns)||0;
+      const detail=added>0?`新規+${added}走`:existing>0?`既存${existing}走`:'';
+      return`<span class="manage-badge update">更新${detail?` ${detail}`:''}</span>`;
+    }
     if(a.kind==='same')return'<span class="manage-badge same">既存走のみ</span>';
     return'';
   }
@@ -80,7 +84,12 @@
     const duplicate=dup.get(h.key)||[];
     const confirmText=isPending?'名前OK':'確認済み';
     const latest=h.latestRunDate?`最新走 ${esc(h.latestRunDate)}`:'最新走 不明';
-    const auditLine=audit?`${audit.beforeRuns??0}走 → ${audit.afterRuns??0}走${audit.addedRuns?`（+${audit.addedRuns}）`:''}`:'';
+    const auditLine=audit?[
+      `${audit.beforeRuns??0}走 → ${audit.afterRuns??0}走${audit.addedRuns?`（+${audit.addedRuns}）`:''}`,
+      audit.existingUpdatedRuns?`既存更新 ${audit.existingUpdatedRuns}走`:'',
+      audit.marginAddedRuns?`着差追加 ${audit.marginAddedRuns}走`:'',
+      audit.marginChangedRuns?`着差変更 ${audit.marginChangedRuns}走`:''
+    ].filter(Boolean).join(' / '):'';
     return `<div class="recent-horse${isPending?' pending':''}${duplicate.length?' duplicate':''}" data-horse-key="${esc(h.key)}">
       <div class="recent-meta"><div class="manage-badges">${isPending?'<span class="recent-badge">馬名確認</span>':''}${auditBadge(audit)}${duplicate.length?`<span class="manage-badge dup">重複候補:${esc(duplicate.join('/'))}</span>`:''}</div><small>${esc(imported)}</small></div>
       <div class="recent-edit"><input data-name-input value="${isPending&&WRONG_RE.test(String(h.name||''))?'':esc(h.name||'')}" placeholder="正しい馬名を入力"><div class="name-actions"><button type="button" class="secondary" data-confirm-name ${isPending?'':'disabled'}>${confirmText}</button><button type="button" class="secondary" data-save-name>名前変更</button></div></div>
