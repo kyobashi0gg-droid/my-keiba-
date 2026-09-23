@@ -76,12 +76,12 @@
     return{selected,basis,excluded:runs.length-usable.length};
   }
 
-  function recentAbilityScope(runs){
+  function recentAbilityScope(runs,currentLevelOverride=null){
     const valid=runs.filter(r=>num(r.lap33)!=null).sort((a,b)=>dateTs(b.date)-dateTs(a.date));
     const recent=valid.slice(0,10);
     const recent6=valid.slice(0,6);
     const levels=recent6.map(raceLevel).filter(x=>x!=null);
-    const currentLevel=levels.length?Math.max(...levels):null;
+    const currentLevel=currentLevelOverride!=null?currentLevelOverride:(levels.length?Math.max(...levels):null);
     let floor=null;
     if(currentLevel!=null){ if(currentLevel>=3)floor=currentLevel-1; else if(currentLevel===2)floor=1; else floor=0; }
     const scoped=recent.filter(r=>{const lv=raceLevel(r);return floor==null||lv==null||lv>=floor});
@@ -125,8 +125,8 @@
     return{min:round1(Math.min(...best.points.map(p=>p.lap))),max:round1(Math.max(...best.points.map(p=>p.lap))),count:best.points.length};
   }
 
-  function coreAnalysis(runs){
-    const scope=recentAbilityScope(runs);
+  function coreAnalysis(runs,currentLevelOverride=null){
+    const scope=recentAbilityScope(runs,currentLevelOverride);
     const points=[];
     scope.runs.forEach((r,i)=>{const lap=num(r.lap33),w=performanceWeight(r,i,scope.currentLevel);if(lap!=null&&w>0)points.push({lap,weight:w,run:r})});
     const strong=points.filter(p=>isGoodRun(p.run));
@@ -210,7 +210,7 @@
     const dbHorses=await listHorses(),byName=new Map(dbHorses.map(h=>[norm(h.name),h])),out=[];
     for(const [i,name] of names.entries()){
       const h=byName.get(norm(name)); if(!h){out.push({no:i+1,name,missing:true});continue}
-      const runs=await getRuns(h.key),sel=selectRuns(runs,ctx),analysis=coreAnalysis(sel.selected),core=analysis.core;
+      const runs=await getRuns(h.key),usable=usableRuns(runs),ability=recentAbilityScope(usable),sel=selectRuns(runs,ctx),analysis=coreAnalysis(sel.selected,ability.currentLevel),core=analysis.core;
       const judge=baseJudge(avg,core),signal=chooseSignal(avg,analysis);
       out.push({no:i+1,name:h.name,missing:false,basis:sel.basis,judge,signal,analysis,excluded:sel.excluded});
       if(i%5===4)await new Promise(r=>setTimeout(r,0));
