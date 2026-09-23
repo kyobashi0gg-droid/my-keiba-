@@ -1,4 +1,4 @@
-const CACHE = 'my-keiba-lab-v52-margin-source-diagnostics';
+const CACHE = 'my-keiba-lab-v53-top3-hidden-placings';
 
 // 起動に必要な最小構成だけを事前キャッシュ。
 // 追加モジュールは初回利用時にキャッシュし、更新時の一括addAll失敗を避ける。
