@@ -108,7 +108,7 @@
 
   const aliases = {
     date:['日付','年月日','開催日','日程'], raceName:['レース名','競走名','レース'], finish:['着順','着'],
-    fieldSize:['頭数','出走頭数'], lap33:['33ラップ','33lap','33'], track:['競馬場','開催場','場'],
+    raceClass:['クラス','競走クラス','クラス名'], fieldSize:['頭数','出走頭数'], lap33:['33ラップ','33lap','33'], track:['競馬場','開催場','場'],
     surface:['芝ダ','芝・ダ','芝ダート','馬場種別','コース種別'], distance:['距離'], going:['馬場状態','馬場','馬場コンディション','コンディション'],
     odds:['単勝オッズ','オッズ','単勝'], agari:['上がり3f','上り3f','上がり','上り'], positions:['通過順','通過'],
     margin:['着差','タイム差','差'], pace:['ペース'], review:['レース総評','総評'], weight:['馬体重'], jockey:['騎手'], trainingScore:['調教採点','採点']
@@ -144,6 +144,11 @@
         const cells=[...rows[i].querySelectorAll('th,td')]; if(!cells.length)continue;
         const run={}; cells.forEach((c,idx)=>{if(cols[idx])run[cols[idx]]=c.textContent.trim();});
         if(!run.date&&!run.raceName)continue;
+        const rowText=cells.map(c=>c.textContent.trim()).join(' ');
+        if(!run.raceClass){
+          const cm=rowText.match(/(?:新馬|未勝利|1勝(?:クラス)?|2勝(?:クラス)?|3勝(?:クラス)?|オープン|OP|リステッド|Listed|G\s*[123]|Ｇ[１２３]|G[ⅠⅡⅢ]|Jpn\s*[123])/i);
+          if(cm)run.raceClass=cm[0];
+        }
         run.date=normalizeDate(run.date); run.going=normalizeGoing(run.going); run.surface=normalizeSurface(run.surface);
         out.push(run);
       }
