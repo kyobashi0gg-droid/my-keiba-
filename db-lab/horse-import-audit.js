@@ -158,6 +158,12 @@
     if(existingUpdates)parts.push(`既存走更新 ${existingUpdates}走`);
     if(marginAdded)parts.push(`着差追加 ${marginAdded}走`);
     if(marginChanged)parts.push(`着差変更 ${marginChanged}走`);
+    const src=window.MyKeibaDbLabLastImportStats;
+    if(src?.sourceRuns){
+      if(src.sourceMarginRuns>0)parts.push(`取込元着差 ${src.sourceMarginRuns}/${src.sourceRuns}走`);
+      else if(src.marginColumnFiles===0)parts.push(`取込元着差 0/${src.sourceRuns}走（MHTに着差列なし）`);
+      else parts.push(`取込元着差 0/${src.sourceRuns}走`);
+    }
     if(nSame)parts.push(`既存走のみ ${nSame}頭`);
     if(dup)parts.push(`重複候補 ${dup}頭`);
     if(mismatch)parts.push(`馬名差異 ${mismatch}頭（手動名を保持）`);
