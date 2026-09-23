@@ -1,4 +1,4 @@
-const CACHE = 'my-keiba-lab-v48-db-condition-fix';
+const CACHE = 'my-keiba-lab-v49-goodrun-class-strict';
 
 // 起動に必要な最小構成だけを事前キャッシュ。
 // 追加モジュールは初回利用時にキャッシュし、更新時の一括addAll失敗を避ける。
