@@ -132,12 +132,17 @@
 
   function parseRunTables(doc) {
     const out = [];
+    let hasMarginColumn = false;
     for (const table of doc.querySelectorAll('table')) {
       const rows = [...table.querySelectorAll('tr')];
       let headerRow = -1, cols = [];
       for (let i=0;i<Math.min(rows.length,8);i++) {
         const mapped = [...rows[i].querySelectorAll('th,td')].map(c => headerKey(c.textContent.trim()));
-        if (mapped.filter(Boolean).length >= 3 && (mapped.includes('date') || mapped.includes('raceName'))) { headerRow=i; cols=mapped; break; }
+        if (mapped.filter(Boolean).length >= 3 && (mapped.includes('date') || mapped.includes('raceName'))) {
+          headerRow=i; cols=mapped;
+          if(mapped.includes('margin'))hasMarginColumn=true;
+          break;
+        }
       }
       if (headerRow < 0) continue;
       for (let i=headerRow+1;i<rows.length;i++) {
@@ -154,16 +159,18 @@
       }
     }
     const seen=new Set();
-    return out.filter(r=>{const k=[r.date,r.track,r.raceName,r.distance,r.finish].map(v=>String(v||'').trim()).join('|');if(!k.replace(/\|/g,'')||seen.has(k))return false;seen.add(k);return true;});
+    const runs=out.filter(r=>{const k=[r.date,r.track,r.raceName,r.distance,r.finish].map(v=>String(v||'').trim()).join('|');if(!k.replace(/\|/g,'')||seen.has(k))return false;seen.add(k);return true;});
+    return {runs,hasMarginColumn};
   }
 
   async function parseFile(file) {
     const raw=await file.text();
     const html=/\.mht(?:ml)?$/i.test(file.name)?decodeMht(raw):raw;
     const doc=new DOMParser().parseFromString(html,'text/html');
-    const fullText=textOf(doc); const id=identity(doc,fullText,file.name); const runs=parseRunTables(doc);
+    const fullText=textOf(doc); const id=identity(doc,fullText,file.name); const parsed=parseRunTables(doc),runs=parsed.runs;
     const dates=runs.map(r=>r.date).filter(v=>/^20\d{2}-\d{2}-\d{2}$/.test(v)).sort();
-    return { fileName:file.name, name:id.name, nameKey:normName(id.name), registrationNo:id.registrationNo, runs, newestDate:dates.at(-1)||'', parsedAt:new Date().toISOString() };
+    const marginRuns=runs.filter(r=>String(r.margin||'').trim()!=='').length;
+    return { fileName:file.name, name:id.name, nameKey:normName(id.name), registrationNo:id.registrationNo, runs, marginRuns, hasMarginColumn:parsed.hasMarginColumn, newestDate:dates.at(-1)||'', parsedAt:new Date().toISOString() };
   }
 
   function runId(horseKey, run) {
@@ -183,7 +190,7 @@
       for(const run of item.runs){const rec={...run,id:runId(key,run),horseKey:key,sourceFile:item.fileName,importedAt:item.parsedAt};const old=await reqP(rs.get(rec.id));if(!old)added++;rs.put({...old,...rec});}
       hs.put({...existing,key,name:item.name,nameKey:item.nameKey,registrationNo:item.registrationNo||existing?.registrationNo||'',lastImportedAt:item.parsedAt,sourceFile:item.fileName,latestRunDate:item.newestDate||existing?.latestRunDate||'',dbSchemaVersion:18});
       await new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)});
-      return { name:item.name, added, total:item.runs.length };
+      return { name:item.name, added, total:item.runs.length, sourceMarginRuns:item.marginRuns||0, hasMarginColumn:!!item.hasMarginColumn };
     } finally { db.close(); }
   }
 
@@ -198,6 +205,10 @@
       await new Promise(r=>setTimeout(r,0));
     }
     const ok=results.filter(x=>!x.error), ng=results.filter(x=>x.error); const count=await existingCount();
+    const sourceRuns=ok.reduce((s,x)=>s+(Number(x.total)||0),0);
+    const sourceMarginRuns=ok.reduce((s,x)=>s+(Number(x.sourceMarginRuns)||0),0);
+    const marginColumnFiles=ok.filter(x=>x.hasMarginColumn).length;
+    window.MyKeibaDbLabLastImportStats={files:ok.length,sourceRuns,sourceMarginRuns,marginColumnFiles,failed:ng.length,at:new Date().toISOString()};
     if(status) status.textContent=`登録DB ${count}頭。今回 ${ok.length}頭取込${ng.length?` / ${ng.length}件失敗`:''}。` + (ok.length?` ${ok.map(x=>`${x.name}(新規走+${x.added})`).join('、')}`:'');
     window.dispatchEvent(new CustomEvent('mykeiba:horse-db-updated'));
   }
