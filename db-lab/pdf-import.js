@@ -48,6 +48,22 @@
     if(anchors.length<2)return null;
 
     const raceNameItem=nearest(inBox(page,60,175,48,78,t=>!/^\d{1,2}\/\d{1,2}/.test(t)&&!venues.includes(t)),58);
+    const raceName=raceNameItem?.text||'新聞取込レース';
+    const headerText=asciiDigits(page.items.filter(i=>i.y<=135).map(i=>i.text).join(' '));
+    const classText=`${raceName} ${headerText}`;
+    let raceClass='';
+    if(/G\s*1|Ｇ１|GⅠ|Jpn\s*1/i.test(classText))raceClass='G1';
+    else if(/G\s*2|Ｇ２|GⅡ|Jpn\s*2/i.test(classText))raceClass='G2';
+    else if(/G\s*3|Ｇ３|GⅢ|Jpn\s*3/i.test(classText))raceClass='G3';
+    else if(/リステッド|Listed|\bL\b|オープン|OP/i.test(classText))raceClass='OP';
+    else if(/3勝|三勝/.test(classText))raceClass='3勝';
+    else if(/2勝|二勝/.test(classText))raceClass='2勝';
+    else if(/1勝|一勝/.test(classText))raceClass='1勝';
+    else if(/未勝利/.test(classText))raceClass='未勝利';
+    else if(/新馬/.test(classText))raceClass='新馬';
+    let ageClass=null;
+    if(/(?:^|\s)2歳(?!以上)/.test(headerText))ageClass=2;
+    else if(/(?:^|\s)3歳(?!以上)/.test(headerText))ageClass=3;
     const avg33=page.text.match(/([+-]?\d+(?:\.\d+)?)\s*\(平均33ラップ\)/)?.[1]||'';
     // 日本語の「芝/ダート」は \b の単語境界では拾えないため、全角数字・m表記も含めて直接判定する。
     const courseText=asciiDigits(page.text).replace(/ｍ/g,'m');
@@ -55,7 +71,7 @@
     const surface=course?.[1]==='芝'?'芝':course?.[1]?'ダート':'';
     const distance=course?.[2]||'';
     const horses=anchors.map(x=>({number:Number(x.anchor.text),name:x.nameItem.text})).sort((a,b)=>a.number-b.number);
-    return {pageNo:page.pageNo,track:trackItem.text,raceNo:raceNoItem.text,raceName:raceNameItem?.text||'新聞取込レース',surface,distance,avg33,horses};
+    return {pageNo:page.pageNo,track:trackItem.text,raceNo:raceNoItem.text,raceName,raceClass,ageClass,surface,distance,avg33,horses};
   }
 
   let races=[];
