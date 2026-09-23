@@ -232,7 +232,7 @@
       const gap=x.judge.gap==null?'':` / 差${x.judge.gap}`;
       const a=x.analysis,core=zoneTextBand(a.core),all=zoneTextBand(a.allGood),lv=levelName(a.scope.currentLevel);
       const sig=x.signal?`<div class="db33-signal">${esc(x.signal.detail||'')}</div>`:'';
-      return`<div class="horse"><div class="horse-top"><b>${x.no} ${esc(x.name)}</b><span class="pill ${pill}">${esc(d.mark)} ${esc(d.label)}</span></div><div class="zone">${esc(x.basis)} / コア33 ${esc(core)}</div><small>${esc(lv)}優先 / 近年対象${a.scope.runs.length}走 / 全好走33 ${esc(all)}${gap}${x.excluded?` / 度外視${x.excluded}走`:''}</small>${sig}</div>`;
+      return`<div class="horse"><div class="horse-top"><b>${x.no} ${esc(x.name)}</b><span class="pill ${pill}">${esc(d.mark)} ${esc(d.label)}</span></div><div class="zone">${esc(x.basis)} / コア33 ${esc(core)}</div><small>${esc(lv)}優先 / 近年対象${a.scope.runs.length}走${a.scope.excludedByClass?` / 下級除外${a.scope.excludedByClass}走`:''} / 全好走33 ${esc(all)}${gap}${x.excluded?` / 度外視${x.excluded}走`:''}</small>${sig}</div>`;
     }).join('');
     $('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
   }
