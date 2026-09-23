@@ -289,7 +289,7 @@
   document.head.appendChild(style);
   const legend=document.querySelector('.legend');
   if(legend&&!document.querySelector('#db33AdvancedLegend')){
-    const box=document.createElement('div');box.id='db33AdvancedLegend';box.className='db33-advanced-note';box.innerHTML='<b>追加判定：</b> ▲ 隠れ適合＝3〜5着・僅差が特定33に集中　/　⚠ 33依存・今回はズレ＝コア33時だけ成績が明確に良い　/　◇ 能力型＝広い33で好走';legend.insertAdjacentElement('afterend',box);
+    const box=document.createElement('div');box.id='db33AdvancedLegend';box.className='db33-advanced-note';box.innerHTML='<b>追加判定：</b> ▲ 隠れ適合＝特定33帯で他条件より着順上昇（対象着順も表示）　/　⚠ 33依存・今回はズレ＝コア33時だけ成績が明確に良い　/　◇ 能力型＝広い33で好走';legend.insertAdjacentElement('afterend',box);
   }
 
   $('loadDb').onclick=async()=>{try{const hs=await listHorses();$('dbStatus').textContent=`登録DB ${hs.length}頭。出走馬欄に馬名を1行ずつ入力してください。`}catch(e){$('dbStatus').textContent='DBを開けませんでした。MY KEIBA LABと同じブラウザで開いてください。'}};
