@@ -22,8 +22,8 @@
     return (f!=null&&f<=3)||(m!=null&&m<=0.3);
   }
   function dateTs(v){const t=Date.parse(String(v||''));return Number.isFinite(t)?t:0}
-  function raceLevel(run){
-    const s=`${run?.raceClass||run?.className||run?.grade||''} ${run?.raceName||''}`;
+  function levelFromText(s){
+    s=String(s||'');
     if(/G\s*1|Ｇ１|GⅠ|Jpn\s*1/i.test(s))return 7;
     if(/G\s*2|Ｇ２|GⅡ|Jpn\s*2/i.test(s))return 6;
     if(/G\s*3|Ｇ３|GⅢ|Jpn\s*3/i.test(s))return 5;
@@ -34,7 +34,46 @@
     if(/未勝利|新馬/.test(s))return 0;
     return null;
   }
+  function runClassText(run){return `${run?.raceClass||run?.className||run?.grade||''} ${run?.raceName||''}`}
+  function raceLevel(run){return levelFromText(runClassText(run))}
+  function isNewcomerRun(run){return /新馬/.test(runClassText(run))}
+  function isMaidenRun(run){return /未勝利/.test(runClassText(run))}
   function levelName(n){return n==null?'能力帯不明':n>=7?'G1級':n===6?'G2級':n===5?'G3級':n===4?'OP級':n===3?'3勝級':n===2?'2勝級':n===1?'1勝級':'新馬・未勝利';}
+
+  function targetRaceInfo(){
+    const pdf=window.MyKeibaDbLabPdfRace||{};
+    const raceName=$('raceName')?.value||'';
+    const level=levelFromText(`${pdf.raceClass||''} ${raceName}`);
+    let age=Number(pdf.ageClass)||null;
+    if(age!==2&&age!==3){
+      const s=String(raceName);
+      if(/2歳(?!以上)/.test(s))age=2;
+      else if(/3歳(?!以上)/.test(s))age=3;
+      else age=null;
+    }
+    return{level,age};
+  }
+
+  function targetClassRule(info){
+    const level=info?.level,age=info?.age;
+    if(age===2||age===3){
+      if(level===7)return{label:`${age}歳G1：新馬・未勝利除外`,keep:run=>!isNewcomerRun(run)&&!isMaidenRun(run)};
+      return{label:`${age}歳戦：下級クラス除外なし`,keep:()=>true};
+    }
+    if(level===7)return{label:'G1：OPクラス以上',keep:run=>{const lv=raceLevel(run);return lv==null||lv>=4}};
+    if(level===6||level===5)return{label:'G2/G3：3勝クラス以上',keep:run=>{const lv=raceLevel(run);return lv==null||lv>=3}};
+    if(level===4)return{label:'OP：2勝クラス以上',keep:run=>{const lv=raceLevel(run);return lv==null||lv>=2}};
+    if(level===3)return{label:'3勝：1勝クラス以上',keep:run=>{const lv=raceLevel(run);return lv==null||lv>=1}};
+    if(level===2)return{label:'2勝：新馬戦のみ除外',keep:run=>!isNewcomerRun(run)};
+    return{label:'クラス除外なし',keep:()=>true};
+  }
+
+  function applyTargetClassRule(runs,info){
+    const rule=targetClassRule(info);
+    const kept=[],excluded=[];
+    for(const run of runs||[]){(rule.keep(run)?kept:excluded).push(run)}
+    return{runs:kept,excluded,rule:rule.label};
+  }
 
   function excuseReason(run){
     if(isGoodRun(run))return'';
@@ -82,11 +121,7 @@
     const recent6=valid.slice(0,6);
     const levels=recent6.map(raceLevel).filter(x=>x!=null);
     const currentLevel=currentLevelOverride!=null?currentLevelOverride:(levels.length?Math.max(...levels):null);
-    let floor=null;
-    if(currentLevel!=null){ if(currentLevel>=3)floor=currentLevel-1; else if(currentLevel===2)floor=1; else floor=0; }
-    const scoped=recent.filter(r=>{const lv=raceLevel(r);return floor==null||lv==null||lv>=floor});
-    const excludedByClass=recent.length-scoped.length;
-    return{runs:scoped,currentLevel,total:valid.length,floor,excludedByClass};
+    return{runs:recent,currentLevel,total:valid.length};
   }
 
   function performanceWeight(run,index,currentLevel){
@@ -207,12 +242,16 @@
     const ctx={surface:$('surface').value,band:bandOf($('distance').value),going:$('going').value};
     const inputAvg=num($('avg33').value),pdfAvg=num(window.MyKeibaDbLabPdfRace?.avg33),avg=inputAvg!=null?inputAvg:pdfAvg;
     if(inputAvg==null&&pdfAvg!=null)$('avg33').value=String(pdfAvg);
-    const dbHorses=await listHorses(),byName=new Map(dbHorses.map(h=>[norm(h.name),h])),out=[];
+    const target=targetRaceInfo(),dbHorses=await listHorses(),byName=new Map(dbHorses.map(h=>[norm(h.name),h])),out=[];
     for(const [i,name] of names.entries()){
       const h=byName.get(norm(name)); if(!h){out.push({no:i+1,name,missing:true});continue}
-      const runs=await getRuns(h.key),usable=usableRuns(runs),ability=recentAbilityScope(usable),sel=selectRuns(runs,ctx),analysis=coreAnalysis(sel.selected,ability.currentLevel),core=analysis.core;
+      const runs=await getRuns(h.key);
+      const usable=usableRuns(runs),excuseExcluded=runs.length-usable.length;
+      const classScope=applyTargetClassRule(usable,target);
+      const ability=recentAbilityScope(usable);
+      const sel=selectRuns(classScope.runs,ctx),analysis=coreAnalysis(sel.selected,ability.currentLevel),core=analysis.core;
       const judge=baseJudge(avg,core),signal=chooseSignal(avg,analysis);
-      out.push({no:i+1,name:h.name,missing:false,basis:sel.basis,judge,signal,analysis,excluded:sel.excluded});
+      out.push({no:i+1,name:h.name,missing:false,basis:sel.basis,judge,signal,analysis,excluded:excuseExcluded,classExcluded:classScope.excluded.length,classRule:classScope.rule});
       if(i%5===4)await new Promise(r=>setTimeout(r,0));
     }
     last=out;render(out);return out;
@@ -232,7 +271,7 @@
       const gap=x.judge.gap==null?'':` / 差${x.judge.gap}`;
       const a=x.analysis,core=zoneTextBand(a.core),all=zoneTextBand(a.allGood),lv=levelName(a.scope.currentLevel);
       const sig=x.signal?`<div class="db33-signal">${esc(x.signal.detail||'')}</div>`:'';
-      return`<div class="horse"><div class="horse-top"><b>${x.no} ${esc(x.name)}</b><span class="pill ${pill}">${esc(d.mark)} ${esc(d.label)}</span></div><div class="zone">${esc(x.basis)} / コア33 ${esc(core)}</div><small>${esc(lv)}優先 / 近年対象${a.scope.runs.length}走${a.scope.excludedByClass?` / 下級除外${a.scope.excludedByClass}走`:''} / 全好走33 ${esc(all)}${gap}${x.excluded?` / 度外視${x.excluded}走`:''}</small>${sig}</div>`;
+      return`<div class="horse"><div class="horse-top"><b>${x.no} ${esc(x.name)}</b><span class="pill ${pill}">${esc(d.mark)} ${esc(d.label)}</span></div><div class="zone">${esc(x.basis)} / コア33 ${esc(core)}</div><small>${esc(x.classRule)} / 近年対象${a.scope.runs.length}走${x.classExcluded?` / 下級除外${x.classExcluded}走`:''} / 能力参考 ${esc(lv)} / 全好走33 ${esc(all)}${gap}${x.excluded?` / 度外視${x.excluded}走`:''}</small>${sig}</div>`;
     }).join('');
     $('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
   }
