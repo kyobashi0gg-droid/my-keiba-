@@ -17,6 +17,10 @@
   function finishNo(v){const n=num(v);return n!=null&&n>0?n:null}
   function firstPosition(v){const m=String(v||'').match(/\d+/);return m?Number(m[0]):null}
   function marginNo(v){const n=num(v);return n==null?null:Math.abs(n)}
+  function isGoodRun(run){
+    const f=finishNo(run?.finish),m=marginNo(run?.margin);
+    return (f!=null&&f<=3)||(m!=null&&m<=0.3);
+  }
   function dateTs(v){const t=Date.parse(String(v||''));return Number.isFinite(t)?t:0}
   function raceLevel(run){
     const s=String(run?.raceName||'');
@@ -33,7 +37,8 @@
   function levelName(n){return n==null?'能力帯不明':n>=7?'G1級':n===6?'G2級':n===5?'G3級':n===4?'OP級':n===3?'3勝級':n===2?'2勝級':n===1?'1勝級':'新馬・未勝利';}
 
   function excuseReason(run){
-    const f=finishNo(run.finish); if(f!=null&&f<=3)return'';
+    if(isGoodRun(run))return'';
+    const f=finishNo(run.finish);
     const review=String(run.review||'');
     const words=['不利','出遅','立遅','躓','つまず','挟ま','接触','前詰','詰ま','進路','壁','包ま','落鉄','故障','競走中止','度外視','大外回','外々','内詰','寄られ','被され'];
     const hit=words.find(w=>review.includes(w)); if(hit)return`総評:${hit}`;
@@ -48,7 +53,7 @@
 
   function summarize(runs){
     const valid=runs.map(run=>({run,lap:num(run.lap33),finish:finishNo(run.finish)})).filter(x=>x.lap!=null);
-    const good=valid.filter(x=>x.finish!=null&&x.finish<=3); const basis=good.length>=2?good:valid;
+    const good=valid.filter(x=>isGoodRun(x.run)); const basis=good.length>=2?good:valid;
     if(!basis.length)return{zoneMin:null,zoneMax:null,goodCount:good.length,lapCount:valid.length};
     const vals=basis.map(x=>x.lap).sort((a,b)=>a-b);
     return{zoneMin:round1(vals[0]),zoneMax:round1(vals.at(-1)),goodCount:good.length,lapCount:valid.length};
@@ -79,9 +84,9 @@
     const currentLevel=levels.length?Math.max(...levels):null;
     let floor=null;
     if(currentLevel!=null){ if(currentLevel>=3)floor=currentLevel-1; else if(currentLevel===2)floor=1; else floor=0; }
-    let scoped=recent.filter(r=>{const lv=raceLevel(r);return floor==null||lv==null||lv>=floor});
-    if(scoped.length<4)scoped=recent;
-    return{runs:scoped,currentLevel,total:valid.length};
+    const scoped=recent.filter(r=>{const lv=raceLevel(r);return floor==null||lv==null||lv>=floor});
+    const excludedByClass=recent.length-scoped.length;
+    return{runs:scoped,currentLevel,total:valid.length,floor,excludedByClass};
   }
 
   function performanceWeight(run,index,currentLevel){
@@ -124,10 +129,10 @@
     const scope=recentAbilityScope(runs);
     const points=[];
     scope.runs.forEach((r,i)=>{const lap=num(r.lap33),w=performanceWeight(r,i,scope.currentLevel);if(lap!=null&&w>0)points.push({lap,weight:w,run:r})});
-    const strong=points.filter(p=>{const f=finishNo(p.run.finish),m=marginNo(p.run.margin);return (f!=null&&f<=3)||(m!=null&&m<=.3)});
+    const strong=points.filter(p=>isGoodRun(p.run));
     const source=strong.length>=2?strong:points;
     const core=densestBand(source,.9,Math.min(2,source.length));
-    const allGoodVals=runs.filter(r=>{const f=finishNo(r.finish);return num(r.lap33)!=null&&f!=null&&f<=3}).map(r=>num(r.lap33));
+    const allGoodVals=runs.filter(r=>num(r.lap33)!=null&&isGoodRun(r)).map(r=>num(r.lap33));
     const allGood=allGoodVals.length?{min:round1(Math.min(...allGoodVals)),max:round1(Math.max(...allGoodVals))}:null;
     return{scope,points,strong,core,allGood};
   }
