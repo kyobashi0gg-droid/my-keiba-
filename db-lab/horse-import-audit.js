@@ -12,24 +12,46 @@
   const reqP=r=>new Promise((resolve,reject)=>{r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});
   const txDone=tx=>new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)});
 
+  const auditFields=['date','track','raceName','raceClass','finish','fieldSize','lap33','surface','distance','going','odds','agari','positions','margin','pace','review','weight','jockey','trainingScore'];
+  const clean=v=>String(v??'').trim();
+  function compactRun(run){
+    const out={};
+    for(const k of auditFields)out[k]=clean(run?.[k]);
+    return out;
+  }
+  function meaningfulChanged(beforeRun,afterRun){
+    return auditFields.some(k=>clean(beforeRun?.[k])!==clean(afterRun?.[k]));
+  }
+
   async function snapshot(){
     const db=await openDb();
     try{
       const tx=db.transaction([HORSES,RUNS],'readonly');
       const horses=await reqP(tx.objectStore(HORSES).getAll());
-      const counts=new Map();
+      const counts=new Map(),runsByHorse=new Map();
       await new Promise((resolve,reject)=>{
         const cur=tx.objectStore(RUNS).openCursor();
-        cur.onsuccess=()=>{const c=cur.result;if(!c)return resolve();const key=c.value?.horseKey;if(key)counts.set(key,(counts.get(key)||0)+1);c.continue()};
+        cur.onsuccess=()=>{
+          const c=cur.result;
+          if(!c)return resolve();
+          const run=c.value||{},key=run.horseKey;
+          if(key){
+            counts.set(key,(counts.get(key)||0)+1);
+            if(!runsByHorse.has(key))runsByHorse.set(key,new Map());
+            runsByHorse.get(key).set(run.id,compactRun(run));
+          }
+          c.continue();
+        };
         cur.onerror=()=>reject(cur.error);
       });
       await txDone(tx);
-      return {horses:new Map(horses.map(h=>[h.key,h])),counts};
+      return {horses:new Map(horses.map(h=>[h.key,h])),counts,runsByHorse};
     } finally {db.close()}
   }
 
   async function allHorses(){const db=await openDb();try{return await reqP(db.transaction(HORSES,'readonly').objectStore(HORSES).getAll())}finally{db.close()}}
-  async function countRuns(key){const db=await openDb();try{return await reqP(db.transaction(RUNS,'readonly').objectStore(RUNS).index('horseKey').count(key))}finally{db.close()}}
+  async function getRuns(key){const db=await openDb();try{return await reqP(db.transaction(RUNS,'readonly').objectStore(RUNS).index('horseKey').getAll(key))}finally{db.close()}}
+  async function countRuns(key){return (await getRuns(key)).length}
 
   function duplicateInfo(horses){
     const byName=new Map(),byReg=new Map();
@@ -54,8 +76,20 @@
       const prev=before.horses.get(h.key);
       const oldStamp=prev?.lastImportedAt||'';
       if(prev && oldStamp===h.lastImportedAt) continue;
-      const afterCount=await countRuns(h.key);
+      const afterRuns=await getRuns(h.key);
+      const afterCount=afterRuns.length;
       const beforeCount=before.counts.get(h.key)||0;
+      const beforeRuns=before.runsByHorse?.get(h.key)||new Map();
+      let existingUpdatedRuns=0,marginAddedRuns=0,marginChangedRuns=0;
+      for(const run of afterRuns){
+        const old=beforeRuns.get(run.id);
+        if(!old)continue;
+        const now=compactRun(run);
+        if(meaningfulChanged(old,now))existingUpdatedRuns++;
+        const oldMargin=clean(old.margin),newMargin=clean(now.margin);
+        if(!oldMargin&&newMargin)marginAddedRuns++;
+        else if(oldMargin&&newMargin&&oldMargin!==newMargin)marginChangedRuns++;
+      }
       let restoredName='';
       let nameMismatch=false;
 
@@ -85,8 +119,11 @@
       changed.push({
         key:h.key,
         name:restoredName||h.name,
-        kind:prev?(afterCount>beforeCount?'update':'same'):'new',
+        kind:prev?((afterCount>beforeCount||existingUpdatedRuns>0)?'update':'same'):'new',
         addedRuns:Math.max(0,afterCount-beforeCount),
+        existingUpdatedRuns,
+        marginAddedRuns,
+        marginChangedRuns,
         beforeRuns:beforeCount,
         afterRuns:afterCount,
         latestRunDate:h.latestRunDate||'',
@@ -112,9 +149,15 @@
     const nUpd=rows.filter(x=>x.kind==='update').length;
     const nSame=rows.filter(x=>x.kind==='same').length;
     const runs=rows.reduce((s,x)=>s+(x.addedRuns||0),0);
+    const existingUpdates=rows.reduce((s,x)=>s+(x.existingUpdatedRuns||0),0);
+    const marginAdded=rows.reduce((s,x)=>s+(x.marginAddedRuns||0),0);
+    const marginChanged=rows.reduce((s,x)=>s+(x.marginChangedRuns||0),0);
     const dup=rows.filter(x=>x.duplicates?.length).length;
     const mismatch=rows.filter(x=>x.nameMismatch).length;
     const parts=[`登録DB ${count}頭`,`新規 ${nNew}頭`,`更新 ${nUpd}頭（新規走+${runs}）`];
+    if(existingUpdates)parts.push(`既存走更新 ${existingUpdates}走`);
+    if(marginAdded)parts.push(`着差追加 ${marginAdded}走`);
+    if(marginChanged)parts.push(`着差変更 ${marginChanged}走`);
     if(nSame)parts.push(`既存走のみ ${nSame}頭`);
     if(dup)parts.push(`重複候補 ${dup}頭`);
     if(mismatch)parts.push(`馬名差異 ${mismatch}頭（手動名を保持）`);
@@ -134,7 +177,7 @@
       const status=$('horseImportStatus');
       if(status)status.textContent='重複・更新状況を確認してから登録しています…';
       let before;
-      try{before=await snapshot()}catch{before={horses:new Map(),counts:new Map()}}
+      try{before=await snapshot()}catch{before={horses:new Map(),counts:new Map(),runsByHorse:new Map()}}
       await base.call(input,e);
       try{
         const audit=await applyPostImport(before);
