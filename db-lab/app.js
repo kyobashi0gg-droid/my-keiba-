@@ -225,14 +225,48 @@
   }
 
   function reverseSignal(avg,analysis,targetLevel){
-    const rows=evidenceRows(analysis,avg,targetLevel).filter(x=>x.tier>=2&&x.finish!=null&&x.finish<=3);
-    if(rows.length<2)return null;
-    const far=rows.filter(x=>x.delta>=1.0);
-    if(far.length<2||!far.some(x=>x.tier===3))return null;
-    const left=far.every(x=>x.lap<=avg-1.0),right=far.every(x=>x.lap>=avg+1.0);
-    if(!left&&!right)return null;
-    const side=right?'高い33側':'低い33側';
-    return{code:'reverse',mark:'逆◎',label:'全く逆',cls:'reverse',gap:Math.min(...far.map(x=>x.delta)),detail:`${side}に同級以上の好走が集中（${far.length}走）`};
+    const allGood=evidenceRows(analysis,avg,targetLevel)
+      .filter(x=>x.tier>=1&&x.finish!=null&&x.finish<=3);
+    const currentGood=allGood.filter(x=>x.tier===3);
+    if(currentGood.length<2)return null;
+
+    const currentFar=currentGood.filter(x=>x.delta>=1.0);
+    if(currentFar.length<2)return null;
+    const currentLeft=currentFar.every(x=>x.lap<=avg-1.0);
+    const currentRight=currentFar.every(x=>x.lap>=avg+1.0);
+    if(!currentLeft&&!currentRight)return null;
+
+    const side=currentRight?'高い33側':'低い33側';
+    const currentNear=currentGood.filter(x=>x.delta<=.9);
+    if(currentNear.length)return null;
+
+    const allFar=allGood.filter(x=>x.delta>=1.0);
+    const allLeft=allGood.length>=2&&allGood.every(x=>x.lap<=avg-1.0);
+    const allRight=allGood.length>=2&&allGood.every(x=>x.lap>=avg+1.0);
+    const allCareerReverse=allGood.length>=2&&allFar.length===allGood.length&&(allLeft||allRight);
+
+    if(allCareerReverse){
+      return{
+        code:'reverse_all',
+        mark:'逆◎',
+        label:'全く逆',
+        cls:'reverse',
+        gap:Math.min(...allFar.map(x=>x.delta)),
+        detail:`${side}に有効クラスの好走が一貫して集中（${allGood.length}走）`
+      };
+    }
+
+    const lowerNear=allGood.filter(x=>x.tier<3&&x.delta<=.9);
+    return{
+      code:'reverse_current',
+      mark:'逆◎',
+      label:'現級では逆',
+      cls:'reverse',
+      gap:Math.min(...currentFar.map(x=>x.delta)),
+      detail:lowerNear.length
+        ? `${side}に同級以上の好走が集中（${currentFar.length}走）／下級では今回帯の好走あり`
+        : `${side}に同級以上の好走が集中（${currentFar.length}走）／全体では反対側に限定されない`
+    };
   }
 
   function dependencySignal(avg,analysis,targetLevel){
