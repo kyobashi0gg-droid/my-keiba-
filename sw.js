@@ -1,4 +1,4 @@
-const CACHE = 'my-keiba-lab-v54-class-aware-db33';
+const CACHE = 'my-keiba-lab-v55-db33-error-guard';
 
 // 起動に必要な最小構成だけを事前キャッシュ。
 // 追加モジュールは初回利用時にキャッシュし、更新時の一括addAll失敗を避ける。
