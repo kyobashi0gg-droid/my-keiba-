@@ -81,6 +81,7 @@
     $('track').value=r.track||'';
     $('raceNo').value=r.raceNo||'';
     $('raceName').value=r.raceName||'';
+    if($('raceClass'))$('raceClass').value=r.raceClass||'';
     if(r.surface)$('surface').value=r.surface;
     $('distance').value=r.distance||'';
     $('surface').dispatchEvent(new Event('change',{bubbles:true}));
