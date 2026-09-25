@@ -155,8 +155,9 @@
     }
     const counts = {};
     data.horses.forEach(h => { counts[h.mark] = (counts[h.mark] || 0) + 1; });
+    const abilityCount = data.horses.filter(h => h.mark === '◇' || h.abilityCode === 'ability').length;
     box.innerHTML = `<div class="v38-head"><div><small>DB LAB RESULT</small><strong>DB33 外部評価</strong></div><span>${matched}/${(race.horses||[]).length}頭</span></div>
-      <div class="v38-counts"><b class="perfect">◎ ${counts['◎']||0}</b><b class="possible">○ ${counts['○']||0}</b><b class="hidden">▲ ${counts['▲']||0}</b><b class="warn">⚠ ${counts['⚠']||0}</b><b class="reverse">逆◎ ${counts['逆◎']||0}</b><b class="ability">◇ ${counts['◇']||0}</b></div>
+      <div class="v38-counts"><b class="perfect">◎ ${counts['◎']||0}</b><b class="possible">○ ${counts['○']||0}</b><b class="hidden">▲ ${counts['▲']||0}</b><b class="warn">⚠ ${counts['⚠']||0}</b><b class="reverse">逆◎ ${counts['逆◎']||0}</b><b class="ability">◇ ${abilityCount}</b></div>
       <p>DB LABで保存した主評価を表示。◇能力型は33適合を上書きせず、該当時だけ補助タグで併記します。</p>`;
   }
 
