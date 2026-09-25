@@ -30,7 +30,8 @@
       return {
         no: c[0] || '', name: c[1] || '', mark: c[2] || '—', label: c[3] || '',
         zone: c[4] || '—', basis: c[5] || '', gap: c[6] || '', excluded: c[7] || '0',
-        signalCode: c[8] || '', signalDetail: c[9] || '', allZone: c[10] || '—', ability: c[11] || ''
+        signalCode: c[8] || '', signalDetail: c[9] || '', allZone: c[10] || '—', ability: c[11] || '',
+        abilityCode: c[12] || '', abilityDetail: c[13] || ''
       };
     }).filter(h => h.name);
     return { race, horses, at };
@@ -126,15 +127,22 @@
       const horse = (race.horses || []).find(h => h.id === btn?.dataset.v4Expand);
       const nameCell = tr.children?.[1];
       if (!horse || !nameCell) return;
-      nameCell.querySelector('.v38-dbtag')?.remove();
+      nameCell.querySelectorAll('.v38-dbtag').forEach(x => x.remove());
       const hit = byName.get(norm(horse.name));
       if (!hit) return;
       matched++;
       const tag = document.createElement('span');
       tag.className = `v38-dbtag ${cls(hit.mark)}`;
       tag.textContent = label(hit);
-      tag.title = `${hit.basis || '条件未取得'} / コア33 ${hit.zone || '—'}${hit.allZone&&hit.allZone!=='—'?` / 全好走33 ${hit.allZone}`:''}${hit.signalDetail?` / ${hit.signalDetail}`:''}${hit.gap ? ` / 差${hit.gap}` : ''}`;
+      tag.title = `${hit.basis || '条件未取得'} / コア33 ${hit.zone || '—'}${hit.allZone&&hit.allZone!=='—'?` / 全好走33 ${hit.allZone}`:''}${hit.signalDetail?` / ${hit.signalDetail}`:''}${hit.abilityDetail?` / ◇ ${hit.abilityDetail}`:''}${hit.gap ? ` / 差${hit.gap}` : ''}`;
       nameCell.appendChild(tag);
+      if (hit.abilityCode === 'ability') {
+        const abilityTag = document.createElement('span');
+        abilityTag.className = 'v38-dbtag ability';
+        abilityTag.textContent = '◇ 能力型';
+        abilityTag.title = hit.abilityDetail || '広い33で好走する補助属性';
+        nameCell.appendChild(abilityTag);
+      }
     });
 
     let box = body.querySelector('#v38DbLabSummary');
@@ -149,7 +157,7 @@
     data.horses.forEach(h => { counts[h.mark] = (counts[h.mark] || 0) + 1; });
     box.innerHTML = `<div class="v38-head"><div><small>DB LAB RESULT</small><strong>DB33 外部評価</strong></div><span>${matched}/${(race.horses||[]).length}頭</span></div>
       <div class="v38-counts"><b class="perfect">◎ ${counts['◎']||0}</b><b class="possible">○ ${counts['○']||0}</b><b class="hidden">▲ ${counts['▲']||0}</b><b class="warn">⚠ ${counts['⚠']||0}</b><b class="reverse">逆◎ ${counts['逆◎']||0}</b><b class="ability">◇ ${counts['◇']||0}</b></div>
-      <p>DB LABで保存した評価をレースごとに保持して表示しています。別レースを保存してもこの評価は消えません。</p>`;
+      <p>DB LABで保存した主評価を表示。◇能力型は33適合を上書きせず、該当時だけ補助タグで併記します。</p>`;
   }
 
   let timer = null;
