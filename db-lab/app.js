@@ -127,7 +127,7 @@
   function classTier(run,targetLevel){
     const lv=raceLevel(run);
     if(targetLevel==null)return 3;
-    if(lv==null)return 2;
+    if(lv==null)return 0;
     if(lv>=targetLevel)return 3;
     if(lv===targetLevel-1)return 2;
     return 1;
