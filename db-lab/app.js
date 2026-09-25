@@ -43,7 +43,9 @@
   function targetRaceInfo(){
     const pdf=window.MyKeibaDbLabPdfRace||{};
     const raceName=$('raceName')?.value||'';
-    const level=levelFromText(`${pdf.raceClass||''} ${raceName}`);
+    const manualClass=$('raceClass')?.value||'';
+    const classText=manualClass||pdf.raceClass||raceName;
+    const level=levelFromText(classText);
     let age=Number(pdf.ageClass)||null;
     if(age!==2&&age!==3){
       const s=String(raceName);
@@ -51,7 +53,7 @@
       else if(/3歳(?!以上)/.test(s))age=3;
       else age=null;
     }
-    return{level,age};
+    return{level,age,classText};
   }
 
   function targetClassRule(info){
@@ -124,12 +126,20 @@
     return{runs:recent,currentLevel,total:valid.length};
   }
 
+  function minimumEvidenceLevel(targetLevel){
+    if(targetLevel>=7)return 4;       // G1: OP以上を参考対象
+    if(targetLevel===6||targetLevel===5)return 3; // G2/G3: 3勝以上
+    if(targetLevel===4)return 2;      // OP: 2勝以上
+    if(targetLevel===3)return 1;      // 3勝: 1勝以上
+    if(targetLevel===2)return 0;      // 2勝: 新馬以外を参考対象
+    return 0;
+  }
+
   function classTier(run,targetLevel){
     const lv=raceLevel(run);
-    if(targetLevel==null)return 3;
-    if(lv==null)return 0;
-    if(lv>=targetLevel)return 3;
-    if(lv===targetLevel-1)return 2;
+    if(targetLevel==null||lv==null)return 0;
+    if(lv>=targetLevel)return 3; // 同級以上
+    if(lv>=minimumEvidenceLevel(targetLevel))return 2; // 今回基準で残す下級参考
     return 1;
   }
 
@@ -339,7 +349,9 @@
     const ctx={surface:$('surface').value,band:bandOf($('distance').value),going:$('going').value};
     const inputAvg=num($('avg33').value),pdfAvg=num(window.MyKeibaDbLabPdfRace?.avg33),avg=inputAvg!=null?inputAvg:pdfAvg;
     if(inputAvg==null&&pdfAvg!=null)$('avg33').value=String(pdfAvg);
-    const target=targetRaceInfo(),dbHorses=await listHorses(),byName=new Map(dbHorses.map(h=>[norm(h.name),h])),out=[];
+    const target=targetRaceInfo();
+    if(target.level==null)throw new Error('今回クラスを選択してください（G3・3勝など）。クラス未設定では同級判定を行いません。');
+    const dbHorses=await listHorses(),byName=new Map(dbHorses.map(h=>[norm(h.name),h])),out=[];
     for(const [i,name] of names.entries()){
       const h=byName.get(norm(name)); if(!h){out.push({no:i+1,name,missing:true});continue}
       try{
@@ -347,7 +359,7 @@
         const usable=usableRuns(runs),excuseExcluded=runs.length-usable.length;
         const classScope=applyTargetClassRule(usable,target);
         const abilityScope=recentAbilityScope(usable);
-        const targetLevel=target.level!=null?target.level:abilityScope.currentLevel;
+        const targetLevel=target.level;
         const sel=selectRuns(classScope.runs,ctx),analysis=coreAnalysis(sel.selected,targetLevel);
         let judge;
         try{judge=primaryJudge(avg,analysis,targetLevel)}
