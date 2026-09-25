@@ -142,7 +142,7 @@
     if(!p)return 0;
     const recency=Math.max(.55,1-index*.06);
     const tier=classTier(run,targetLevel);
-    const levelW=tier===3?1.12:tier===2?.72:.36;
+    const levelW = tier === 3 ? 1.12 : (tier === 2 ? 0.72 : 0.36);
     return p*recency*levelW;
   }
 
@@ -309,14 +309,28 @@
     const target=targetRaceInfo(),dbHorses=await listHorses(),byName=new Map(dbHorses.map(h=>[norm(h.name),h])),out=[];
     for(const [i,name] of names.entries()){
       const h=byName.get(norm(name)); if(!h){out.push({no:i+1,name,missing:true});continue}
-      const runs=await getRuns(h.key);
-      const usable=usableRuns(runs),excuseExcluded=runs.length-usable.length;
-      const classScope=applyTargetClassRule(usable,target);
-      const abilityScope=recentAbilityScope(usable);
-      const targetLevel=target.level!=null?target.level:abilityScope.currentLevel;
-      const sel=selectRuns(classScope.runs,ctx),analysis=coreAnalysis(sel.selected,targetLevel);
-      const judge=primaryJudge(avg,analysis,targetLevel),ability=abilitySignal(analysis,targetLevel);
-      out.push({no:i+1,name:h.name,missing:false,basis:sel.basis,judge,ability,analysis,targetLevel,excluded:excuseExcluded,classExcluded:classScope.excluded.length,classRule:classScope.rule});
+      try{
+        const runs=await getRuns(h.key);
+        const usable=usableRuns(runs),excuseExcluded=runs.length-usable.length;
+        const classScope=applyTargetClassRule(usable,target);
+        const abilityScope=recentAbilityScope(usable);
+        const targetLevel=target.level!=null?target.level:abilityScope.currentLevel;
+        const sel=selectRuns(classScope.runs,ctx),analysis=coreAnalysis(sel.selected,targetLevel);
+        let judge;
+        try{judge=primaryJudge(avg,analysis,targetLevel)}
+        catch(err){
+          console.warn('primaryJudge fallback',h.name,err);
+          judge=fallbackJudge(avg,analysis?.core||null);
+          judge.detail='詳細判定を簡易判定へ退避';
+        }
+        let ability=null;
+        try{ability=abilitySignal(analysis,targetLevel)}catch(err){console.warn('abilitySignal skipped',h.name,err)}
+        out.push({no:i+1,name:h.name,missing:false,basis:sel.basis,judge,ability,analysis,targetLevel,excluded:excuseExcluded,classExcluded:classScope.excluded.length,classRule:classScope.rule});
+      }catch(err){
+        console.error('horse evaluation failed',h.name,err);
+        const emptyAnalysis={scope:{runs:[],currentLevel:target.level??null},core:null,allGood:null,strong:[]};
+        out.push({no:i+1,name:h.name,missing:false,basis:'判定エラー',judge:{code:'unknown',mark:'—',label:'判定不可',gap:null,cls:'mid',detail:`この馬のDB計算でエラー: ${err?.message||String(err)}`},ability:null,analysis:emptyAnalysis,targetLevel:target.level??null,excluded:0,classExcluded:0,classRule:'再評価が必要'});
+      }
       if(i%5===4)await new Promise(r=>setTimeout(r,0));
     }
     last=out;render(out);return out;
@@ -334,7 +348,7 @@
       const ability=x.ability?`<span class="pill p-ability" title="${esc(x.ability.detail||'')}">◇ 能力型</span>`:'';
       return`<div class="horse"><div class="horse-top"><b>${x.no} ${esc(x.name)}</b><span style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end"><span class="pill ${pill}">${esc(d.mark)} ${esc(d.label)}</span>${ability}</span></div><div class="zone">${esc(x.basis)} / コア33 ${esc(core)}</div><small>${esc(x.classRule)} / 近年対象${a.scope.runs.length}走${x.classExcluded?` / 下級除外${x.classExcluded}走`:''} / 能力参考 ${esc(lv)} / 全好走33 ${esc(all)}${gap}${x.excluded?` / 度外視${x.excluded}走`:''}</small>${reason}${x.ability?`<div class="db33-signal">◇ ${esc(x.ability.detail)}</div>`:''}</div>`;
     }).join('');
-    $('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
+    try{$('resultCard')?.scrollIntoView?.({behavior:'smooth',block:'start'})}catch{}
   }
 
   function resultText(){
@@ -352,7 +366,7 @@
   }
 
   $('loadDb').onclick=async()=>{try{const hs=await listHorses();$('dbStatus').textContent=`登録DB ${hs.length}頭。出走馬欄に馬名を1行ずつ入力してください。`}catch(e){$('dbStatus').textContent='DBを開けませんでした。MY KEIBA LABと同じブラウザで開いてください。'}};
-  $('judge').onclick=async()=>{try{$('dbStatus').textContent='評価中…';await evaluate();$('dbStatus').textContent='評価完了（クラス別33適合を優先・能力型は補助タグ）'}catch(e){console.error(e);$('dbStatus').textContent='評価中にエラーが発生しました。'}};
+  $('judge').onclick=async()=>{try{$('dbStatus').textContent='評価中…';await evaluate();$('dbStatus').textContent='評価完了（クラス別33適合を優先・能力型は補助タグ）'}catch(e){console.error(e);$('dbStatus').textContent=`評価エラー: ${e?.message||String(e)}`;}};
   $('saveResult').onclick=()=>{if(!last.length)return;localStorage.setItem('my-keiba-db-result-v2',resultText());localStorage.setItem('my-keiba-db-result-v2-at',new Date().toISOString());$('saveStatus').textContent='MY KEIBA LAB取込用としてこのブラウザに保存しました（能力型は補助タグ扱い）。'};
   $('copyResult').onclick=async()=>{if(!last.length)return;try{await navigator.clipboard.writeText(resultText());$('saveStatus').textContent='結果をコピーしました。'}catch{$('saveStatus').textContent='コピーできませんでした。'}};
   $('loadDb').click();
