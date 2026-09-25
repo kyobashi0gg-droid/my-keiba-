@@ -189,12 +189,22 @@
   }
 
   function openImport(raceId = '') {
-    currentRaceId = raceId || currentRaceId || '';
+    // 新しく取込画面を開くたびに、前のレースの貼り付け内容を残さない。
+    // raceId が無い（ホームから開いた）場合も、直前のレースIDを引き継がない。
+    currentRaceId = raceId || '';
     installImportDialog();
     const modal = document.querySelector('#v5Import');
+    const area = modal.querySelector('#v5ImportText');
+    const result = modal.querySelector('#v5ImportResult');
+    if (area) area.value = '';
+    if (result) {
+      result.hidden = true;
+      result.textContent = '';
+      result.className = 'v5-result';
+    }
     modal.hidden = false;
     document.body.style.overflow = 'hidden';
-    setTimeout(() => modal.querySelector('#v5ImportText')?.focus(), 50);
+    setTimeout(() => area?.focus(), 50);
   }
 
   function closeImport() {
