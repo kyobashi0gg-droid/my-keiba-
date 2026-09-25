@@ -278,12 +278,6 @@
       return{code:'possible',mark:'○',label:'好走可能',gap:best.delta,cls:'possible',detail:evidenceText('1段下クラスの適合実績',best)};
     }
 
-    const lowerRef=rows.filter(x=>x.tier===1&&x.finish!=null&&x.finish<=3&&x.delta<=.5);
-    if(lowerRef.length){
-      const best=pickBest(lowerRef);
-      return{code:'possible',mark:'○',label:'好走可能',gap:best.delta,cls:'possible',detail:evidenceText('下級クラスの参考適合',best)};
-    }
-
     const reverse=reverseSignal(avg,analysis,targetLevel);
     if(reverse)return reverse;
     const dep=dependencySignal(avg,analysis,targetLevel);
