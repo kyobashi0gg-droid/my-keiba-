@@ -319,7 +319,7 @@
     const lowerGood=rows.filter(x=>x.tier===2&&x.finish!=null&&x.finish<=3&&x.delta<=.9);
     if(lowerGood.length){
       const best=pickBest(lowerGood);
-      return{code:'possible',mark:'○',label:'好走可能',gap:best.delta,cls:'possible',detail:evidenceText('1段下クラスの適合実績',best)};
+      return{code:'possible',mark:'○',label:'好走可能',gap:best.delta,cls:'possible',detail:evidenceText('下級参考クラスの適合実績',best)};
     }
 
     const reverse=reverseSignal(avg,analysis,targetLevel);
@@ -337,7 +337,7 @@
     if(span<2.0)return null;
     const buckets=new Set(strongLaps.map(v=>Math.floor(v/.8)));
     if(buckets.size<3)return null;
-    return{code:'ability',mark:'◇',label:'能力型',detail:`同級〜1段下で広い33に好走（幅${round1(span)}）`};
+    return{code:'ability',mark:'◇',label:'能力型',detail:`同級〜参考下級で広い33に好走（幅${round1(span)}）`};
   }
 
   function zoneTextBand(b){return!b?'—':b.min===b.max?`${b.min}`:`${b.min}〜${b.max}`}
