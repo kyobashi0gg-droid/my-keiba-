@@ -1,4 +1,4 @@
-const CACHE = 'my-keiba-lab-v55-db33-error-guard';
+const CACHE = 'my-keiba-lab-v56-network-first-static';
 
 // 起動に必要な最小構成だけを事前キャッシュ。
 // 追加モジュールは初回利用時にキャッシュし、更新時の一括addAll失敗を避ける。
@@ -68,7 +68,7 @@ self.addEventListener('fetch', event => {
     return;
   }
   if (isStaticAsset(event.request)) {
-    event.respondWith(cacheFirst(event.request));
+    event.respondWith(networkFirst(event.request));
     return;
   }
   event.respondWith(networkFirst(event.request));
