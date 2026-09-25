@@ -202,6 +202,11 @@
     return [...rows].sort((a,b)=>b.tier-a.tier||a.delta-b.delta||(a.finish??99)-(b.finish??99)||a.index-b.index)[0]||null;
   }
 
+  function avgFinish(runs){
+    const vals=(runs||[]).map(r=>finishNo(r?.finish)).filter(v=>v!=null);
+    return vals.length?vals.reduce((s,v)=>s+v,0)/vals.length:null;
+  }
+
   function hiddenSignal(avg,analysis,targetLevel){
     const rows=evidenceRows(analysis,avg,targetLevel);
     const same=rows.filter(x=>x.tier===3&&x.finish!=null);
