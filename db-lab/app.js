@@ -333,6 +333,55 @@
     return fallbackJudge(avg,analysis.core);
   }
 
+  function fitGroupSignal(avg,analysis,targetLevel,judge){
+    const rows=evidenceRows(analysis,avg,targetLevel);
+    const direct=rows.filter(x=>x.tier===3&&x.finish!=null&&x.finish<=3&&x.delta<=.9);
+    if(direct.length){
+      const best=pickBest(direct);
+      return{code:'direct',label:'同級直接',cls:'group-direct',detail:evidenceText('同級以上の適合実績',best)};
+    }
+
+    const lower=rows.filter(x=>x.tier===2&&x.finish!=null&&x.finish<=3&&x.delta<=.9);
+    if(lower.length){
+      const best=pickBest(lower);
+      return{code:'lower',label:'下級参考',cls:'group-lower',detail:evidenceText('下級参考の適合実績',best)};
+    }
+
+    if(judge?.code==='hidden')return{code:'hidden',label:'隠れ',cls:'group-hidden',detail:judge.detail||''};
+    if(['reverse_all','reverse_current','dependency'].includes(judge?.code)){
+      return{code:'reverse',label:'逆・ズレ',cls:'group-reverse',detail:judge.detail||''};
+    }
+    return{code:'middle',label:'中間',cls:'group-middle',detail:judge?.detail||''};
+  }
+
+  function revivalSignal(avg,analysis,targetLevel,group){
+    if(group?.code!=='direct'||avg==null||!analysis?.core)return null;
+    const gap=gapToBand(avg,analysis.core);
+    if(gap==null||gap>.3)return null;
+
+    const recent=(analysis?.scope?.runs||[])
+      .map((run,index)=>({run,index,lap:num(run.lap33),finish:finishNo(run.finish),level:raceLevel(run)}))
+      .filter(x=>x.lap!=null&&x.finish!=null)
+      .slice(0,2);
+    if(recent.length<2)return null;
+
+    const outside=recent.every(x=>x.lap<analysis.core.min-.35||x.lap>analysis.core.max+.35);
+    const poor=recent.every(x=>x.finish>=4);
+    if(!outside||!poor)return null;
+
+    const directOlder=evidenceRows(analysis,avg,targetLevel)
+      .some(x=>x.tier===3&&x.finish!=null&&x.finish<=3&&x.delta<=.9&&x.index>=2);
+    if(!directOlder)return null;
+
+    const recentText=recent.map(x=>`${x.lap>=0?'+':''}${x.lap}(${x.finish}着)`).join(' → ');
+    return{
+      code:'revival',
+      mark:'↺',
+      label:'復活適合',
+      detail:`同級直接実績あり / 直近2走はコア外かつ4着以下（${recentText}）/ 今回はコアへ復帰（差${gap}）`
+    };
+  }
+
   function abilitySignal(analysis,targetLevel){
     const strong=(analysis?.strong||[]).filter(p=>classTier(p.run,targetLevel)>=2);
     if(strong.length<4)return null;
@@ -372,13 +421,15 @@
           judge=fallbackJudge(avg,analysis?.core||null);
           judge.detail='詳細判定を簡易判定へ退避';
         }
-        let ability=null;
+        let group=null,revival=null,ability=null;
+        try{group=fitGroupSignal(avg,analysis,targetLevel,judge)}catch(err){console.warn('fitGroupSignal skipped',h.name,err)}
+        try{revival=revivalSignal(avg,analysis,targetLevel,group)}catch(err){console.warn('revivalSignal skipped',h.name,err)}
         try{ability=abilitySignal(analysis,targetLevel)}catch(err){console.warn('abilitySignal skipped',h.name,err)}
-        out.push({no:i+1,name:h.name,missing:false,basis:sel.basis,judge,ability,analysis,targetLevel,excluded:excuseExcluded,classExcluded:classScope.excluded.length,classRule:classScope.rule});
+        out.push({no:i+1,name:h.name,missing:false,basis:sel.basis,judge,group,revival,ability,analysis,targetLevel,excluded:excuseExcluded,classExcluded:classScope.excluded.length,classRule:classScope.rule});
       }catch(err){
         console.error('horse evaluation failed',h.name,err);
         const emptyAnalysis={scope:{runs:[],currentLevel:target.level??null},core:null,allGood:null,strong:[]};
-        out.push({no:i+1,name:h.name,missing:false,basis:'判定エラー',judge:{code:'unknown',mark:'—',label:'判定不可',gap:null,cls:'mid',detail:`この馬のDB計算でエラー: ${err?.message||String(err)}`},ability:null,analysis:emptyAnalysis,targetLevel:target.level??null,excluded:0,classExcluded:0,classRule:'再評価が必要'});
+        out.push({no:i+1,name:h.name,missing:false,basis:'判定エラー',judge:{code:'unknown',mark:'—',label:'判定不可',gap:null,cls:'mid',detail:`この馬のDB計算でエラー: ${err?.message||String(err)}`},group:{code:'middle',label:'中間',cls:'group-middle',detail:''},revival:null,ability:null,analysis:emptyAnalysis,targetLevel:target.level??null,excluded:0,classExcluded:0,classRule:'再評価が必要'});
       }
       if(i%5===4)await new Promise(r=>setTimeout(r,0));
     }
@@ -394,24 +445,26 @@
       const gap=x.judge.gap==null?'':` / 差${x.judge.gap}`;
       const a=x.analysis,core=zoneTextBand(a.core),all=zoneTextBand(a.allGood),lv=levelName(a.scope.currentLevel);
       const reason=x.judge?.detail?`<div class="db33-signal">${esc(x.judge.detail)}</div>`:'';
+      const group=x.group?`<span class="pill p-${esc(x.group.cls)}" title="${esc(x.group.detail||'')}">${esc(x.group.label)}</span>`:'';
+      const revival=x.revival?`<span class="pill p-revival" title="${esc(x.revival.detail||'')}">↺ 復活適合</span>`:'';
       const ability=x.ability?`<span class="pill p-ability" title="${esc(x.ability.detail||'')}">◇ 能力型</span>`:'';
-      return`<div class="horse"><div class="horse-top"><b>${x.no} ${esc(x.name)}</b><span style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end"><span class="pill ${pill}">${esc(d.mark)} ${esc(d.label)}</span>${ability}</span></div><div class="zone">${esc(x.basis)} / コア33 ${esc(core)}</div><small>${esc(x.classRule)} / 近年対象${a.scope.runs.length}走${x.classExcluded?` / 下級除外${x.classExcluded}走`:''} / 今回クラス ${esc(lv)} / 全好走33 ${esc(all)}${gap}${x.excluded?` / 度外視${x.excluded}走`:''}</small>${reason}${x.ability?`<div class="db33-signal">◇ ${esc(x.ability.detail)}</div>`:''}</div>`;
+      return`<div class="horse"><div class="horse-top"><b>${x.no} ${esc(x.name)}</b><span style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">${group}<span class="pill ${pill}">${esc(d.mark)} ${esc(d.label)}</span>${revival}${ability}</span></div><div class="zone">${esc(x.basis)} / コア33 ${esc(core)}</div><small>${esc(x.classRule)} / 近年対象${a.scope.runs.length}走${x.classExcluded?` / 下級除外${x.classExcluded}走`:''} / 今回クラス ${esc(lv)} / 全好走33 ${esc(all)}${gap}${x.excluded?` / 度外視${x.excluded}走`:''}</small>${reason}${x.revival?`<div class="db33-signal revival">↺ ${esc(x.revival.detail)}</div>`:''}${x.ability?`<div class="db33-signal">◇ ${esc(x.ability.detail)}</div>`:''}</div>`;
     }).join('');
     try{$('resultCard')?.scrollIntoView?.({behavior:'smooth',block:'start'})}catch{}
   }
 
   function resultText(){
     const head=`MYKEIBA_DB_RESULT_V2\n${$('track').value.trim()} ${$('raceNo').value.trim()}R|${$('raceName').value.trim()}|${$('surface').value}|${$('distance').value}|${$('going').value||'未設定'}|${$('avg33').value}`;
-    const rows=last.filter(x=>!x.missing).map(x=>{const d=displayBadge(x),a=x.analysis;return `${x.no}|${x.name}|${d.mark}|${d.label}|${zoneTextBand(a.core)}|${x.basis}|${x.judge.gap??0}|${x.excluded||0}|${x.judge?.code||''}|${x.judge?.detail||''}|${zoneTextBand(a.allGood)}|${levelName(a.scope.currentLevel)}|${x.ability?.code||''}|${x.ability?.detail||''}`});
+    const rows=last.filter(x=>!x.missing).map(x=>{const d=displayBadge(x),a=x.analysis;return `${x.no}|${x.name}|${d.mark}|${d.label}|${zoneTextBand(a.core)}|${x.basis}|${x.judge.gap??0}|${x.excluded||0}|${x.judge?.code||''}|${x.judge?.detail||''}|${zoneTextBand(a.allGood)}|${levelName(a.scope.currentLevel)}|${x.ability?.code||''}|${x.ability?.detail||''}|${x.group?.code||''}|${x.group?.label||''}|${x.revival?.code||''}|${x.revival?.detail||''}`});
     return `${head}\n${rows.join('\n')}`;
   }
 
   const style=document.createElement('style');
-  style.textContent=`.p-hidden{background:#e8e0ff;color:#6542a0}.p-warn{background:#ffe3dc;color:#a44534}.p-ability{background:#e3edf8;color:#365e87}.db33-signal{margin-top:2px;padding:7px 9px;border-radius:10px;background:#f6f8f7;color:#536c60;font-size:10px;font-weight:800}.db33-advanced-note{margin-top:8px;padding:9px 11px;border-radius:12px;background:#f6f8f7;color:#607168;font-size:10px;line-height:1.6}`;
+  style.textContent=`.p-hidden{background:#e8e0ff;color:#6542a0}.p-warn{background:#ffe3dc;color:#a44534}.p-ability{background:#e3edf8;color:#365e87}.p-group-direct{background:#dff4e7;color:#17613a}.p-group-lower{background:#fff2cd;color:#805d11}.p-group-hidden{background:#eee6ff;color:#6542a0}.p-group-middle{background:#edf1ef;color:#69776f}.p-group-reverse{background:#f5dfe3;color:#8e3442}.p-revival{background:#ffe9c8;color:#8a5412}.db33-signal{margin-top:2px;padding:7px 9px;border-radius:10px;background:#f6f8f7;color:#536c60;font-size:10px;font-weight:800}.db33-signal.revival{background:#fff7e8;color:#80541d}.db33-advanced-note{margin-top:8px;padding:9px 11px;border-radius:12px;background:#f6f8f7;color:#607168;font-size:10px;line-height:1.6}`;
   document.head.appendChild(style);
   const legend=document.querySelector('.legend');
   if(legend&&!document.querySelector('#db33AdvancedLegend')){
-    const box=document.createElement('div');box.id='db33AdvancedLegend';box.className='db33-advanced-note';box.innerHTML='<b>追加判定：</b> ▲ 隠れ適合＝特定33帯で他条件より着順上昇（対象着順も表示）　/　⚠ 33依存・今回はズレ＝コア33時だけ成績が明確に良い　/　◇ 能力型＝広い33で好走';legend.insertAdjacentElement('afterend',box);
+    const box=document.createElement('div');box.id='db33AdvancedLegend';box.className='db33-advanced-note';box.innerHTML='<b>5分類：</b> 同級直接 / 下級参考 / 隠れ / 中間 / 逆・ズレ　<br><b>補助タグ：</b> ↺ 復活適合＝同級直接実績があり、直近2走がコア外かつ4着以下、今回平均33がコアへ戻る馬　/　◇ 能力型＝広い33で好走';legend.insertAdjacentElement('afterend',box);
   }
 
   $('loadDb').onclick=async()=>{try{const hs=await listHorses();$('dbStatus').textContent=`登録DB ${hs.length}頭。出走馬欄に馬名を1行ずつ入力してください。`}catch(e){$('dbStatus').textContent='DBを開けませんでした。MY KEIBA LABと同じブラウザで開いてください。'}};
