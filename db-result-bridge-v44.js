@@ -120,6 +120,10 @@
     }
 
     const byName = new Map(data.horses.map(h => [norm(h.name), h]));
+    const table = body.querySelector('.v4-table');
+    const headCells = table ? [...table.querySelectorAll('thead th')] : [];
+    let lapIndex = headCells.findIndex(th => ['33','新聞33'].includes(th.textContent.trim()));
+    if (lapIndex >= 0 && headCells[lapIndex]) headCells[lapIndex].textContent = '新聞33';
     let matched = 0;
     body.querySelectorAll('tbody > tr').forEach(tr => {
       if (tr.classList.contains('v4-horse-detail-row')) return;
@@ -131,6 +135,18 @@
       const hit = byName.get(norm(horse.name));
       if (!hit) return;
       matched++;
+
+      // S/A/B/C は新聞由来の補助評価。最新のDB LAB主評価を同じ行に明示して混同を防ぐ。
+      if (lapIndex >= 0 && tr.children?.[lapIndex]) {
+        const lapCell = tr.children[lapIndex];
+        lapCell.querySelectorAll('.v44-dbcell').forEach(x => x.remove());
+        const dbCell = document.createElement('small');
+        dbCell.className = `v44-dbcell ${cls(hit.mark)}`;
+        dbCell.textContent = `DB ${label(hit)}`;
+        dbCell.title = `コア33 ${hit.zone || '—'} / ${hit.basis || '条件未取得'}${hit.signalDetail ? ` / ${hit.signalDetail}` : ''}`;
+        lapCell.appendChild(dbCell);
+      }
+
       const tag = document.createElement('span');
       tag.className = `v38-dbtag ${cls(hit.mark)}`;
       tag.textContent = label(hit);
@@ -158,7 +174,7 @@
     const abilityCount = data.horses.filter(h => h.mark === '◇' || h.abilityCode === 'ability').length;
     box.innerHTML = `<div class="v38-head"><div><small>DB LAB RESULT</small><strong>DB33 外部評価</strong></div><span>${matched}/${(race.horses||[]).length}頭</span></div>
       <div class="v38-counts"><b class="perfect">◎ ${counts['◎']||0}</b><b class="possible">○ ${counts['○']||0}</b><b class="hidden">▲ ${counts['▲']||0}</b><b class="warn">⚠ ${counts['⚠']||0}</b><b class="reverse">逆◎ ${counts['逆◎']||0}</b><b class="ability">◇ ${abilityCount}</b></div>
-      <p>DB LABで保存した主評価を表示。◇能力型は33適合を上書きせず、該当時だけ補助タグで併記します。</p>`;
+      <p>新聞33（S/A/B/C）は補助。DB LABで保存した最新の主評価・コア33を優先表示します。◇能力型は33適合を上書きせず補助タグで併記します。</p>`;
   }
 
   let timer = null;
@@ -177,6 +193,8 @@
     .v38-dbtag.warn,.v38-counts .warn{background:#ffe3dc;color:#a44534}
     .v38-dbtag.ability,.v38-counts .ability{background:#e3edf8;color:#365e87}
     .v38-dbtag.mid{background:#edf1ef;color:#69776f}
+    .v44-dbcell{display:block;margin-top:3px;padding:2px 4px;border-radius:6px;font-size:7px;font-weight:950;line-height:1.25;white-space:normal}
+    .v44-dbcell.perfect{background:#dff4e7;color:#17613a}.v44-dbcell.possible{background:#fff2cd;color:#805d11}.v44-dbcell.reverse{background:#f5dfe3;color:#8e3442}.v44-dbcell.hidden{background:#e8e0ff;color:#6542a0}.v44-dbcell.warn{background:#ffe3dc;color:#a44534}.v44-dbcell.ability{background:#e3edf8;color:#365e87}.v44-dbcell.mid{background:#edf1ef;color:#69776f}
     .v38-summary{margin:12px 0;padding:13px 14px;border:1px solid #d8e8de;border-radius:18px;background:#fbfdfb}
     .v38-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.v38-head small{display:block;font-size:9px;font-weight:900;letter-spacing:.12em;color:#278154}.v38-head strong{display:block;margin-top:2px;font-size:18px;color:#173d2b}.v38-head>span{font-size:10px;font-weight:900;color:#547064}.v38-counts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.v38-counts b{padding:4px 8px;border-radius:999px;font-size:10px}.v38-summary p{margin:7px 0 0;font-size:10px;color:#718078;line-height:1.5}`;
   document.head.appendChild(style);
