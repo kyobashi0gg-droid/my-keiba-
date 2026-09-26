@@ -311,14 +311,15 @@
       return{code:'core',mark:'◎',label:'コア一致',gap:best.delta,cls:'perfect',detail:evidenceText('同級以上で直接適合',best)};
     }
 
-    const hidden=hiddenSignal(avg,analysis,targetLevel);
-    if(hidden)return hidden;
-
     const sameGoodNear=rows.filter(x=>x.tier===3&&x.finish!=null&&x.finish<=3&&x.delta<=.9);
     if(sameGoodNear.length){
       const best=pickBest(sameGoodNear);
       return{code:'possible',mark:'○',label:'好走可能',gap:best.delta,cls:'possible',detail:evidenceText('同級以上で近接好走',best)};
     }
+
+
+    const hidden=hiddenSignal(avg,analysis,targetLevel);
+    if(hidden)return hidden;
 
     const lowerGood=rows.filter(x=>x.tier===2&&x.finish!=null&&x.finish<=3&&x.delta<=.9);
     if(lowerGood.length){
@@ -341,13 +342,14 @@
       return{code:'direct',label:'同級直接',cls:'group-direct',detail:evidenceText('同級以上の適合実績',best)};
     }
 
+    if(judge?.code==='hidden')return{code:'hidden',label:'隠れ',cls:'group-hidden',detail:judge.detail||''};
+
     const lower=rows.filter(x=>x.tier===2&&x.finish!=null&&x.finish<=3&&x.delta<=.9);
     if(lower.length){
       const best=pickBest(lower);
       return{code:'lower',label:'下級参考',cls:'group-lower',detail:evidenceText('下級参考の適合実績',best)};
     }
 
-    if(judge?.code==='hidden')return{code:'hidden',label:'隠れ',cls:'group-hidden',detail:judge.detail||''};
     if(['reverse_all','reverse_current','dependency'].includes(judge?.code)){
       return{code:'reverse',label:'逆・ズレ',cls:'group-reverse',detail:judge.detail||''};
     }
