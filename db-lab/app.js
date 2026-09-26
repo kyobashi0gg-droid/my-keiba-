@@ -62,10 +62,12 @@
       if(level===7)return{label:`${age}歳G1：新馬・未勝利除外`,keep:run=>!isNewcomerRun(run)&&!isMaidenRun(run)};
       return{label:`${age}歳戦：下級クラス除外なし`,keep:()=>true};
     }
-    if(level===7)return{label:'G1：OPクラス以上',keep:run=>{const lv=raceLevel(run);return lv==null||lv>=4}};
-    if(level===6||level===5)return{label:'G2/G3：3勝クラス以上',keep:run=>{const lv=raceLevel(run);return lv==null||lv>=3}};
-    if(level===4)return{label:'OP：2勝クラス以上',keep:run=>{const lv=raceLevel(run);return lv==null||lv>=2}};
-    if(level===3)return{label:'3勝：1勝クラス以上',keep:run=>{const lv=raceLevel(run);return lv==null||lv>=1}};
+    // クラスが判別できない過去走は、上位クラス評価へ混ぜない。
+    // 「不明だから残す」と下級戦が紛れた場合にコア33を歪めるため、厳格に除外する。
+    if(level===7)return{label:'G1：OPクラス以上',keep:run=>{const lv=raceLevel(run);return lv!=null&&lv>=4}};
+    if(level===6||level===5)return{label:'G2/G3：3勝クラス以上',keep:run=>{const lv=raceLevel(run);return lv!=null&&lv>=3}};
+    if(level===4)return{label:'OP：2勝クラス以上',keep:run=>{const lv=raceLevel(run);return lv!=null&&lv>=2}};
+    if(level===3)return{label:'3勝：1勝クラス以上',keep:run=>{const lv=raceLevel(run);return lv!=null&&lv>=1}};
     if(level===2)return{label:'2勝：新馬戦のみ除外',keep:run=>!isNewcomerRun(run)};
     return{label:'クラス除外なし',keep:()=>true};
   }
@@ -180,8 +182,9 @@
     const points=[];
     scope.runs.forEach((r,i)=>{const lap=num(r.lap33),w=performanceWeight(r,i,effectiveLevel);if(lap!=null&&w>0)points.push({lap,weight:w,run:r})});
     const strong=points.filter(p=>isGoodRun(p.run));
-    const source=strong.length>=2?strong:points;
-    const core=densestBand(source,.9,Math.min(2,source.length));
+    // コア33は「3着以内」だけから作る。4〜7着や僅差は隠れ適合の材料であり、
+    // 好走帯そのものへ混ぜない（好走評価=3着以内の運用ルール）。
+    const core=strong.length?densestBand(strong,.9,Math.min(2,strong.length)):null;
     const allGoodVals=runs.filter(r=>num(r.lap33)!=null&&isGoodRun(r)).map(r=>num(r.lap33));
     const allGood=allGoodVals.length?{min:round1(Math.min(...allGoodVals)),max:round1(Math.max(...allGoodVals))}:null;
     return{scope,points,strong,core,allGood,targetLevel:effectiveLevel};
@@ -292,9 +295,10 @@
   }
 
   function fallbackJudge(avg,band){
-    if(avg==null||!band)return{code:'unknown',mark:'—',label:'判定不可',gap:null,cls:'mid',detail:''};
+    if(avg==null)return{code:'unknown',mark:'—',label:'判定不可',gap:null,cls:'mid',detail:'今回平均33が未設定'};
+    if(!band)return{code:'mid',mark:'—',label:'中間',gap:null,cls:'mid',detail:'3着以内の好走33帯を作れる根拠なし'};
     const gap=gapToBand(avg,band);
-    if(gap<=.5)return{code:'possible',mark:'○',label:'好走可能',gap,cls:'possible',detail:'コア帯に近いが、今回クラスでの直接的な3着以内根拠は弱い'};
+    if(gap<=.5)return{code:'possible',mark:'○',label:'好走可能',gap,cls:'possible',detail:'3着以内で作ったコア帯に近いが、今回クラスでの直接的な近接好走根拠は弱い'};
     return{code:'mid',mark:'—',label:'中間',gap,cls:'mid',detail:''};
   }
 
