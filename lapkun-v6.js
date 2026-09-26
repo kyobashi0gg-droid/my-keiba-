@@ -302,6 +302,12 @@
       const agariRank = num(horse.agariRank);
       const tenCls = tenRank === 1 ? 'one' : tenRank === 2 ? 'two' : tenRank === 3 ? 'three' : 'other';
       const agCls = agariRank === 1 ? 'one' : agariRank === 2 ? 'two' : agariRank === 3 ? 'three' : 'other';
+      const normalize = v => window.MyKeibaDataV16?.normalizeHorseName
+        ? window.MyKeibaDataV16.normalizeHorseName(v)
+        : String(v || '').replace(/[\s　・･]/g, '').trim();
+      const db = dbResultFor(race);
+      const dbHit = (db?.horses || []).find(d => normalize(d.name) === normalize(horse.name));
+      const dbText = dbHit ? dbResultLabel(dbHit) : '—';
       wall.innerHTML = `<strong>ラップ君 壁打ち材料</strong>
         <div class="v6-four">
           <span><em>テン1F過去</em><b>${esc6(val(horse.tenPast1f))}</b></span>
@@ -309,7 +315,7 @@
           <span><em>テン順</em><b class="v6-rank-text ${tenCls}">${esc6(tenRank == null ? '—' : `${tenRank}位`)}</b></span>
           <span><em>上がり順</em><b class="v6-rank-text ${agCls}">${esc6(agariRank == null ? '—' : `${agariRank}位`)}</b></span>
         </div>
-        <p>33ラップ ${esc6(horse.lap || '—')} / KTM ${(typeof isKtm === 'function' && isKtm(horse)) ? '該当' : '—'} / 人気 ${esc6(horse.popularity || '—')} / ${esc6(horse.odds || '—')}倍</p>`;
+        <p>新聞33 ${esc6(horse.lap || '—')} / DB33 ${esc6(dbText)} / コア33 ${esc6(dbHit?.zone || '—')} / KTM ${(typeof isKtm === 'function' && isKtm(horse)) ? '該当' : '—'} / 人気 ${esc6(horse.popularity || '—')} / ${esc6(horse.odds || '—')}倍</p>`;
     });
   }
 
