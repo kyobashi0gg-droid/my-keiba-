@@ -74,12 +74,38 @@ function trainingBonus(horse, race) {
   return 0;
 }
 
+function db33ForHorse(horse, race) {
+  try {
+    const data = window.MyKeibaDbResultBridgeV44?.savedFor?.(race);
+    if (!data) return null;
+    const normalize = v => window.MyKeibaDataV16?.normalizeHorseName
+      ? window.MyKeibaDataV16.normalizeHorseName(v)
+      : String(v || '').replace(/[\s　・･]/g, '').trim();
+    const key = normalize(horse?.name);
+    return (data.horses || []).find(h => normalize(h.name) === key) || null;
+  } catch { return null; }
+}
+
+function db33Bonus(horse, race) {
+  const d = db33ForHorse(horse, race);
+  if (!d) return null;
+  let score = d.mark === '◎' ? 3 : d.mark === '○' ? 2 : d.mark === '▲' ? 2 : 0;
+  if (d.abilityCode === 'ability') score += 1;
+  return score;
+}
+
 function valueScore(horse, race) {
   let score = 0;
   if (isKtm(horse)) score += 4;
-  if (horse.lap === 'S') score += 3;
+
+  // DB LABの最新主評価が保存済みならそちらを優先。
+  // 新聞33（S/A/B/C）はDB評価がまだ無い時だけ従来の補助点として使う。
+  const dbBonus = db33Bonus(horse, race);
+  if (dbBonus !== null) score += dbBonus;
+  else if (horse.lap === 'S') score += 3;
   else if (horse.lap === 'A') score += 2;
   else if (horse.lap === 'B') score += 1;
+
   score += trainingBonus(horse, race);
 
   const pop = num(horse.popularity);
@@ -107,7 +133,13 @@ function scoreGrade(score) {
 function scoreReasons(horse, race) {
   const reasons = [];
   if (isKtm(horse)) reasons.push('KTM');
-  if (horse.lap === 'S' || horse.lap === 'A') reasons.push(`33ラップ${horse.lap}`);
+  const db33 = db33ForHorse(horse, race);
+  if (db33) {
+    reasons.push(`DB33 ${db33.label || db33.mark || '—'}`);
+    if (db33.abilityCode === 'ability') reasons.push('能力型');
+  } else if (horse.lap === 'S' || horse.lap === 'A') {
+    reasons.push(`新聞33 ${horse.lap}`);
+  }
   const tBonus = trainingBonus(horse, race);
   if (tBonus === 2) reasons.push('調教採点上位');
   else if (tBonus === 1) reasons.push('調教採点好位');
@@ -559,3 +591,7 @@ if ('serviceWorker' in navigator) {
 }
 
 render();
+
+window.addEventListener('mykeiba:modules-ready', () => {
+  try { render(); } catch {}
+}, { once:true });
