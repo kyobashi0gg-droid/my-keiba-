@@ -141,15 +141,21 @@
     const newspaperGood = (race.horses || []).filter(h => ['S', 'A'].includes(String(h.lap || '').toUpperCase()));
     const missing = (race.horses || []).filter(h => !h.tenPast1f || !h.tenPrev1f || !h.tenRank || !h.agariRank).length;
     const db = dbResultFor(race);
-    const counts = {};
-    let ability = 0;
+    const counts = {}, groups = {};
+    let ability = 0, revival = 0;
     for (const d of (db?.horses || [])) {
       const key = d.mark || '—';
       counts[key] = (counts[key] || 0) + 1;
+      const g = d.groupLabel || '中間';
+      groups[g] = (groups[g] || 0) + 1;
       if (d.abilityCode === 'ability') ability++;
+      if (d.revivalCode === 'revival') revival++;
     }
     const dbSummary = db
-      ? `◎${counts['◎']||0} / ○${counts['○']||0} / ▲${counts['▲']||0} / ⚠${counts['⚠']||0} / 逆◎${counts['逆◎']||0} / 中間${counts['—']||0}${ability ? ` / ◇能力型${ability}` : ''}`
+      ? `◎${counts['◎']||0} / ○${counts['○']||0} / ▲${counts['▲']||0} / ⚠${counts['⚠']||0} / 逆◎${counts['逆◎']||0} / 中間${counts['—']||0}${ability ? ` / ◇能力型${ability}` : ''}${revival ? ` / ↺復活適合${revival}` : ''}`
+      : '未保存';
+    const groupSummary = db
+      ? `同級直接${groups['同級直接']||0} / 下級参考${groups['下級参考']||0} / 隠れ${groups['隠れ']||0} / 中間${groups['中間']||0} / 逆・ズレ${groups['逆・ズレ']||0}`
       : '未保存';
 
     return [
@@ -157,6 +163,7 @@
       `上がり順上位（位置取り・展開確認用）: ${agariTop.length ? agariTop.map(horseLabel).join(' / ') : 'データなし'}`,
       `KTM: ${ktm.length ? ktm.map(h => `${h.number || '—'}番 ${h.name}`).join(' / ') : '該当なし'}`,
       `DB33主評価: ${dbSummary}`,
+      `DB33 5分類: ${groupSummary}`,
       `新聞33 S/A（補助）: ${newspaperGood.length ? newspaperGood.map(h => `${h.number || '—'}番 ${h.name}(${h.lap})`).join(' / ') : '該当なし'}`,
       `4項目に欠損がある馬: ${missing}頭（欠損値は推測せず扱う）`,
     ];
@@ -184,13 +191,14 @@
       `展開・馬場メモ: ${memo}`,
       '',
       '■全馬データ',
-      '馬番|馬名|人気|オッズ|自分印|KTM|調教印|調教採点|前走比|新聞33|DB33主評価|コア33|DB根拠|テン1F過去|テン1F前走|テン順|上がり順',
+      '馬番|馬名|人気|オッズ|自分印|KTM|調教印|調教採点|前走比|新聞33|DB33主評価|DB分類|復活適合|コア33|DB根拠|テン1F過去|テン1F前走|テン順|上がり順',
       ...(race.horses || []).map(h => {
         const d = dbMap.get(normalize(h.name));
         return [
           h.number || '', h.name || '', h.popularity || '', h.odds || '', h.userMark || '',
           (typeof isKtm === 'function' && isKtm(h)) ? 'KTM' : '', h.mark || '', h.trainingScore || '', signed(h.diff), h.lap || '',
-          dbResultLabel(d), d?.zone || '—', d?.signalDetail || d?.basis || '—',
+          dbResultLabel(d), d?.groupLabel || '—', d?.revivalCode === 'revival' ? '復活適合' : '—',
+          d?.zone || '—', d?.revivalDetail || d?.signalDetail || d?.basis || '—',
           h.tenPast1f || '—', h.tenPrev1f || '—', h.tenRank || '—', h.agariRank || '—'
         ].join('|');
       }),
