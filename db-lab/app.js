@@ -395,7 +395,7 @@
       const a=x.analysis,core=zoneTextBand(a.core),all=zoneTextBand(a.allGood),lv=levelName(a.scope.currentLevel);
       const reason=x.judge?.detail?`<div class="db33-signal">${esc(x.judge.detail)}</div>`:'';
       const ability=x.ability?`<span class="pill p-ability" title="${esc(x.ability.detail||'')}">◇ 能力型</span>`:'';
-      return`<div class="horse"><div class="horse-top"><b>${x.no} ${esc(x.name)}</b><span style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end"><span class="pill ${pill}">${esc(d.mark)} ${esc(d.label)}</span>${ability}</span></div><div class="zone">${esc(x.basis)} / コア33 ${esc(core)}</div><small>${esc(x.classRule)} / 近年対象${a.scope.runs.length}走${x.classExcluded?` / 下級除外${x.classExcluded}走`:''} / 能力参考 ${esc(lv)} / 全好走33 ${esc(all)}${gap}${x.excluded?` / 度外視${x.excluded}走`:''}</small>${reason}${x.ability?`<div class="db33-signal">◇ ${esc(x.ability.detail)}</div>`:''}</div>`;
+      return`<div class="horse"><div class="horse-top"><b>${x.no} ${esc(x.name)}</b><span style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end"><span class="pill ${pill}">${esc(d.mark)} ${esc(d.label)}</span>${ability}</span></div><div class="zone">${esc(x.basis)} / コア33 ${esc(core)}</div><small>${esc(x.classRule)} / 近年対象${a.scope.runs.length}走${x.classExcluded?` / 下級除外${x.classExcluded}走`:''} / 今回クラス ${esc(lv)} / 全好走33 ${esc(all)}${gap}${x.excluded?` / 度外視${x.excluded}走`:''}</small>${reason}${x.ability?`<div class="db33-signal">◇ ${esc(x.ability.detail)}</div>`:''}</div>`;
     }).join('');
     try{$('resultCard')?.scrollIntoView?.({behavior:'smooth',block:'start'})}catch{}
   }
