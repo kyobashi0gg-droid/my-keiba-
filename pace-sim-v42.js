@@ -33,7 +33,8 @@
       const n = num(v); if (n != null) return n;
     }
     try {
-      const db = window.MyKeibaDbResultBridgeV38?.saved?.();
+      const db = window.MyKeibaDbResultBridgeV44?.savedFor?.(race)
+        || window.MyKeibaDbResultBridgeV38?.saved?.();
       if (db && sameRace(db.race, race)) return num(db.race.avg33);
     } catch {}
     return null;
@@ -176,7 +177,10 @@
   function dbScenarioNotes(race, profile) {
     if (profile.base == null || !profile.mainRange) return [];
     let db = null;
-    try { db = window.MyKeibaDbResultBridgeV38?.saved?.(); } catch {}
+    try {
+      db = window.MyKeibaDbResultBridgeV44?.savedFor?.(race)
+        || window.MyKeibaDbResultBridgeV38?.saved?.();
+    } catch {}
     if (!db || !sameRace(db.race, race)) return [];
     const byName = new Map((db.horses || []).map(h => [norm(h.name),h]));
     const out=[];
