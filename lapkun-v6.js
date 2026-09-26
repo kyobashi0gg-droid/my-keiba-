@@ -323,7 +323,7 @@
           <span><em>テン順</em><b class="v6-rank-text ${tenCls}">${esc6(tenRank == null ? '—' : `${tenRank}位`)}</b></span>
           <span><em>上がり順</em><b class="v6-rank-text ${agCls}">${esc6(agariRank == null ? '—' : `${agariRank}位`)}</b></span>
         </div>
-        <p>新聞33 ${esc6(horse.lap || '—')} / DB33 ${esc6(dbText)} / コア33 ${esc6(dbHit?.zone || '—')} / KTM ${(typeof isKtm === 'function' && isKtm(horse)) ? '該当' : '—'} / 人気 ${esc6(horse.popularity || '—')} / ${esc6(horse.odds || '—')}倍</p>`;
+        <p>新聞33 ${esc6(horse.lap || '—')} / DB33 ${esc6(dbText)} / 分類 ${esc6(dbHit?.groupLabel || '—')} / ${dbHit?.revivalCode === 'revival' ? '↺復活適合 / ' : ''}コア33 ${esc6(dbHit?.zone || '—')} / KTM ${(typeof isKtm === 'function' && isKtm(horse)) ? '該当' : '—'} / 人気 ${esc6(horse.popularity || '—')} / ${esc6(horse.odds || '—')}倍</p>`;
     });
   }
 
