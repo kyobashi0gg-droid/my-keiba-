@@ -126,7 +126,7 @@
         ${ranked.length ? ranked.map(({ race, horse, score }, i) => `
           <button class="v4-race-card" data-v4-race="${esc(race.id)}">
             <div class="v4-race-top"><div class="v4-race-no">${i + 1}</div><div class="v4-race-title"><strong>${esc(horse.name)}</strong><small>${esc(race.track)} ${esc(race.raceNo)}R ${esc(race.raceName)} ・ ${score}pt</small></div><span class="v4-chevron">›</span></div>
-            <div class="v4-race-tags">${isKtm(horse) ? '<span class="v4-chip ktm">KTM</span>' : ''}${horse.lap ? `<span class="v4-chip lap">33 ${esc(horse.lap)}</span>` : ''}${isValue(horse, race) ? `<span class="v4-chip value">穴${esc(gradeOf(horse, race))} ${score}pt</span>` : ''}</div>
+            <div class="v4-race-tags">${isKtm(horse) ? '<span class="v4-chip ktm">KTM</span>' : ''}${horse.lap ? `<span class="v4-chip lap">新聞33 ${esc(horse.lap)}</span>` : ''}${isValue(horse, race) ? `<span class="v4-chip value">穴${esc(gradeOf(horse, race))} ${score}pt</span>` : ''}</div>
           </button>`).join('') : '<div class="v4-empty"><strong>まだ分析データがありません</strong>新聞PDFを読み込むと自動で表示されます。</div>'}
       </div>`;
   }
@@ -148,7 +148,7 @@
     const ktms = entries().filter(({ horse }) => isKtm(horse));
     return `<div class="v4-section-head"><div><p class="v4-eyebrow">KTM LIST</p><h1 class="v4-h1" style="margin:0">KTM</h1></div><span class="v4-muted">${ktms.length}頭</span></div>
       <div class="v4-horse-list">${ktms.length ? ktms.map(({ race, horse }) => `
-        <button class="v4-race-card" data-v4-race="${esc(race.id)}"><div class="v4-race-top"><div class="v4-race-no">${esc(race.raceNo)}R</div><div class="v4-race-title"><strong>${esc(horse.name)}</strong><small>${esc(race.track)} ${esc(race.raceName)} ・ ${horse.popularity || '—'}人気 / ${horse.odds || '—'}倍</small></div><span class="v4-chevron">›</span></div><div class="v4-race-tags"><span class="v4-chip ktm">調教${esc(horse.mark)}・前走比${Number(horse.diff) >= 0 ? '+' : ''}${esc(horse.diff)}</span>${horse.lap ? `<span class="v4-chip lap">33 ${esc(horse.lap)}</span>` : ''}</div></button>`).join('') : '<div class="v4-empty"><strong>KTM該当馬なし</strong>現在のKTM条件に該当する馬はいません。</div>'}</div>`;
+        <button class="v4-race-card" data-v4-race="${esc(race.id)}"><div class="v4-race-top"><div class="v4-race-no">${esc(race.raceNo)}R</div><div class="v4-race-title"><strong>${esc(horse.name)}</strong><small>${esc(race.track)} ${esc(race.raceName)} ・ ${horse.popularity || '—'}人気 / ${horse.odds || '—'}倍</small></div><span class="v4-chevron">›</span></div><div class="v4-race-tags"><span class="v4-chip ktm">調教${esc(horse.mark)}・前走比${Number(horse.diff) >= 0 ? '+' : ''}${esc(horse.diff)}</span>${horse.lap ? `<span class="v4-chip lap">新聞33 ${esc(horse.lap)}</span>` : ''}</div></button>`).join('') : '<div class="v4-empty"><strong>KTM該当馬なし</strong>現在のKTM条件に該当する馬はいません。</div>'}</div>`;
   }
 
   function horsesHtml(query = '') {
@@ -156,7 +156,7 @@
     const all = entries().filter(({ horse }) => !q || String(horse.name || '').toLowerCase().includes(q));
     return `<div class="v4-section-head"><div><p class="v4-eyebrow">HORSE DB</p><h1 class="v4-h1" style="margin:0">競走馬</h1></div><span class="v4-muted">${all.length}頭</span></div>
       <input id="v4HorseSearch" class="v4-search" placeholder="馬名を検索" value="${esc(query)}">
-      <div class="v4-horse-list">${all.slice(0,100).map(({ race, horse }) => `<button class="v4-horse-card" data-v4-race="${esc(race.id)}"><div class="v4-horse-card-top"><div><strong>${esc(horse.name)}</strong><br><small>${esc(race.track)} ${esc(race.raceNo)}R ${esc(race.raceName)}</small></div><div>${isKtm(horse) ? '<span class="v4-ktm">KTM</span>' : ''}</div></div><div class="v4-horse-meta">${horse.popularity || '—'}人気 / ${horse.odds || '—'}倍 ・ 調教${horse.mark || '—'} ${horse.trainingScore || '—'} ・ 33ラップ ${horse.lap || '—'}</div></button>`).join('') || '<div class="v4-empty">該当する馬がありません。</div>'}</div>`;
+      <div class="v4-horse-list">${all.slice(0,100).map(({ race, horse }) => `<button class="v4-horse-card" data-v4-race="${esc(race.id)}"><div class="v4-horse-card-top"><div><strong>${esc(horse.name)}</strong><br><small>${esc(race.track)} ${esc(race.raceNo)}R ${esc(race.raceName)}</small></div><div>${isKtm(horse) ? '<span class="v4-ktm">KTM</span>' : ''}</div></div><div class="v4-horse-meta">${horse.popularity || '—'}人気 / ${horse.odds || '—'}倍 ・ 調教${horse.mark || '—'} ${horse.trainingScore || '—'} ・ 新聞33 ${horse.lap || '—'}</div></button>`).join('') || '<div class="v4-empty">該当する馬がありません。</div>'}</div>`;
   }
 
   function resultsHtml() {
@@ -216,12 +216,12 @@
 
     body.innerHTML = `
       <div class="v4-summary-line"><span class="v4-chip">${(race.horses || []).length}頭</span><span class="v4-chip lap">平均33 ${raceAvg33(race)}</span>${raceKtmCount(race) ? `<span class="v4-chip ktm">KTM ${raceKtmCount(race)}</span>` : ''}${raceValueCount(race) ? `<span class="v4-chip value">穴注目 ${raceValueCount(race)}</span>` : ''}</div>
-      <div class="v4-table-wrap"><table class="v4-table"><thead><tr><th>馬番</th><th>馬名</th><th>単勝/人気</th><th>自分印</th><th>調教</th><th>採点</th><th>前走比</th><th>33</th><th>KTM</th><th>穴</th><th></th></tr></thead><tbody>
+      <div class="v4-table-wrap"><table class="v4-table"><thead><tr><th>馬番</th><th>馬名</th><th>単勝/人気</th><th>自分印</th><th>調教</th><th>採点</th><th>前走比</th><th>新聞33</th><th>KTM</th><th>穴</th><th></th></tr></thead><tbody>
       ${(race.horses || []).map(horse => {
         const score = scoreOf(horse, race);
         const g = String(horse.lap || '').toLowerCase();
         return `<tr><td class="v4-num">${esc(horse.number || '—')}</td><td class="v4-name">${esc(horse.name)}</td><td>${horse.odds || '—'}倍 / ${horse.popularity || '—'}人気</td><td>${markSelect(horse, race)}</td><td>${esc(horse.mark || '—')}</td><td>${esc(horse.trainingScore || '—')}</td><td>${horse.diff !== '' && horse.diff != null ? `${Number(horse.diff) >= 0 ? '+' : ''}${esc(horse.diff)}` : '—'}</td><td>${horse.lap ? `<span class="v4-grade ${g}">${esc(horse.lap)}</span>` : '—'}</td><td>${isKtm(horse) ? '<span class="v4-ktm">KTM</span>' : ''}</td><td>${isValue(horse, race) ? `<span class="v4-value">${score}pt</span>` : `${score}pt`}</td><td><button class="v4-mini-btn" data-v4-expand="${esc(horse.id)}">詳細</button></td></tr>
-        <tr class="v4-horse-detail-row" data-v4-detail-row="${esc(horse.id)}" hidden><td colspan="11"><div class="v4-horse-detail"><div class="v4-detail-box"><strong>33ラップ評価</strong><p>${esc(horse.lapReason || '評価理由は未取得')}</p><div class="v4-history">${historyHtml(horse)}</div></div><div class="v4-detail-box"><strong>調教・変身材料</strong><p>調教印 ${esc(horse.mark || '—')} / 採点 ${esc(horse.trainingScore || '—')} / 前走比 ${horse.diff !== '' && horse.diff != null ? `${Number(horse.diff) >= 0 ? '+' : ''}${esc(horse.diff)}` : '—'}${horse.v3Blinker ? ' / B着用' : ''}</p></div><div class="v4-detail-box"><strong>壁打ち枠</strong><p>33: ${esc(horse.lap || '—')}<br>ラップ君: 未連携<br>テン: 未連携<br>上がり: 未連携</p></div></div></td></tr>`;
+        <tr class="v4-horse-detail-row" data-v4-detail-row="${esc(horse.id)}" hidden><td colspan="11"><div class="v4-horse-detail"><div class="v4-detail-box"><strong>新聞33評価（補助）</strong><p>${esc(horse.lapReason || '評価理由は未取得')}</p><div class="v4-history">${historyHtml(horse)}</div></div><div class="v4-detail-box"><strong>調教・変身材料</strong><p>調教印 ${esc(horse.mark || '—')} / 採点 ${esc(horse.trainingScore || '—')} / 前走比 ${horse.diff !== '' && horse.diff != null ? `${Number(horse.diff) >= 0 ? '+' : ''}${esc(horse.diff)}` : '—'}${horse.v3Blinker ? ' / B着用' : ''}</p></div><div class="v4-detail-box"><strong>壁打ち枠</strong><p>33: ${esc(horse.lap || '—')}<br>ラップ君: 未連携<br>テン: 未連携<br>上がり: 未連携</p></div></div></td></tr>`;
       }).join('')}</tbody></table></div>
       <div class="v4-edit-bar"><button class="v4-secondary" id="v4EditRace">編集する</button><button class="v4-primary" id="v4CloseBottom">一覧へ戻る</button></div>`;
 
