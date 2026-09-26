@@ -31,7 +31,9 @@
         no: c[0] || '', name: c[1] || '', mark: c[2] || '—', label: c[3] || '',
         zone: c[4] || '—', basis: c[5] || '', gap: c[6] || '', excluded: c[7] || '0',
         signalCode: c[8] || '', signalDetail: c[9] || '', allZone: c[10] || '—', ability: c[11] || '',
-        abilityCode: c[12] || '', abilityDetail: c[13] || ''
+        abilityCode: c[12] || '', abilityDetail: c[13] || '',
+        groupCode: c[14] || '', groupLabel: c[15] || '',
+        revivalCode: c[16] || '', revivalDetail: c[17] || ''
       };
     }).filter(h => h.name);
     return { race, horses, at };
@@ -152,6 +154,20 @@
       tag.textContent = label(hit);
       tag.title = `${hit.basis || '条件未取得'} / コア33 ${hit.zone || '—'}${hit.allZone&&hit.allZone!=='—'?` / 全好走33 ${hit.allZone}`:''}${hit.signalDetail?` / ${hit.signalDetail}`:''}${hit.abilityDetail?` / ◇ ${hit.abilityDetail}`:''}${hit.gap ? ` / 差${hit.gap}` : ''}`;
       nameCell.appendChild(tag);
+      if (hit.groupLabel) {
+        const groupTag = document.createElement('span');
+        groupTag.className = `v38-dbtag group-${hit.groupCode || 'middle'}`;
+        groupTag.textContent = hit.groupLabel;
+        groupTag.title = hit.signalDetail || hit.basis || '';
+        nameCell.appendChild(groupTag);
+      }
+      if (hit.revivalCode === 'revival') {
+        const revivalTag = document.createElement('span');
+        revivalTag.className = 'v38-dbtag revival';
+        revivalTag.textContent = '↺ 復活適合';
+        revivalTag.title = hit.revivalDetail || '';
+        nameCell.appendChild(revivalTag);
+      }
       if (hit.abilityCode === 'ability') {
         const abilityTag = document.createElement('span');
         abilityTag.className = 'v38-dbtag ability';
@@ -174,7 +190,7 @@
     const abilityCount = data.horses.filter(h => h.mark === '◇' || h.abilityCode === 'ability').length;
     box.innerHTML = `<div class="v38-head"><div><small>DB LAB RESULT</small><strong>DB33 外部評価</strong></div><span>${matched}/${(race.horses||[]).length}頭</span></div>
       <div class="v38-counts"><b class="perfect">◎ ${counts['◎']||0}</b><b class="possible">○ ${counts['○']||0}</b><b class="hidden">▲ ${counts['▲']||0}</b><b class="warn">⚠ ${counts['⚠']||0}</b><b class="reverse">逆◎ ${counts['逆◎']||0}</b><b class="ability">◇ ${abilityCount}</b></div>
-      <p>新聞33（S/A/B/C）は補助。DB LABで保存した最新の主評価・コア33を優先表示します。◇能力型は33適合を上書きせず補助タグで併記します。</p>`;
+      <p>新聞33（S/A/B/C）は補助。DB LABの主評価に加え「同級直接 / 下級参考 / 隠れ / 中間 / 逆・ズレ」を表示。↺復活適合と◇能力型は補助タグとして併記します。</p>`;
   }
 
   let timer = null;
@@ -192,6 +208,7 @@
     .v38-dbtag.hidden,.v38-counts .hidden{background:#e8e0ff;color:#6542a0}
     .v38-dbtag.warn,.v38-counts .warn{background:#ffe3dc;color:#a44534}
     .v38-dbtag.ability,.v38-counts .ability{background:#e3edf8;color:#365e87}
+    .v38-dbtag.group-direct{background:#dff4e7;color:#17613a}.v38-dbtag.group-lower{background:#fff2cd;color:#805d11}.v38-dbtag.group-hidden{background:#eee6ff;color:#6542a0}.v38-dbtag.group-middle{background:#edf1ef;color:#69776f}.v38-dbtag.group-reverse{background:#f5dfe3;color:#8e3442}.v38-dbtag.revival{background:#ffe9c8;color:#8a5412}
     .v38-dbtag.mid{background:#edf1ef;color:#69776f}
     .v44-dbcell{display:block;margin-top:3px;padding:2px 4px;border-radius:6px;font-size:7px;font-weight:950;line-height:1.25;white-space:normal}
     .v44-dbcell.perfect{background:#dff4e7;color:#17613a}.v44-dbcell.possible{background:#fff2cd;color:#805d11}.v44-dbcell.reverse{background:#f5dfe3;color:#8e3442}.v44-dbcell.hidden{background:#e8e0ff;color:#6542a0}.v44-dbcell.warn{background:#ffe3dc;color:#a44534}.v44-dbcell.ability{background:#e3edf8;color:#365e87}.v44-dbcell.mid{background:#edf1ef;color:#69776f}
