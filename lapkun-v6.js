@@ -113,18 +113,51 @@
     return `${n >= 0 ? '+' : ''}${n}`;
   }
 
+  function dbResultFor(race) {
+    try {
+      return window.MyKeibaDbResultBridgeV44?.savedFor?.(race)
+        || window.MyKeibaDbResultBridgeV38?.saved?.()
+        || null;
+    } catch { return null; }
+  }
+
+  function dbResultMap(race) {
+    const db = dbResultFor(race);
+    const normalize = v => window.MyKeibaDataV16?.normalizeHorseName
+      ? window.MyKeibaDataV16.normalizeHorseName(v)
+      : String(v || '').replace(/[\s　・･]/g, '').trim();
+    return new Map((db?.horses || []).map(h => [normalize(h.name), h]));
+  }
+
+  function dbResultLabel(d) {
+    if (!d) return '—';
+    return d.label ? `${d.mark || ''} ${d.label}`.trim() : (d.mark || '—');
+  }
+
   function factSummary(race) {
     const tenTop = sortedTop(race, 'tenRank');
     const agariTop = sortedTop(race, 'agariRank');
     const ktm = (race.horses || []).filter(h => typeof isKtm === 'function' && isKtm(h));
-    const lapGood = (race.horses || []).filter(h => ['S', 'A'].includes(String(h.lap || '').toUpperCase()));
+    const newspaperGood = (race.horses || []).filter(h => ['S', 'A'].includes(String(h.lap || '').toUpperCase()));
     const missing = (race.horses || []).filter(h => !h.tenPast1f || !h.tenPrev1f || !h.tenRank || !h.agariRank).length;
+    const db = dbResultFor(race);
+    const counts = {};
+    let ability = 0;
+    for (const d of (db?.horses || [])) {
+      const key = d.mark || '—';
+      counts[key] = (counts[key] || 0) + 1;
+      if (d.abilityCode === 'ability') ability++;
+    }
+    const dbSummary = db
+      ? `◎${counts['◎']||0} / ○${counts['○']||0} / ▲${counts['▲']||0} / ⚠${counts['⚠']||0} / 逆◎${counts['逆◎']||0} / 中間${counts['—']||0}${ability ? ` / ◇能力型${ability}` : ''}`
+      : '未保存';
 
     return [
-      `テン順上位（取得分）: ${tenTop.length ? tenTop.map(horseLabel).join(' / ') : 'データなし'}`,
-      `上がり順上位（取得分）: ${agariTop.length ? agariTop.map(horseLabel).join(' / ') : 'データなし'}`,
+      `テン順上位（位置取り・ペース用）: ${tenTop.length ? tenTop.map(horseLabel).join(' / ') : 'データなし'}`,
+      `上がり順上位（位置取り・展開確認用）: ${agariTop.length ? agariTop.map(horseLabel).join(' / ') : 'データなし'}`,
       `KTM: ${ktm.length ? ktm.map(h => `${h.number || '—'}番 ${h.name}`).join(' / ') : '該当なし'}`,
-      `33ラップS/A: ${lapGood.length ? lapGood.map(h => `${h.number || '—'}番 ${h.name}(${h.lap})`).join(' / ') : '該当なし'}`,
+      `DB33主評価: ${dbSummary}`,
+      `新聞33 S/A（補助）: ${newspaperGood.length ? newspaperGood.map(h => `${h.number || '—'}番 ${h.name}(${h.lap})`).join(' / ') : '該当なし'}`,
       `4項目に欠損がある馬: ${missing}頭（欠損値は推測せず扱う）`,
     ];
   }
@@ -134,6 +167,10 @@
     const going = race.going && race.going !== '未設定' ? race.going : '未設定';
     const memo = race.paceMemo || '—';
     const facts = factSummary(race);
+    const dbMap = dbResultMap(race);
+    const normalize = v => window.MyKeibaDataV16?.normalizeHorseName
+      ? window.MyKeibaDataV16.normalizeHorseName(v)
+      : String(v || '').replace(/[\s　・･]/g, '').trim();
 
     const lines = [
       '【ラップ君 壁打ち依頼 / MY KEIBA LAB】',
@@ -147,24 +184,28 @@
       `展開・馬場メモ: ${memo}`,
       '',
       '■全馬データ',
-      '馬番|馬名|人気|オッズ|自分印|KTM|調教印|調教採点|前走比|33評価|テン1F過去|テン1F前走|テン順|上がり順',
-      ...(race.horses || []).map(h => [
-        h.number || '', h.name || '', h.popularity || '', h.odds || '', h.userMark || '',
-        (typeof isKtm === 'function' && isKtm(h)) ? 'KTM' : '', h.mark || '', h.trainingScore || '', signed(h.diff), h.lap || '',
-        h.tenPast1f || '—', h.tenPrev1f || '—', h.tenRank || '—', h.agariRank || '—'
-      ].join('|')),
+      '馬番|馬名|人気|オッズ|自分印|KTM|調教印|調教採点|前走比|新聞33|DB33主評価|コア33|DB根拠|テン1F過去|テン1F前走|テン順|上がり順',
+      ...(race.horses || []).map(h => {
+        const d = dbMap.get(normalize(h.name));
+        return [
+          h.number || '', h.name || '', h.popularity || '', h.odds || '', h.userMark || '',
+          (typeof isKtm === 'function' && isKtm(h)) ? 'KTM' : '', h.mark || '', h.trainingScore || '', signed(h.diff), h.lap || '',
+          dbResultLabel(d), d?.zone || '—', d?.signalDetail || d?.basis || '—',
+          h.tenPast1f || '—', h.tenPrev1f || '—', h.tenRank || '—', h.agariRank || '—'
+        ].join('|');
+      }),
       '',
       '■データ上の事実メモ',
       ...facts.map(x => `・${x}`),
       '',
       '■ラップ君への壁打ち依頼',
       'このデータだけを土台に、次の順番で検討してください。欠損値は推測で埋めないでください。',
-      '1. テン1F過去・テン1F前走・テン順から、前半の速さと位置取りの仮説を作る。',
-      '2. 上がり順を重ねて、前半型・末脚型・前後半バランス型を整理する。',
-      '3. 今回の平均33ラップと各馬の33評価を重ね、展開が噛み合いそうな馬／ズレそうな馬を分ける。',
-      '4. KTM、調教印、調教採点、前走比を状態面として加え、能力評価と状態評価を混同せず整理する。',
-      '5. 人気・オッズとのバランスを見て、特に人気薄で条件が重なる馬を拾う。人気馬も過剰人気なら指摘する。',
-      '6. 天気・馬場が未設定なら、結論を固定せず「良馬場なら／渋れば」の分岐で考える。',
+      '1. テン1F過去・テン1F前走・テン順は、前半の速さ・位置取り・先行圧・想定ペースを作るために使う。適性評価への直接加点には使わない。',
+      '2. 上がり順は、想定位置や展開時にどこから動くか、33適性を発揮できるかの確認に使う。「上がり上位だから適性上位」とは判定しない。',
+      '3. 適性評価の主軸はDB33主評価・コア33・DB根拠。新聞33（S/A/B/C）は補助情報として扱う。',
+      '4. 今回の想定33レンジとDB33のコア帯を照合し、コア一致／好走可能／隠れ適合／33依存・ズレ／逆◎／中間を優先して取捨する。',
+      '5. KTM、調教印、調教採点、前走比は状態面として加え、33適性・能力評価と混同しない。',
+      '6. 最後に人気・オッズとのバランスを見て、人気薄で条件が重なる馬を拾う。天気・馬場が未確定なら分岐で考える。',
       '',
       '■回答してほしい形',
       '・想定展開（前半〜直線）',
@@ -174,7 +215,7 @@
       '・買うならどう組むか／妙味が薄ければ見送り',
       '・追加で確認したい情報',
       '',
-      '数字の大小だけで機械的に決めず、33ラップ・テン・上がり・調教・人気が「同じ方向を向いているか」を重視して壁打ちしてください。'
+      '33ラップ適性を主役にしてください。テン・上がりは「今回どの33になりそうか」「その馬が適性を発揮できる位置・展開になるか」を読むための道具として扱ってください。'
     ];
     return lines.join('\n');
   }
