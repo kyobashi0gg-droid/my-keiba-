@@ -36,6 +36,21 @@
   function inBox(page,x1,x2,y1,y2,p=()=>true){return page.items.filter(i=>i.x>=x1&&i.x<=x2&&i.y>=y1&&i.y<=y2&&p(i.text))}
   function nearest(items,targetY){return [...items].sort((a,b)=>Math.abs(a.y-targetY)-Math.abs(b.y-targetY))[0]}
 
+  function detectRaceClass(text){
+    const s=asciiDigits(String(text||''));
+    if(/G\s*1|Ｇ１|GⅠ|Jpn\s*1/i.test(s))return'G1';
+    if(/G\s*2|Ｇ２|GⅡ|Jpn\s*2/i.test(s))return'G2';
+    if(/G\s*3|Ｇ３|GⅢ|Jpn\s*3/i.test(s))return'G3';
+    // 条件級の明記を OP/L より先に判定する。
+    if(/3勝|三勝/.test(s))return'3勝';
+    if(/2勝|二勝/.test(s))return'2勝';
+    if(/1勝|一勝/.test(s))return'1勝';
+    if(/未勝利/.test(s))return'未勝利';
+    if(/新馬/.test(s))return'新馬';
+    if(/リステッド|Listed|\(\s*L\s*\)|\bL\b|オープン|\bOP\b/i.test(s))return'OP';
+    return'';
+  }
+
   function parseRace(page){
     const trackItem=inBox(page,15,70,70,108,t=>venues.includes(t))[0];
     const raceNoItem=inBox(page,62,105,70,108,t=>/^\d{1,2}$/.test(t))[0];
@@ -51,16 +66,9 @@
     const raceName=raceNameItem?.text||'新聞取込レース';
     const headerText=asciiDigits(page.items.filter(i=>i.y<=135).map(i=>i.text).join(' '));
     const classText=`${raceName} ${headerText}`;
-    let raceClass='';
-    if(/G\s*1|Ｇ１|GⅠ|Jpn\s*1/i.test(classText))raceClass='G1';
-    else if(/G\s*2|Ｇ２|GⅡ|Jpn\s*2/i.test(classText))raceClass='G2';
-    else if(/G\s*3|Ｇ３|GⅢ|Jpn\s*3/i.test(classText))raceClass='G3';
-    else if(/リステッド|Listed|\bL\b|オープン|OP/i.test(classText))raceClass='OP';
-    else if(/3勝|三勝/.test(classText))raceClass='3勝';
-    else if(/2勝|二勝/.test(classText))raceClass='2勝';
-    else if(/1勝|一勝/.test(classText))raceClass='1勝';
-    else if(/未勝利/.test(classText))raceClass='未勝利';
-    else if(/新馬/.test(classText))raceClass='新馬';
+    // レース名を最優先。ヘッダー周辺に別用途の OP/L 文字列が混ざっても
+    // 「白秋ＳＨ・3勝」のような明示クラスを上書きしない。
+    const raceClass=detectRaceClass(raceName)||detectRaceClass(headerText)||detectRaceClass(classText);
     let ageClass=null;
     if(/(?:^|\s)2歳(?!以上)/.test(headerText))ageClass=2;
     else if(/(?:^|\s)3歳(?!以上)/.test(headerText))ageClass=3;
