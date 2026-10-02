@@ -239,9 +239,57 @@ function v3MergeRace(existing, incoming) {
   };
 }
 
+function v3DateSerial(label = '') {
+  const m = String(label).match(/(\d{1,2})\/(\d{1,2})/);
+  if (!m) return null;
+  const month = Number(m[1]);
+  const day = Number(m[2]);
+  if (!month || !day) return null;
+  return Math.floor(Date.UTC(2000, month - 1, day) / 86400000);
+}
+
+function v3DateDistance(a, b) {
+  const sa = v3DateSerial(a);
+  const sb = v3DateSerial(b);
+  if (sa == null || sb == null) return null;
+  const diff = Math.abs(sa - sb);
+  // 年末年始の3日開催にも対応。
+  return Math.min(diff, 366 - diff);
+}
+
+function v3IsPremiumImportedRace(race) {
+  return Boolean(race?.v3DateLabel || race?.v3SourcePage);
+}
+
+function v3RaceKey(race) {
+  const base = `${race?.track || ''}-${race?.raceNo || ''}`;
+  const date = String(race?.v3DateLabel || '').trim();
+  return date ? `${date}|${base}` : base;
+}
+
+function v3IsSameImportWindow(race, importedDates) {
+  if (!v3IsPremiumImportedRace(race)) return true;
+  if (!importedDates.length) return true;
+
+  const label = String(race.v3DateLabel || '').trim();
+  if (!label) return false;
+
+  return importedDates.some(date => {
+    const distance = v3DateDistance(label, date);
+    // 土日＋3日開催を同じ開催週として保持。
+    return distance != null && distance <= 2;
+  });
+}
+
 function v3SortRaces(races) {
   const venues = ['札幌', '函館', '福島', '新潟', '東京', '中山', '中京', '京都', '阪神', '小倉'];
   return races.sort((a, b) => {
+    const ad = v3DateSerial(a.v3DateLabel);
+    const bd = v3DateSerial(b.v3DateLabel);
+    if (ad != null && bd != null && ad !== bd) return ad - bd;
+    if (ad != null && bd == null) return -1;
+    if (ad == null && bd != null) return 1;
+
     const ai = venues.indexOf(a.track);
     const bi = venues.indexOf(b.track);
     const av = ai < 0 ? 99 : ai;
@@ -252,17 +300,33 @@ function v3SortRaces(races) {
 }
 
 function v3ApplyRaces(imported) {
-  const existingMap = new Map(state.races.map(r => [`${r.track}-${r.raceNo}`, r]));
-  const incomingKeys = new Set(imported.map(r => `${r.track}-${r.raceNo}`));
+  const incomingKeys = new Set(imported.map(v3RaceKey));
+  const existingMap = new Map(state.races.map(r => [v3RaceKey(r), r]));
+  const importedDates = [...new Set(
+    imported.map(r => String(r.v3DateLabel || '').trim()).filter(Boolean)
+  )];
 
-  const untouched = state.races.filter(r => !incomingKeys.has(`${r.track}-${r.raceNo}`));
+  let removedStale = 0;
+  const untouched = state.races.filter(race => {
+    if (incomingKeys.has(v3RaceKey(race))) return false;
+
+    // 新しい日付入り新聞を読み込んだ時だけ、前週以前の新聞取込分を整理。
+    // 手入力レースは残し、同じ週の土日・3日開催分は保持する。
+    if (importedDates.length && v3IsPremiumImportedRace(race) && !v3IsSameImportWindow(race, importedDates)) {
+      removedStale += 1;
+      return false;
+    }
+    return true;
+  });
+
   const merged = imported.map(race => {
-    const key = `${race.track}-${race.raceNo}`;
+    const key = v3RaceKey(race);
     return v3MergeRace(existingMap.get(key), race);
   });
 
   state.races = v3SortRaces([...untouched, ...merged]);
   saveState();
+  return { removedStale };
 }
 
 async function v3ImportPremiumPdf(file) {
@@ -285,7 +349,8 @@ async function v3ImportPremiumPdf(file) {
       `現在のKTMルール該当は ${ktmCount}頭です。\n\n` +
       `読み取る項目：馬名・予想オッズ・人気順・調教印・調教採点・前走比。\n` +
       `B表記は「着用」として記録し、初ブリンカーとは自動判定しません。\n` +
-      `同じ開催場・Rがある場合はPDFデータで更新します。\n\n` +
+      `同じ日付・開催場・RはPDFデータで更新します。\n` +
+      `前週以前の新聞取込レースは自動整理します（手入力レース、同じ週の土日・3日開催は残します）。\n\n` +
       `取り込みますか？`
     );
 
@@ -294,8 +359,11 @@ async function v3ImportPremiumPdf(file) {
       return;
     }
 
-    v3ApplyRaces(races);
-    setImportStatus(`${races.length}レース・${horseCount}頭を取り込みました。KTM ${ktmCount}頭。`);
+    const applyResult = v3ApplyRaces(races);
+    const cleanupText = applyResult.removedStale
+      ? ` 前週以前の新聞取込 ${applyResult.removedStale}レースを整理しました。`
+      : '';
+    setImportStatus(`${races.length}レース・${horseCount}頭を取り込みました。KTM ${ktmCount}頭。${cleanupText}`);
   } catch (error) {
     console.error(error);
     setImportStatus('プレミアム版PDFの解析に失敗しました。ページを再読み込みして再度お試しください。', 'warn');
