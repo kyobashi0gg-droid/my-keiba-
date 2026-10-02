@@ -34,6 +34,21 @@
     if(/未勝利|新馬/.test(s))return 0;
     return null;
   }
+  function explicitRaceLevelFromName(s){
+    s=String(s||'');
+    if(/G\s*1|Ｇ１|GⅠ|Jpn\s*1/i.test(s))return 7;
+    if(/G\s*2|Ｇ２|GⅡ|Jpn\s*2/i.test(s))return 6;
+    if(/G\s*3|Ｇ３|GⅢ|Jpn\s*3/i.test(s))return 5;
+    // レース名に明記された条件級を OP/L より優先する。
+    // 例: 「白秋ＳＨ・3勝」に周辺テキスト由来の OP が混ざっても 3勝級を維持する。
+    if(/[3３]勝|三勝/.test(s))return 3;
+    if(/[2２]勝|二勝/.test(s))return 2;
+    if(/[1１]勝|一勝/.test(s))return 1;
+    if(/未勝利/.test(s))return 0;
+    if(/新馬/.test(s))return 0;
+    if(/リステッド|Listed|\(\s*L\s*\)|\bL\b|オープン|\bOP\b/i.test(s))return 4;
+    return null;
+  }
   function runClassText(run){return `${run?.raceClass||run?.className||run?.grade||''} ${run?.raceName||''}`}
   function raceLevel(run){return levelFromText(runClassText(run))}
   function isNewcomerRun(run){return /新馬/.test(runClassText(run))}
@@ -44,8 +59,13 @@
     const pdf=window.MyKeibaDbLabPdfRace||{};
     const raceName=$('raceName')?.value||'';
     const manualClass=$('raceClass')?.value||'';
-    const classText=manualClass||pdf.raceClass||raceName;
-    const level=levelFromText(classText);
+    const selectedClassText=manualClass||pdf.raceClass||raceName;
+    const nameLevel=explicitRaceLevelFromName(raceName);
+    const selectedLevel=levelFromText(selectedClassText);
+    // レース名に「3勝」「2勝」「1勝」「G3」「(L)」等が明記されている場合は
+    // stale な自動入力値よりレース名を優先し、同級/下級判定の誤分類を防ぐ。
+    const level=nameLevel!=null?nameLevel:selectedLevel;
+    const classText=nameLevel!=null?raceName:selectedClassText;
     let age=Number(pdf.ageClass)||null;
     if(age!==2&&age!==3){
       const s=String(raceName);
