@@ -310,9 +310,11 @@ function v3ApplyRaces(imported) {
   const untouched = state.races.filter(race => {
     if (incomingKeys.has(v3RaceKey(race))) return false;
 
-    // 新しい日付入り新聞を読み込んだ時だけ、前週以前の新聞取込分を整理。
-    // 手入力レースは残し、同じ週の土日・3日開催分は保持する。
-    if (importedDates.length && v3IsPremiumImportedRace(race) && !v3IsSameImportWindow(race, importedDates)) {
+    // 新聞PDFは「現在読み込んだ開催日」を1セットとして扱う。
+    // 別日のプレミアム新聞取込レースを残すと、土日分が24R+24Rで48Rに重なるため、
+    // 新しい日付入りPDFを読み込んだ時は過去のプレミアム取込分を整理する。
+    // 手入力レースは残す。
+    if (importedDates.length && v3IsPremiumImportedRace(race)) {
       removedStale += 1;
       return false;
     }
@@ -328,6 +330,32 @@ function v3ApplyRaces(imported) {
   saveState();
   return { removedStale };
 }
+
+
+// 旧版で土日分が同時保持されて48Rになった状態を、ページ読込時に自動修復する。
+// 最新のプレミアム新聞日だけ残し、手入力レースは保持する。
+function v3CleanupAccumulatedPremiumDays() {
+  if (typeof state === 'undefined' || !Array.isArray(state.races)) return 0;
+  const premium = state.races.filter(v3IsPremiumImportedRace);
+  const labels = [...new Set(premium.map(r => String(r.v3DateLabel || '').trim()).filter(Boolean))];
+  if (labels.length <= 1) return 0;
+
+  const latest = labels
+    .map(label => ({ label, serial: v3DateSerial(label) }))
+    .filter(x => x.serial != null)
+    .sort((a, b) => b.serial - a.serial)[0]?.label;
+  if (!latest) return 0;
+
+  const before = state.races.length;
+  state.races = state.races.filter(r => !v3IsPremiumImportedRace(r) || String(r.v3DateLabel || '').trim() === latest);
+  const removed = before - state.races.length;
+  if (removed > 0) {
+    saveState();
+    setTimeout(() => setImportStatus(`重複していた過去日の新聞取込 ${removed}レースを自動整理しました。`, 'ok'), 0);
+  }
+  return removed;
+}
+v3CleanupAccumulatedPremiumDays();
 
 async function v3ImportPremiumPdf(file) {
   setImportStatus(`${file.name} をプレミアム版専用ロジックで解析しています…`, 'working');
