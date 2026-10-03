@@ -28,9 +28,9 @@
     if(/G\s*2|Ｇ２|GⅡ|Jpn\s*2/i.test(s))return 6;
     if(/G\s*3|Ｇ３|GⅢ|Jpn\s*3/i.test(s))return 5;
     if(/リステッド|Listed|\bL\b|オープン|OP/i.test(s))return 4;
-    if(/3勝|三勝/.test(s))return 3;
-    if(/2勝|二勝/.test(s))return 2;
-    if(/1勝|一勝/.test(s))return 1;
+    if(/[3３]勝|三勝/.test(s))return 3;
+    if(/[2２]勝|二勝/.test(s))return 2;
+    if(/[1１]勝|一勝/.test(s))return 1;
     if(/未勝利|新馬/.test(s))return 0;
     return null;
   }
