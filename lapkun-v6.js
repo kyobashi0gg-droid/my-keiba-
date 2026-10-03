@@ -9,8 +9,14 @@
     .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
   const val = v => (v === '' || v == null ? '—' : String(v));
+  // Rank fields may be blank. Number('') becomes 0, so guard blanks explicitly
+  // to prevent missing ranks from being exported as the nonexistent "0位".
   const num = v => {
-    const n = Number(String(v ?? '').replace(/[^0-9.-]/g, ''));
+    const raw = String(v ?? '').trim();
+    if (!raw || /^(?:-|—|―|−|なし|null)$/i.test(raw)) return null;
+    const cleaned = raw.replace(/[^0-9.-]/g, '');
+    if (!cleaned) return null;
+    const n = Number(cleaned);
     return Number.isFinite(n) ? n : null;
   };
 
@@ -27,7 +33,7 @@
 
   function rankBadge(v) {
     const n = num(v);
-    if (n == null) return '<span class="v6-missing">—</span>';
+    if (n == null || n <= 0) return '<span class="v6-missing">—</span>';
     const cls = n === 1 ? 'one' : n === 2 ? 'two' : n === 3 ? 'three' : 'other';
     return `<span class="v6-rank-badge ${cls}" aria-label="${n}位">${n}<small>位</small></span>`;
   }
@@ -98,7 +104,7 @@
   function sortedTop(race, key, max = 3) {
     return (race.horses || [])
       .map(h => ({ h, n: num(h[key]) }))
-      .filter(x => x.n != null)
+      .filter(x => x.n != null && x.n > 0)
       .sort((a, b) => a.n - b.n)
       .slice(0, max);
   }
