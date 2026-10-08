@@ -200,6 +200,10 @@
     box.innerHTML = `<div class="v38-head"><div><small>DB LAB RESULT</small><strong>DB33 外部評価</strong></div><span>${matched}/${(race.horses||[]).length}頭</span></div>
       <div class="v38-counts"><b class="perfect">◎ ${counts['◎']||0}</b><b class="possible">○ ${counts['○']||0}</b><b class="hidden">▲ ${counts['▲']||0}</b><b class="warn">⚠ ${counts['⚠']||0}</b><b class="reverse">逆◎ ${counts['逆◎']||0}</b><b class="ability">◇ ${abilityCount}</b></div>
       <p>新聞33（S/A/B/C）は補助。DB LABの主評価に加え「同級直接 / 下級参考 / 隠れ / 中間 / 逆・ズレ」を表示。↺復活適合と◇能力型は補助タグとして併記します。</p>`;
+
+    window.dispatchEvent(new CustomEvent('mykeiba:db-result-decorated', {
+      detail: { raceId: race.id || '', matched }
+    }));
   }
 
   let timer = null;
