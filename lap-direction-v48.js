@@ -34,6 +34,32 @@
   // 馬DBの「3着以内の実33」だけから参考帯を作る。主評価には使わない。
   const localRefCache = new Map();
   let dbHorseListPromise = null;
+  let horseDbModulePromise = null;
+
+  function ensureHorseDbModule() {
+    if (window.MyKeibaHorseDBV18) return Promise.resolve(window.MyKeibaHorseDBV18);
+    if (horseDbModulePromise) return horseDbModulePromise;
+    horseDbModulePromise = new Promise(resolve => {
+      const existing = [...document.scripts].find(s => /(?:^|\/)horse-db-v18\.js(?:\?|$)/.test(s.getAttribute('src') || ''));
+      if (existing) {
+        if (window.MyKeibaHorseDBV18) return resolve(window.MyKeibaHorseDBV18);
+        existing.addEventListener('load', () => resolve(window.MyKeibaHorseDBV18 || null), { once:true });
+        existing.addEventListener('error', () => resolve(null), { once:true });
+        setTimeout(() => resolve(window.MyKeibaHorseDBV18 || null), 1200);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = './horse-db-v18.js';
+      script.async = false;
+      script.dataset.mykeibaLapDirectionHorseDb = '1';
+      script.onload = () => resolve(window.MyKeibaHorseDBV18 || null);
+      script.onerror = () => resolve(null);
+      document.head.appendChild(script);
+    }).finally(() => {
+      if (!window.MyKeibaHorseDBV18) horseDbModulePromise = null;
+    });
+    return horseDbModulePromise;
+  }
 
   function lapNum(v) {
     if (v == null || v === '') return null;
@@ -53,6 +79,7 @@
 
   async function dbHorseList() {
     if (dbHorseListPromise) return dbHorseListPromise;
+    await ensureHorseDbModule();
     const api = window.MyKeibaHorseDBV18;
     if (!api?.listHorses) return [];
     dbHorseListPromise = api.listHorses().catch(() => []);
@@ -64,13 +91,10 @@
     if (!key) return null;
     if (localRefCache.has(key)) return localRefCache.get(key);
 
-    const api = window.MyKeibaHorseDBV18;
-    if (!api?.getRuns) {
-      localRefCache.set(key, null);
-      return null;
-    }
-
     try {
+      await ensureHorseDbModule();
+      const api = window.MyKeibaHorseDBV18;
+      if (!api?.getRuns) return null;
       const list = await dbHorseList();
       const dbHorse = list.find(h => norm(h.name) === key);
       if (!dbHorse) {
@@ -87,7 +111,6 @@
       localRefCache.set(key, zone);
       return zone;
     } catch {
-      localRefCache.set(key, null);
       return null;
     }
   }
@@ -288,9 +311,14 @@
   });
   window.addEventListener('mykeiba:modules-ready', () => schedule(80));
   window.addEventListener('mykeiba:odds-updated', () => schedule(100));
+  window.addEventListener('mykeiba:horse-db-updated', () => {
+    localRefCache.clear();
+    dbHorseListPromise = null;
+    schedule(120);
+  });
   window.addEventListener('mykeiba:resume', () => schedule(80), { passive:true });
   window.addEventListener('pageshow', () => schedule(100), { passive:true });
   schedule(250);
 
-  window.MyKeibaLapDirectionV48 = { parseZone, direction, horseDirection, localGoodZone, hydrateLocalReferences, decorateTable, patchConsultText };
+  window.MyKeibaLapDirectionV48 = { parseZone, direction, horseDirection, localGoodZone, hydrateLocalReferences, ensureHorseDbModule, decorateTable, patchConsultText };
 })();
