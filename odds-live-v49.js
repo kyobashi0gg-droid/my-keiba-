@@ -96,6 +96,7 @@
       race.oddsFetchMode = 'auto';
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
       if (typeof render === 'function') render();
+      window.dispatchEvent(new CustomEvent('mykeiba:odds-updated', { detail:{ raceId:race.id } }));
     }
     return result;
   }
