@@ -148,6 +148,22 @@
     return `${n >= 0 ? '+' : ''}${n}`;
   }
 
+  function domZonesForHorse(horse) {
+    const row = [...document.querySelectorAll('#v4DetailBody tbody > tr')]
+      .find(tr => tr.querySelector('[data-v4-expand]')?.dataset.v4Expand === horse?.id);
+    if (!row) return null;
+    const tags = [...row.querySelectorAll('.v38-dbtag')];
+    for (const tag of tags) {
+      const title = String(tag.getAttribute('title') || '');
+      const coreMatch = title.match(/コア33\s*([^/]+?)(?=\s*\/|$)/);
+      const allMatch = title.match(/全好走33\s*([^/]+?)(?=\s*\/|$)/);
+      const coreText = coreMatch?.[1]?.trim() || '';
+      const allText = allMatch?.[1]?.trim() || '';
+      if (parseZone(coreText) || parseZone(allText)) return { coreText, allText };
+    }
+    return null;
+  }
+
   function horseDirection(race, horse) {
     const db = dbFor(race);
     const hit = (db?.horses || []).find(h => norm(h.name) === norm(horse?.name));
@@ -155,6 +171,13 @@
     if (core) return { ...direction(avg33(race), hit.zone), hit, sourceZone:hit.zone, source:'core' };
     const all = parseZone(hit?.allZone);
     if (all) return { ...direction(avg33(race), hit.allZone, { reference:true }), hit, sourceZone:hit.allZone, source:'saved-all' };
+
+    // DB bridge itself may already have the correct saved zone rendered even when
+    // this module saw a stale/temporary savedFor result. Use that on-screen value.
+    const dom = domZonesForHorse(horse);
+    if (parseZone(dom?.coreText)) return { ...direction(avg33(race), dom.coreText), hit, sourceZone:dom.coreText, source:'dom-core' };
+    if (parseZone(dom?.allText)) return { ...direction(avg33(race), dom.allText, { reference:true }), hit, sourceZone:dom.allText, source:'dom-all' };
+
     const local = localRefCache.get(norm(horse?.name));
     if (local) return { ...direction(avg33(race), local.text, { reference:true }), hit, sourceZone:local.text, source:'horse-db-good', localCount:local.count };
     return { ...direction(avg33(race), null), hit, sourceZone:'—', source:'none' };
@@ -311,6 +334,7 @@
   });
   window.addEventListener('mykeiba:modules-ready', () => schedule(80));
   window.addEventListener('mykeiba:odds-updated', () => schedule(100));
+  window.addEventListener('mykeiba:db-result-decorated', () => schedule(30));
   window.addEventListener('mykeiba:horse-db-updated', () => {
     localRefCache.clear();
     dbHorseListPromise = null;
@@ -320,5 +344,5 @@
   window.addEventListener('pageshow', () => schedule(100), { passive:true });
   schedule(250);
 
-  window.MyKeibaLapDirectionV48 = { parseZone, direction, horseDirection, localGoodZone, hydrateLocalReferences, ensureHorseDbModule, decorateTable, patchConsultText };
+  window.MyKeibaLapDirectionV48 = { parseZone, direction, horseDirection, domZonesForHorse, localGoodZone, hydrateLocalReferences, ensureHorseDbModule, decorateTable, patchConsultText };
 })();
