@@ -77,7 +77,16 @@
   }
 
   function savedFor(race) {
-    return archivedFor(race) || legacyFor(race);
+    const archived = archivedFor(race);
+    const legacy = legacyFor(race);
+    if (!archived) return legacy;
+    if (!legacy) return archived;
+
+    // v50: 同じレースの旧アーカイブが残っていても、
+    // DB LABで再評価・再保存した直近結果を優先する。
+    const archivedAt = Date.parse(archived.at || '') || 0;
+    const legacyAt = Date.parse(legacy.at || '') || 0;
+    return legacyAt > archivedAt ? legacy : archived;
   }
 
   function currentRace() {
