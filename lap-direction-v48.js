@@ -45,13 +45,16 @@
     return { lo: Math.min(...vals), hi: Math.max(...vals) };
   }
 
-  function direction(avg, zone) {
+  function direction(avg, zone, options = {}) {
     const a = num(avg);
     const z = parseZone(zone);
-    if (a == null || !z) return { code:'unknown', short:'—', label:'判定不可', cls:'unknown', avg:a, zone:z };
-    if (a > z.hi + 1e-9) return { code:'minus', short:'−側', label:'マイナス側へ振れると合いやすい', cls:'minus', avg:a, zone:z };
-    if (a < z.lo - 1e-9) return { code:'plus', short:'＋側', label:'プラス側へ振れると合いやすい', cls:'plus', avg:a, zone:z };
-    return { code:'same', short:'＝', label:'平均33付近でコア帯内', cls:'same', avg:a, zone:z };
+    const reference = Boolean(options.reference);
+    const prefix = reference ? '参考' : '';
+    const basisLabel = reference ? '全好走33帯' : 'コア33';
+    if (a == null || !z) return { code:'unknown', short:'—', label:'判定不可', cls:'unknown', avg:a, zone:z, reference:false, basis:'none' };
+    if (a > z.hi + 1e-9) return { code:'minus', short:`${prefix}−${reference ? '' : '側'}`, label:`${basisLabel}へはマイナス側へ振れると合いやすい`, cls:'minus', avg:a, zone:z, reference, basis:reference ? 'all' : 'core' };
+    if (a < z.lo - 1e-9) return { code:'plus', short:`${prefix}＋${reference ? '' : '側'}`, label:`${basisLabel}へはプラス側へ振れると合いやすい`, cls:'plus', avg:a, zone:z, reference, basis:reference ? 'all' : 'core' };
+    return { code:'same', short:reference ? '参考＝' : '＝', label:`平均33付近で${basisLabel}内`, cls:'same', avg:a, zone:z, reference, basis:reference ? 'all' : 'core' };
   }
 
   function signed(v) {
@@ -63,14 +66,18 @@
   function horseDirection(race, horse) {
     const db = dbFor(race);
     const hit = (db?.horses || []).find(h => norm(h.name) === norm(horse?.name));
-    const d = direction(avg33(race), hit?.zone);
-    return { ...d, hit };
+    const core = parseZone(hit?.zone);
+    if (core) return { ...direction(avg33(race), hit.zone), hit, sourceZone:hit.zone };
+    const all = parseZone(hit?.allZone);
+    if (all) return { ...direction(avg33(race), hit.allZone, { reference:true }), hit, sourceZone:hit.allZone };
+    return { ...direction(avg33(race), null), hit, sourceZone:'—' };
   }
 
   function chipHtml(d) {
-    const zoneText = d.hit?.zone || '—';
-    const title = `平均33 ${signed(d.avg)} / コア33 ${zoneText} / ${d.label}`;
-    return `<span class="v48-dir ${d.cls}" title="${title.replaceAll('&','&amp;').replaceAll('"','&quot;')}">${d.short}</span>`;
+    const basis = d.reference ? '全好走33' : 'コア33';
+    const zoneText = d.sourceZone || '—';
+    const title = `平均33 ${signed(d.avg)} / ${basis} ${zoneText} / ${d.label}${d.reference ? '（コア33なしの参考表示）' : ''}`;
+    return `<span class="v48-dir ${d.cls}${d.reference ? ' reference' : ''}" title="${title.replaceAll('&','&amp;').replaceAll('"','&quot;')}">${d.short}</span>`;
   }
 
   function decorateTable() {
@@ -83,7 +90,7 @@
     const lapIndex = heads.findIndex(th => ['新聞33','33','33方向'].includes(th.textContent.trim()));
     if (lapIndex < 0) return false;
     heads[lapIndex].textContent = '33方向';
-    heads[lapIndex].title = '今回平均33からDBコア33へ寄せるなら、マイナス側/プラス側のどちらがよいかを簡易表示';
+    heads[lapIndex].title = 'コア33を優先して方向表示。コア33がない馬は全好走33帯から「参考− / 参考＝ / 参考＋」を表示';
 
     for (const tr of [...table.querySelectorAll('tbody > tr')]) {
       if (tr.classList.contains('v4-horse-detail-row')) continue;
@@ -97,15 +104,22 @@
     }
 
     const summary = body.querySelector('#v38DbLabSummary p');
-    if (summary) summary.textContent = '33方向は「今回平均33 → DBコア33」の寄せ方向を簡易表示。詳細な33適合はDB LABの主評価・コア33・根拠レースで確認します。';
+    if (summary) summary.textContent = '33方向はコア33を優先。コア33がない馬だけ全好走33帯から「参考− / 参考＝ / 参考＋」を表示します。詳細適合はDB LABの主評価・コア33・根拠レースを優先します。';
 
     return true;
   }
 
   function consultDirectionCounts(race) {
-    const c = { minus:0, same:0, plus:0, unknown:0 };
-    for (const h of (race.horses || [])) c[horseDirection(race, h).code]++;
-    return `33方向（平均33→DBコア33）: −側${c.minus}頭 / ＝${c.same}頭 / ＋側${c.plus}頭 / 不明${c.unknown}頭`;
+    const c = { minus:0, same:0, plus:0, refMinus:0, refSame:0, refPlus:0, unknown:0 };
+    for (const h of (race.horses || [])) {
+      const d = horseDirection(race, h);
+      if (d.code === 'unknown') c.unknown++;
+      else if (d.reference && d.code === 'minus') c.refMinus++;
+      else if (d.reference && d.code === 'same') c.refSame++;
+      else if (d.reference && d.code === 'plus') c.refPlus++;
+      else c[d.code]++;
+    }
+    return `33方向: −側${c.minus}頭 / ＝${c.same}頭 / ＋側${c.plus}頭 / 参考−${c.refMinus}頭 / 参考＝${c.refSame}頭 / 参考＋${c.refPlus}頭 / 不明${c.unknown}頭`;
   }
 
   function patchConsultText() {
@@ -136,7 +150,12 @@
         const cols = line.split('|');
         const horseName = cols[1] || '';
         const hit = byName.get(norm(horseName));
-        const d = direction(avg, hit?.zone);
+        const core = parseZone(hit?.zone);
+        const d = core
+          ? direction(avg, hit?.zone)
+          : parseZone(hit?.allZone)
+            ? direction(avg, hit?.allZone, { reference:true })
+            : direction(avg, null);
         if (headerIndex < cols.length) cols[headerIndex] = d.short;
         lines[i] = cols.join('|');
         continue;
@@ -144,7 +163,7 @@
 
       if (/^・新聞33 S\/A（補助）:/.test(line)) lines[i] = `・${consultDirectionCounts(race)}`;
       if (/^3\. 適性評価の主軸はDB33主評価/.test(line)) {
-        lines[i] = '3. 適性評価の主軸はDB33主評価・コア33・DB根拠。33方向は「今回平均33からDBコア33へ寄る方向」の簡易表示であり、詳細適合を上書きしない。';
+        lines[i] = '3. 適性評価の主軸はDB33主評価・コア33・DB根拠。33方向はコア33を優先し、コア33がない場合のみ全好走33帯から「参考− / 参考＝ / 参考＋」を表示する。参考表示は主評価を上書きしない。';
       }
       if (/新聞33.*補助/.test(line) && !/^3\./.test(line)) {
         lines[i] = line.replace(/新聞33[^。]*補助[^。]*。?/g, '33方向は簡易表示として扱う。');
@@ -157,6 +176,7 @@
   style.textContent = `
     .v48-dir-cell{min-width:54px;text-align:center}
     .v48-dir{display:inline-flex;align-items:center;justify-content:center;min-width:38px;padding:5px 6px;border-radius:999px;font-size:11px;font-weight:950;line-height:1;white-space:nowrap;border:1px solid transparent}
+    .v48-dir.reference{min-width:48px;font-size:9px;border-style:dashed;opacity:.86}
     .v48-dir.minus{background:#e8f1ff;color:#1e5ba8;border-color:#c8dcfa}
     .v48-dir.same{background:#edf4ef;color:#35604a;border-color:#d3e2d8}
     .v48-dir.plus{background:#fff0df;color:#9a5b14;border-color:#f2d4af}
