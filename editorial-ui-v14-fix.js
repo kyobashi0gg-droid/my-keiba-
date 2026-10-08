@@ -42,7 +42,9 @@
 
   const detailSources = [
     './pace-sim-v42.js',
-    './pace-unknown-consult-v43.js'
+    './pace-unknown-consult-v43.js',
+    './lap-direction-v48.js',
+    './odds-live-v49.js'
   ];
 
   const loaded = new Set();
