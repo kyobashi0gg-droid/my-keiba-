@@ -95,13 +95,17 @@
     $('surface').dispatchEvent(new Event('change',{bubbles:true}));
     $('distance').dispatchEvent(new Event('input',{bubbles:true}));
     $('distance').dispatchEvent(new Event('change',{bubbles:true}));
-    const avg = Number(r.avg33);
-    $('avg33').value = Number.isFinite(avg) ? String(avg) : '';
+    // 平均33の記載がない単独新聞では r.avg33 === ''。
+    // Number('') は 0 になるため、未記載を +0.0 と誤認しないよう空欄を明示判定する。
+    const rawAvg = String(r.avg33 ?? '').trim();
+    const avg = rawAvg === '' ? null : Number(rawAvg);
+    const hasAvg = avg != null && Number.isFinite(avg);
+    $('avg33').value = hasAvg ? String(avg) : '';
     $('avg33').dispatchEvent(new Event('input',{bubbles:true}));
     $('avg33').dispatchEvent(new Event('change',{bubbles:true}));
     $('horses').value=(r.horses||[]).map(h=>h.name).join('\n');
-    $('pdfStatus').textContent=`${label(r)} を入力しました。馬場状態だけ当日の状態を選んでください。`;
-    window.MyKeibaDbLabPdfRace={...r,avg33:Number.isFinite(avg)?String(avg):''};
+    $('pdfStatus').textContent=`${label(r)} を入力しました。${hasAvg ? '馬場状態だけ当日の状態を選んでください。' : '平均33は新聞に未記載です。既存値や別資料から入力してください。'}`;
+    window.MyKeibaDbLabPdfRace={...r,avg33:hasAvg?String(avg):''};
   }
 
   async function importPdf(file){
