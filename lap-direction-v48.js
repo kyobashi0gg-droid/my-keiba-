@@ -174,11 +174,13 @@
     if (e.target?.closest?.('.v4-race-card,[data-v4-race],[data-v4-expand]')) schedule(190);
     const b = e.target?.closest?.('button');
     if (b && /ラップ君に相談/.test(b.textContent || '')) setTimeout(patchConsultText, 520);
+    if (e.target?.closest?.('.v12-apply')) schedule(480);
   }, true);
   window.addEventListener('storage', e => {
     if (e.key === 'my-keiba-db-results-v3' || e.key === 'my-keiba-db-result-v2') schedule(80);
   });
   window.addEventListener('mykeiba:modules-ready', () => schedule(80));
+  window.addEventListener('mykeiba:odds-updated', () => schedule(100));
   window.addEventListener('mykeiba:resume', () => schedule(80), { passive:true });
   window.addEventListener('pageshow', () => schedule(100), { passive:true });
   schedule(250);
