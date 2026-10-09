@@ -138,3 +138,22 @@ def _inspect_smartrc_assets():
             print("[odds-discover] error="+str(e)[:150],flush=True)
     threading.Thread(target=run,daemon=True).start()
 _inspect_smartrc_assets()
+
+
+def _scan_inline():
+    import threading
+    def run():
+        try:
+            r=requests.get("https://www.smartrc.jp/v3/",timeout=12)
+            soup=BeautifulSoup(r.text,"html.parser")
+            script_text="\n".join(x.get_text() for x in soup.select("script:not([src])"))
+            markers=["odds_tan","pop_tan","fetch(","XMLHttpRequest","axios","$.ajax","/api/","race","firebase"]
+            print("[odds-inline] inline_scripts="+str(len(soup.select("script:not([src])")))+" chars="+str(len(script_text))+" marker_counts="+repr({m:script_text.lower().count(m.lower()) for m in markers}),flush=True)
+            for needle in ["odds_tan","pop_tan","fetch(","XMLHttpRequest"]:
+                pos=script_text.find(needle)
+                if pos>=0: print("[odds-inline] near_"+needle+"="+repr(script_text[max(0,pos-100):pos+180])[:420],flush=True)
+            links=[x.get("href") for x in soup.select("link[href]")][:30]
+            print("[odds-inline] assets="+repr(links)[:1200],flush=True)
+        except Exception as e: print("[odds-inline] error="+str(e)[:160],flush=True)
+    threading.Thread(target=run,daemon=True).start()
+_scan_inline()
