@@ -54,13 +54,18 @@ def race_id_from_index(html, *, track, race_no, race_date):
     if track not in VENUES or not 1 <= race_no <= 12:
         raise OddsSourceError("開催場・Rが不正です")
     soup = BeautifulSoup(html, "html.parser")
-    if "レース一覧" not in (soup.title.get_text(" ", strip=True) if soup.title else ""):
-        raise OddsSourceError("開催日別レース一覧として確認できません")
-    # Date-scoped pages contain the displayed month/day. Do not accept an empty list.
-    text = soup.get_text(" ", strip=True)
-    m_d = str(race_date.month) + "/" + str(race_date.day)
-    if m_d not in text:
-        raise OddsSourceError("一覧の開催日を確認できません")
+    # The date-scoped /top/race_list_sub.html fragment deliberately has no
+    # <title> and may omit the displayed date. This helper is only safe for
+    # fragments fetched with the exact date query; subsequently verify
+    # both the full racecard date and API date before exposing any odds.
+    title = soup.title.get_text(" ", strip=True) if soup.title else ""
+    if title and "レース一覧" not in title:
+        raise OddsSourceError("レース一覧ではありません")
+    if title:
+        text = soup.get_text(" ", strip=True)
+        m_d = str(race_date.month) + "/" + str(race_date.day)
+        if m_d not in text:
+            raise OddsSourceError("開催日を確認できません")
     candidates=set()
     for a in soup.select("a[href]"):
         url=a.get("href","")
