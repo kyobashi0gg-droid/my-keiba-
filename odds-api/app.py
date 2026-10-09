@@ -104,6 +104,10 @@ def _one_time_netkeiba_probe():
     locations = [
         ("mobile-odds", "https://race.sp.netkeiba.com/?pid=odds_view&race_id=" + fixed_raceid + "&type=b1"),
         ("mobile-bias", "https://race.sp.netkeiba.com/?pid=bias&race_id=" + fixed_raceid),
+        ("mobile-racecard", "https://race.sp.netkeiba.com/race/shutuba.html?race_id=" + fixed_raceid),
+        ("desktop-racecard", "https://race.netkeiba.com/race/shutuba.html?race_id=" + fixed_raceid),
+        ("mobile-wide", "https://race.sp.netkeiba.com/?pid=odds_view&race_id=" + fixed_raceid + "&type=b5&housiki=c1"),
+        ("race-list", "https://race.sp.netkeiba.com/?pid=race_list&kaisai_date=20261010"),
     ]
     for label, url in locations:
         try:
@@ -126,6 +130,8 @@ def _one_time_netkeiba_probe():
                 "rows":len(soup.select("tr")),
                 "examples":candidate[:2],
                 "oddsBlankCount":soup.get_text(" ",strip=True).count("---.-"),
+                "premiumGate":"続きはプレミアム" in soup.get_text(" ",strip=True),
+                "raceIdRefs":len(soup.select("a[href*='202605040309']")),
             }
             print("[netkeiba-one-shot] " + json.dumps(payload, ensure_ascii=False), flush=True)
         except requests.RequestException as exc:
