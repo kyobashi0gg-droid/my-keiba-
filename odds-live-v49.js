@@ -54,15 +54,15 @@
   // Experimental fail-closed guard. A partial or mismatched response must never
   // overwrite existing odds. Keep this on the experiment branch until verified.
   function normHorseName(value = '') {
-    return clean(value).replace(/[\\s　・･]/g, '').toLowerCase();
+    return clean(value).replace(/[\s　・･]/g, '').toLowerCase();
   }
 
   function dateParts(value = '') {
     const text = clean(value);
     // Supported: YYYY-MM-DD, YYYY/MM/DD, M/D, M月D日.
-    let m = text.match(/(?:^|\\D)(20\\d{2})[-/.年](\\d{1,2})[-/.月](\\d{1,2})(?:日|\\D|$)/);
+    let m = text.match(/(?:^|\D)(20\d{2})[-/.年](\d{1,2})[-/.月](\d{1,2})(?:日|\D|$)/);
     if (m) return { year:Number(m[1]), month:Number(m[2]), day:Number(m[3]) };
-    m = text.match(/(?:^|\\D)(\\d{1,2})[/.月](\\d{1,2})(?:日|\\D|$)/);
+    m = text.match(/(?:^|\D)(\d{1,2})[/.月](\d{1,2})(?:日|\D|$)/);
     return m ? { year:null, month:Number(m[1]), day:Number(m[2]) } : null;
   }
 
