@@ -92,3 +92,20 @@ def probe():
 
 if __name__=="__main__":
     app.run(host="0.0.0.0",port=int(os.environ.get("PORT","10000")))
+
+
+# Diagnostic only: check upstream availability at boot without importing odds.
+def _startup_probe():
+    import threading
+    def check():
+        for label,url in [("SmartRC","https://www.smartrc.jp/v3/"),("netkeiba","https://race.netkeiba.com/odds/index.html")]:
+            try:
+                res=requests.get(url,timeout=12,headers={"User-Agent":"Mozilla/5.0","Accept-Language":"ja-JP"})
+                print(f"[odds-upstream-test] {label}: HTTP={res.status_code} bytes={len(res.content)} content_type={res.headers.get('Content-Type','')} URL={res.url}",flush=True)
+                soup=BeautifulSoup(res.text,"html.parser")
+                print(f"[odds-upstream-test] {label}: title={str(soup.title.get_text(' ',strip=True) if soup.title else '')[:90]!r} horse_rows={len(soup.select('tr'))} odds_nodes={len(soup.select('.Odds,.Win_Odds,.Tansho,[data-odds]'))}",flush=True)
+            except Exception as ex:
+                print(f"[odds-upstream-test] {label}: ERROR {type(ex).__name__} {str(ex)[:150]}",flush=True)
+    threading.Thread(target=check,daemon=True).start()
+
+_startup_probe()
