@@ -241,7 +241,15 @@ def _race_id_resolution_probe():
                 for rid in parse_qs(urlsplit(a.get("href","")).query).get("race_id",[]):
                     if re.fullmatch(r"202605\\d{4}09",rid):
                         hits.add(rid)
-            compact={"page":label,"status":resp.status_code,"bytes":len(resp.content),"idsTokyo9":sorted(hits)[:15],"idsCount":len(hits),"title":sou.title.get_text(strip=True)[:70] if sou.title else ""}
+            ids_by_url=set()
+            example_urls=[]
+            for a in sou.select("a[href]"):
+                href=a.get("href","")
+                matched=re.findall(r"(?<!\\d)202605\\d{4}09(?!\\d)",href)
+                if matched:
+                    ids_by_url.update(matched)
+                    if len(example_urls)<2:example_urls.append(href[:100])
+            compact={"page":label,"status":resp.status_code,"bytes":len(resp.content),"idsTokyo9":sorted(hits)[:15],"idsCount":len(hits),"pathIds":sorted(ids_by_url)[:12],"samplePaths":example_urls,"title":sou.title.get_text(strip=True)[:70] if sou.title else ""}
             try:
                 compact["resolved"]=race_id_from_index(resp.content,track="東京",race_no=9,race_date=datetime(2026,10,10).date())
             except ValueError as e:compact["resolutionError"]=str(e)
@@ -250,3 +258,26 @@ def _race_id_resolution_probe():
             print("[race-identity-probe] "+json.dumps({"page":label,"error":type(e).__name__}),flush=True)
 
 threading.Thread(target=_race_id_resolution_probe,daemon=True).start()
+
+def _roster_probe():
+    import json
+    time.sleep(4)
+    rid="202605040309"
+    try:
+        url="https://race.sp.netkeiba.com/race/shutuba.html"
+        r=requests.get(url,params={"race_id":rid},timeout=15,headers={"User-Agent":"Mozilla/5.0"})
+        soup=BeautifulSoup(r.content,"html.parser")
+        samples=[]
+        for row in soup.select("tr"):
+            txt=row.get_text(" ",strip=True)
+            if "ノクターン" in txt or "ビップチェイス" in txt:
+                samples.append({"tagClass":row.get("class",[]),"cells":[{"class":td.get("class",[]),"text":td.get_text(" ",strip=True)[:65]} for td in row.find_all("td",recursive=False)]})
+        print("[netkeiba-roster-probe] "+json.dumps({"status":r.status_code,"HorseListRows":len(soup.select("tr.HorseList")),"samples":samples[:2]},ensure_ascii=False),flush=True)
+        x=requests.get("https://race.netkeiba.com/api/api_get_jra_odds.html",params={"race_id":rid,"type":"1","action":"update"},timeout=12,headers={"User-Agent":"Mozilla/5.0"})
+        z=x.json()
+        data=z.get("data",{})
+        print("[netkeiba-meta-probe] "+json.dumps({"meta":{key:data.get(key) for key in ("send_date","send_time","official_datetime","update_datetime","yy","jyo","kai","nichi","rno","touroku","shusso")},"status":z.get("status"),"reason":z.get("reason")},ensure_ascii=False),flush=True)
+    except (requests.RequestException,ValueError) as e:
+        print("[netkeiba-roster-probe] "+json.dumps({"error":type(e).__name__}),flush=True)
+
+threading.Thread(target=_roster_probe,daemon=True).start()
