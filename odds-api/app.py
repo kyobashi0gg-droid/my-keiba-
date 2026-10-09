@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from flask import Flask, request, jsonify
 import requests
 from bs4 import BeautifulSoup
+from source_parser import parse_sportsnavi_public_html, race_id_from_index, resolve_race_date
 
 app=Flask(__name__)
 TRACKS={"札幌":"01","函館":"02","福島":"03","新潟":"04","東京":"05","中山":"06","中京":"07","京都":"08","阪神":"09","小倉":"10"}
@@ -133,6 +134,11 @@ def _one_time_netkeiba_probe():
                 "premiumGate":"続きはプレミアム" in soup.get_text(" ",strip=True),
                 "raceIdRefs":len(soup.select("a[href*='202605040309']")),
             }
+            if label=="race-list":
+                try:
+                    payload["resolvedRaceId"]=race_id_from_index(resp.content,track="東京",race_no=9,race_date=datetime(2026,10,10).date())
+                except ValueError as ex:
+                    payload["resolutionError"]=str(ex)
             print("[netkeiba-one-shot] " + json.dumps(payload, ensure_ascii=False), flush=True)
         except requests.RequestException as exc:
             print("[netkeiba-one-shot] " + json.dumps({"name":label,"error":type(exc).__name__}), flush=True)
@@ -163,6 +169,12 @@ def _one_time_yahoo_probe():
                     rows.append({"columns":len(tr.find_all(["td","th"])),"text":t[:150]})
             txt=soup.get_text(" ",strip=True)
             updated=re.findall(r"20\\d{2}[/年]\\d{1,2}[/月]\\d{1,2}日?\\s+\\d{1,2}:\\d{2}\\s*更新",txt)
+            target_track,target_no = (("東京",9) if label=="yahoo-tokyo9" else ("京都",10))
+            try:
+                parsed=parse_sportsnavi_public_html(resp.content,track=target_track,race_no=target_no,race_date=datetime(2026,10,10).date())
+                result={"count":len(parsed["horses"]),"sourceUpdatedAt":parsed["updatedAt"],"first":parsed["horses"][0]}
+            except ValueError as err:
+                result={"error":str(err)}
             print("[yahoo-public-probe] "+json.dumps({
                 "source":label,"status":resp.status_code,"htmlBytes":len(resp.content),
                 "title":soup.title.get_text(strip=True)[:65] if soup.title else "",
@@ -171,6 +183,8 @@ def _one_time_yahoo_probe():
                 "updateMarkers":updated[:2],
                 "missingOddsCount":txt.count("---.-"),
                 "hasAllExpectedNames":all(n in txt for n in (("ノクターン","ビップチェイス") if label=="yahoo-tokyo9" else ("エルハーベン","ワンコールアウェイ"))),
+                "parser":result,
+                "updateContext":txt[max(0,txt.rfind(" 更新")-28):txt.rfind(" 更新")+6],
             },ensure_ascii=False),flush=True)
         except requests.RequestException as e:
             print("[yahoo-public-probe] "+json.dumps({"source":label,"error":type(e).__name__}),flush=True)
