@@ -223,3 +223,30 @@ def _one_time_netkeiba_json_probe():
             print("[netkeiba-json-probe] "+json.dumps({"id":rid,"error":type(ex).__name__}),flush=True)
 
 threading.Thread(target=_one_time_netkeiba_json_probe,daemon=True).start()
+
+def _race_id_resolution_probe():
+    import json
+    time.sleep(3)
+    targets=[
+        ("mobile-list","https://race.sp.netkeiba.com/?pid=race_list&kaisai_date=20261010"),
+        ("desktop-sub","https://race.netkeiba.com/top/race_list_sub.html?kaisai_date=20261010"),
+    ]
+    for label,url in targets:
+        try:
+            resp=requests.get(url,timeout=15,headers={"User-Agent":"Mozilla/5.0","Accept-Language":"ja-JP"})
+            sou=BeautifulSoup(resp.content,"html.parser")
+            from urllib.parse import parse_qs,urlsplit
+            hits=set()
+            for a in sou.select("a[href]"):
+                for rid in parse_qs(urlsplit(a.get("href","")).query).get("race_id",[]):
+                    if re.fullmatch(r"202605\\d{4}09",rid):
+                        hits.add(rid)
+            compact={"page":label,"status":resp.status_code,"bytes":len(resp.content),"idsTokyo9":sorted(hits)[:15],"idsCount":len(hits),"title":sou.title.get_text(strip=True)[:70] if sou.title else ""}
+            try:
+                compact["resolved"]=race_id_from_index(resp.content,track="東京",race_no=9,race_date=datetime(2026,10,10).date())
+            except ValueError as e:compact["resolutionError"]=str(e)
+            print("[race-identity-probe] "+json.dumps(compact,ensure_ascii=False),flush=True)
+        except requests.RequestException as e:
+            print("[race-identity-probe] "+json.dumps({"page":label,"error":type(e).__name__}),flush=True)
+
+threading.Thread(target=_race_id_resolution_probe,daemon=True).start()
