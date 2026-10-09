@@ -272,7 +272,7 @@ def _roster_probe():
         for row in soup.select("tr"):
             txt=row.get_text(" ",strip=True)
             if "ノクターン" in txt or "ビップチェイス" in txt:
-                samples.append({"tagClass":row.get("class",[]),"cells":[{"class":td.get("class",[]),"text":td.get_text(" ",strip=True)[:65]} for td in row.find_all("td",recursive=False)]})
+                samples.append({"tagClass":row.get("class",[]),"cells":[{"class":td.get("class",[]),"text":td.get_text(" ",strip=True)[:65],"anchors":[{"text":a.get_text(" ",strip=True)[:35],"class":a.get("class",[]),"horseLink":"/horse/" in a.get("href","")} for a in td.select("a[href]")][:5]} for td in row.find_all("td",recursive=False)]})
         try:
             roster=parse_roster(r.content,race_id=rid,race_date=datetime(2026,10,10).date(),track="東京",race_no=9)
             status={"rosterSize":len(roster),"names":list(roster.items())[:2]}
