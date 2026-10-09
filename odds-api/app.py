@@ -94,3 +94,42 @@ def probe():
 
 if __name__=="__main__":
     app.run(host="0.0.0.0",port=int(os.environ.get("PORT","10000")))
+
+# One-shot, bounded experiment on the test service only (no repeated crawling).
+# Logs only race/odds diagnostics, never response bodies, cookies or tokens.
+def _one_time_netkeiba_probe():
+    import json
+    time.sleep(3)
+    fixed_raceid = "202605040309"  # 2026-10-10 Tokyo 9R, test fixture
+    locations = [
+        ("mobile-odds", "https://race.sp.netkeiba.com/?pid=odds_view&race_id=" + fixed_raceid + "&type=b1"),
+        ("mobile-bias", "https://race.sp.netkeiba.com/?pid=bias&race_id=" + fixed_raceid),
+    ]
+    for label, url in locations:
+        try:
+            resp = requests.get(url, timeout=12, headers={
+                "User-Agent": "Mozilla/5.0 (compatible; MYKEIBA-Test/1.0)",
+                "Accept-Language": "ja-JP,ja;q=0.9",
+            })
+            soup = BeautifulSoup(resp.content, "html.parser")
+            # Never log full HTML: it could contain unrelated sensitive attributes.
+            candidate = []
+            for row in soup.select("tr"):
+                plain = row.get_text(" ", strip=True)
+                if "ノクターン" in plain or "ビップチェイス" in plain:
+                    candidate.append({"cells":len(row.select("td")),"text":plain[:160]})
+            payload = {
+                "name":label,
+                "status":resp.status_code,
+                "length":len(resp.content),
+                "title":(soup.title.get_text(strip=True) if soup.title else "")[:70],
+                "rows":len(soup.select("tr")),
+                "examples":candidate[:2],
+                "oddsBlankCount":soup.get_text(" ",strip=True).count("---.-"),
+            }
+            print("[netkeiba-one-shot] " + json.dumps(payload, ensure_ascii=False), flush=True)
+        except requests.RequestException as exc:
+            print("[netkeiba-one-shot] " + json.dumps({"name":label,"error":type(exc).__name__}), flush=True)
+
+import threading
+threading.Thread(target=_one_time_netkeiba_probe, daemon=True).start()
