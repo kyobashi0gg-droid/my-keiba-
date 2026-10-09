@@ -66,7 +66,7 @@
     return m ? { year:null, month:Number(m[1]), day:Number(m[2]) } : null;
   }
 
-  function validateSnapshot(data, race) {
+  function validateSnapshot(data, race, clockMs = Date.now()) {
     if (clean(data.track) !== clean(race.track) ||
         Number(data.raceNo) !== Number(race.raceNo)) {
       throw new Error('取得先の競馬場・レース番号が一致しません');
@@ -74,10 +74,17 @@
 
     const wantedDate = dateParts(race.v3DateLabel);
     const actualDate = dateParts(data.raceDate);
-    if (!wantedDate || !actualDate || wantedDate.month !== actualDate.month ||
-        wantedDate.day !== actualDate.day ||
-        (wantedDate.year && actualDate.year && wantedDate.year !== actualDate.year)) {
+    // v3DateLabel often contains only '10/10(土)' and has no year.
+    // The upstream must supply an explicit year, and the race must be recent.
+    if (!wantedDate || !actualDate || !actualDate.year ||
+        wantedDate.month !== actualDate.month || wantedDate.day !== actualDate.day ||
+        (wantedDate.year && actualDate.year !== wantedDate.year)) {
       throw new Error('開催日の照合ができません。反映を中止しました');
+    }
+    const jstToday = Math.floor((clockMs + 9 * 60 * 60 * 1000) / 86400000);
+    const raceDay = Math.floor(Date.UTC(actualDate.year, actualDate.month - 1, actualDate.day) / 86400000);
+    if (raceDay < jstToday - 1 || raceDay > jstToday + 7) {
+      throw new Error('古い開催日または遠い未来の開催日です。反映を中止しました');
     }
 
     const existing = race.horses || [];
