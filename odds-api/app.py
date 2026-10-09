@@ -190,3 +190,36 @@ def _one_time_yahoo_probe():
             print("[yahoo-public-probe] "+json.dumps({"source":label,"error":type(e).__name__}),flush=True)
 
 threading.Thread(target=_one_time_yahoo_probe,daemon=True).start()
+
+# One-time, publicly accessible Netkeiba JSON odds endpoint experiment.
+# Inspect response schema only (no cookies, credentials, full raw payload or bulk fetch).
+def _one_time_netkeiba_json_probe():
+    import json
+    time.sleep(3)
+    url="https://race.netkeiba.com/api/api_get_jra_odds.html"
+    for rid in ["202605040309","202608040310"]:
+        try:
+            resp=requests.get(url,params={"race_id":rid,"type":"1","action":"update"},timeout=15,
+                headers={"User-Agent":"Mozilla/5.0","Accept-Language":"ja-JP,ja;q=0.9","Accept":"application/json"})
+            detail={"id":rid,"status":resp.status_code,"bytes":len(resp.content),"contentType":resp.headers.get("Content-Type","")[:60]}
+            try:
+                js=resp.json()
+                detail["rootKeys"]=list(js)[:12] if isinstance(js,dict) else []
+                detail["statusValue"]=js.get("status") if isinstance(js,dict) else ""
+                data=js.get("data") if isinstance(js,dict) else None
+                if isinstance(data,dict):
+                    detail["dataKeys"]=list(data)[:12]
+                    odds=data.get("odds")
+                    if isinstance(odds,dict):
+                        detail["oddsGroups"]=list(odds)[:6]
+                        wins=odds.get("1")
+                        if isinstance(wins,dict):
+                            detail["winEntries"]=len(wins)
+                            detail["sample"]=list(wins.items())[:2]
+            except ValueError:
+                detail["json"]=False
+            print("[netkeiba-json-probe] "+json.dumps(detail,ensure_ascii=False),flush=True)
+        except requests.RequestException as ex:
+            print("[netkeiba-json-probe] "+json.dumps({"id":rid,"error":type(ex).__name__}),flush=True)
+
+threading.Thread(target=_one_time_netkeiba_json_probe,daemon=True).start()
