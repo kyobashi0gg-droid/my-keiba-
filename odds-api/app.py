@@ -214,3 +214,20 @@ def _inspect_app_bundle():
         except Exception as ex: print("[odds-bundle] ERROR="+str(ex)[:170],flush=True)
     threading.Thread(target=run,daemon=True).start()
 _inspect_app_bundle()
+
+
+def _inspect_endpoints():
+    import threading
+    def run():
+        try:
+            txt=requests.get("https://www.smartrc.jp/v3/app.js",timeout=25).text
+            paths=sorted(set(re.findall(r"""smartrc\\.php(?:/[a-zA-Z0-9_./?-]{0,120})?""",txt)))
+            print("[odds-endpoints] paths="+repr(paths[:100])[:8500],flush=True)
+            for term in ("odds_mtime","odds_tan","pop_tan","getOdds","loadOdds","updateOdds","odds/update","get_odds","raceOdds"):
+                matches=list(re.finditer(re.escape(term),txt,re.I))
+                for m in matches[-3:]:
+                    ctx=txt[max(0,m.start()-450):m.start()+500]
+                    print("[odds-endpoints] term="+term+" context="+repr(ctx)[:1050],flush=True)
+        except Exception as e: print("[odds-endpoints] ERROR="+str(e)[:180],flush=True)
+    threading.Thread(target=run,daemon=True).start()
+_inspect_endpoints()
