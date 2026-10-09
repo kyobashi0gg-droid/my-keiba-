@@ -33,12 +33,12 @@ def parse_netkeiba(html):
         ns=n.get("data-umaban") or n.get_text(strip=True)
         os_=odd.get("data-odds") or odd.get_text(strip=True)
         if not re.fullmatch(r"(?:[1-9]|1[0-8])",ns): continue
-        m=re.search(r"(?<!\\d)(\\d{1,4}\\.\\d)(?:倍)?(?!\\d)",os_)
+        m=re.search(r"(?<!\d)(\d{1,4}\.\d)(?:倍)?(?!\d)",os_)
         if not m: continue
-        nm=re.sub(r"\\s+","",name.get_text(strip=True))
+        nm=re.sub(r"\s+","",name.get_text(strip=True))
         rank=None
         if pop:
-            q=re.search(r"\\d+",pop.get("data-popularity") or pop.get_text(strip=True))
+            q=re.search(r"\d+",pop.get("data-popularity") or pop.get_text(strip=True))
             if q: rank=int(q.group())
         out.append({"number":int(ns),"name":nm,"odds":float(m.group(1)),"popularity":rank})
     nums=[h["number"] for h in out]
@@ -61,7 +61,7 @@ def odds():
     # Do not guess the meeting number/day. Until automatic race-ID lookup is verified,
     # require a 12-digit raceId. The existing button does not yet pass this parameter.
     raceid=request.args.get("raceId","")
-    if not re.fullmatch(r"20\\d{10}",raceid) or raceid[4:6]!=TRACKS[track] or int(raceid[-2:])!=num:
+    if not re.fullmatch(r"20\d{10}",raceid) or raceid[4:6]!=TRACKS[track] or int(raceid[-2:])!=num:
         return jsonify(error="raceIdの自動照合は未実装です。未検証データは取り込みません"),422
     cached=CACHE.get(raceid)
     if cached and time.monotonic()-cached[0]<15: return jsonify(cached[1])
