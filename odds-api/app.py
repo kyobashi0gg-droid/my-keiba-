@@ -4,6 +4,7 @@ The public endpoint is OFF by default. Enable only when provider permissions,
 access control and integration tests are satisfactory.
 """
 import os
+import hmac
 import threading
 import time
 from flask import Flask, request, jsonify
@@ -14,13 +15,16 @@ from netkeiba_source import UnverifiedOdds
 
 app=Flask(__name__)
 ORIGIN="https://kyobashi0gg-droid.github.io"
-ENABLED=os.environ.get("MYKEIBA_ODDS_ENABLED","0")=="1"
+ACCESS_KEY=os.environ.get("MYKEIBA_ODDS_ACCESS_KEY","")
+ENABLED=(os.environ.get("MYKEIBA_ODDS_ENABLED","0")=="1" and len(ACCESS_KEY)>=32)
 
 @app.after_request
 def cors(response):
     if request.headers.get("Origin")==ORIGIN:
         response.headers["Access-Control-Allow-Origin"]=ORIGIN
         response.headers["Vary"]="Origin"
+        response.headers["Access-Control-Allow-Methods"]="GET, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"]="Accept, X-MYKEIBA-ACCESS"
     response.headers["Cache-Control"]="no-store"
     return response
 
@@ -29,10 +33,15 @@ def health():
     return jsonify(status="ok",mode="experiment",upstream="netkeiba",
                    publicOddsEnabled=ENABLED)
 
-@app.get("/odds")
+@app.route("/odds",methods=["GET","OPTIONS"])
 def odds():
+    if request.method=="OPTIONS":
+        return ("",204)
     if not ENABLED:
         return jsonify(error="試験段階のため自動配信は無効です"),503
+    supplied=request.headers.get("X-MYKEIBA-ACCESS","")
+    if not supplied or not hmac.compare_digest(ACCESS_KEY,supplied):
+        return jsonify(error="個人用アクセスキーが必要です"),403
     track=str(request.args.get("track","")).strip()
     try:
         race_no=int(request.args.get("raceNo",""))
@@ -61,7 +70,7 @@ def _one_time_selfcheck():
             print(f"[netkeiba-e2e] {track}{rno}R FAILED={type(exc).__name__} "
                   f"detail={str(exc)[:90]}",flush=True)
 
-if os.environ.get("MYKEIBA_RUN_TEST_ON_BOOT","1")=="1":
+if os.environ.get("MYKEIBA_RUN_TEST_ON_BOOT","0")=="1":
     threading.Thread(target=_one_time_selfcheck,daemon=True).start()
 
 if __name__=="__main__":
