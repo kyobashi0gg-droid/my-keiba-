@@ -197,3 +197,20 @@ def _inspect_manifest():
         except Exception as e: print("[odds-manifest] ERROR "+str(e)[:160],flush=True)
     threading.Thread(target=run,daemon=True).start()
 _inspect_manifest()
+
+
+def _inspect_app_bundle():
+    import threading
+    def run():
+        try:
+            resp=requests.get("https://www.smartrc.jp/v3/app.js",timeout=25)
+            txt=resp.text
+            print("[odds-bundle] status="+str(resp.status_code)+" bytes="+str(len(resp.content)),flush=True)
+            for key in ("odds_tan","pop_tan","単勝","tansho","odds","Ajax.request","Ext.Ajax","proxy:","url:","url=","smartrc.jp"):
+                positions=[m.start() for m in list(re.finditer(re.escape(key),txt,re.I))[:4]]
+                print("[odds-bundle] key="+key+" count="+str(len(list(re.finditer(re.escape(key),txt,re.I))))+" contexts="+repr([txt[max(0,p-85):p+125] for p in positions])[:1300],flush=True)
+            endpoints=list(dict.fromkeys(re.findall(r"""(?:https?://[^'"\\s]{5,150}|/[a-zA-Z0-9_-]+/[a-zA-Z0-9_./?-]{4,110})""",txt)))
+            print("[odds-bundle] path_candidates="+repr([e for e in endpoints if not any(x in e for x in ("sencha","extjs","google","w3.org"))][:60])[:3500],flush=True)
+        except Exception as ex: print("[odds-bundle] ERROR="+str(ex)[:170],flush=True)
+    threading.Thread(target=run,daemon=True).start()
+_inspect_app_bundle()
