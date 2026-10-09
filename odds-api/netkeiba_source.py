@@ -32,19 +32,12 @@ def parse_roster(html, *, race_id, race_date, track, race_no):
         if not re.fullmatch(r"\d{1,2}",no_text):
             continue
         no=int(no_text)
-        names=[]
-        for a in horse_td.select("a[href]"):
-            label=a.get_text(" ",strip=True)
-            if not label or label.endswith("のデータベース"):
-                continue
-            if ("/horse/" in a.get("href","") or "HorseName" in " ".join(a.get("class",[]))):
-                names.append(label)
-        if not names:
-            # Some mobile renderings put the name into the first descendant.
-            one=horse_td.select_one(".HorseName,.Horse_Name")
-            if one:
-                names=[one.get_text(" ",strip=True)]
-        if len(names)!=1:
+        # In netkeiba mobile tables the *first* Horse_Info anchor is the
+        # visible horse name. The next horse link is merely an accessibility
+        # tooltip ending "のデータベース", and later anchors are jockeys.
+        link=horse_td.select_one("a[href]")
+        names=[link.get_text(" ",strip=True)] if link else []
+        if len(names)!=1 or names[0].endswith("のデータベース"):
             continue
         name=re.sub(r"\s+","",names[0])
         if not name or len(name)>45:
