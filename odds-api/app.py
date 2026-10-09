@@ -51,7 +51,7 @@ def odds():
 def _one_time_selfcheck():
     """Test representative races without exposing or logging actual odds."""
     time.sleep(3)
-    for track,rno,expected in (("東京",9,9),("京都",10,15)):
+    for track,rno,expected in (("東京",9,9),("東京",10,16),("東京",11,11),("京都",10,15),("京都",11,13)):
         try:
             value=fetch_snapshot(track=track,race_no=rno,date_label="2026-10-10")
             n=len(value["horses"])
