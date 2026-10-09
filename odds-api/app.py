@@ -139,3 +139,40 @@ def _one_time_netkeiba_probe():
 
 import threading
 threading.Thread(target=_one_time_netkeiba_probe, daemon=True).start()
+
+# Temporary one-shot availability experiment for fully public SportsNavi
+# odds table. Does not log responses, headers, cookies or personal data.
+def _one_time_yahoo_probe():
+    import json
+    time.sleep(4)
+    urls = [
+        ("yahoo-tokyo9", "https://sports.yahoo.co.jp/keiba/race/odds/tfw/2605040309?ninki=1"),
+        ("yahoo-kyoto10", "https://sports.yahoo.co.jp/keiba/race/odds/tfw/2608040310?ninki=1"),
+    ]
+    for label, url in urls:
+        try:
+            resp=requests.get(url,timeout=12,headers={
+                "User-Agent":"Mozilla/5.0",
+                "Accept-Language":"ja-JP,ja;q=0.9",
+            })
+            soup=BeautifulSoup(resp.content,"html.parser")
+            rows=[]
+            for tr in soup.select("tr"):
+                t=tr.get_text(" ",strip=True)
+                if any(n in t for n in ("ノクターン", "ビップチェイス", "エルハーベン", "ワンコールアウェイ")):
+                    rows.append({"columns":len(tr.find_all(["td","th"])),"text":t[:150]})
+            txt=soup.get_text(" ",strip=True)
+            updated=re.findall(r"20\\d{2}[/年]\\d{1,2}[/月]\\d{1,2}日?\\s+\\d{1,2}:\\d{2}\\s*更新",txt)
+            print("[yahoo-public-probe] "+json.dumps({
+                "source":label,"status":resp.status_code,"htmlBytes":len(resp.content),
+                "title":soup.title.get_text(strip=True)[:65] if soup.title else "",
+                "rows":len(soup.select("tr")),
+                "samples":rows[:3],
+                "updateMarkers":updated[:2],
+                "missingOddsCount":txt.count("---.-"),
+                "hasAllExpectedNames":all(n in txt for n in (("ノクターン","ビップチェイス") if label=="yahoo-tokyo9" else ("エルハーベン","ワンコールアウェイ"))),
+            },ensure_ascii=False),flush=True)
+        except requests.RequestException as e:
+            print("[yahoo-public-probe] "+json.dumps({"source":label,"error":type(e).__name__}),flush=True)
+
+threading.Thread(target=_one_time_yahoo_probe,daemon=True).start()
