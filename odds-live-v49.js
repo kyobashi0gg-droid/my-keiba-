@@ -42,8 +42,8 @@
       popularity: h.popularity ?? h.rank ?? h.人気 ?? h.人気順 ?? ''
     })).filter(h => clean(h.number) || clean(h.name));
     return {
-      track: data?.track || data?.開催場 || race.track,
-      raceNo: data?.raceNo || data?.race || data?.R || race.raceNo,
+      track: data?.track || data?.開催場 || '',
+      raceNo: data?.raceNo || data?.race || data?.R || '',
       updatedAt: data?.updatedAt || data?.sourceUpdatedAt || data?.jraUpdatedAt || '',
       raceDate: data?.raceDate || data?.date || '',
       fetchedAt: new Date().toISOString(),
