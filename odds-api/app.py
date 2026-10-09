@@ -109,3 +109,32 @@ def _startup_probe():
     threading.Thread(target=check,daemon=True).start()
 
 _startup_probe()
+
+
+# Discovery diagnostics: log only public script asset paths and candidate API strings.
+def _inspect_smartrc_assets():
+    import threading
+    from urllib.parse import urljoin, urlparse
+    def run():
+        try:
+            root="https://www.smartrc.jp/v3/"
+            resp=requests.get(root,timeout=12,headers={"User-Agent":"Mozilla/5.0"})
+            soup=BeautifulSoup(resp.text,"html.parser")
+            assets=[urljoin(root,x.get("src")) for x in soup.select("script[src]") if x.get("src")]
+            print("[odds-discover] scripts="+repr(assets[:28]),flush=True)
+            for url in assets[:16]:
+                parsed=urlparse(url)
+                if parsed.hostname not in ("www.smartrc.jp","smartrc.jp"): continue
+                try:
+                    result=requests.get(url,timeout=12,headers={"User-Agent":"Mozilla/5.0"})
+                    body=result.text
+                    found=[]
+                    for pattern in (r"[^\n;]{0,100}odds_tan[^\n;]{0,160}",r"[^\n;]{0,90}pop_tan[^\n;]{0,160}",r"[^\n;]{0,80}(?:\\.json|/api/|\\.php|\\.asmx)[^\n;]{0,130}"):
+                        found.extend(re.findall(pattern,body,re.I)[:5])
+                    print(f"[odds-discover] JS={parsed.path} status={result.status_code} bytes={len(result.content)} hints={repr(found[:10])[:2000]}",flush=True)
+                except Exception as e:
+                    print(f"[odds-discover] JS={parsed.path} ERROR={type(e).__name__}",flush=True)
+        except Exception as e:
+            print("[odds-discover] error="+str(e)[:150],flush=True)
+    threading.Thread(target=run,daemon=True).start()
+_inspect_smartrc_assets()
