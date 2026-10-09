@@ -157,3 +157,23 @@ def _scan_inline():
         except Exception as e: print("[odds-inline] error="+str(e)[:160],flush=True)
     threading.Thread(target=run,daemon=True).start()
 _scan_inline()
+
+
+def _discover_urls():
+    import threading
+    from urllib.parse import urlparse
+    def run():
+        try:
+            page=requests.get("https://www.smartrc.jp/v3/",timeout=15).text
+            soup=BeautifulSoup(page,"html.parser")
+            scripts="\n".join(x.get_text() for x in soup.select("script:not([src])"))
+            patterns=[r'(?:(?:https?:)?//)[^\\s\\"\\x27<>]{5,180}',r'[^\\s\\"\\x27<>]{3,100}\\.(?:json|php|jsp|ashx|aspx)(?:\\?[^\\s\\"\\x27<>]{0,70})?',r'(?:url|endpoint|host|server|service|baseUrl)\\s*[:=]\\s*[^,;\\n]{3,130}']
+            for pat in patterns:
+                vals=list(dict.fromkeys(re.findall(pat,scripts,re.I)))
+                print("[odds-urls] pattern="+pat[:30]+" count="+str(len(vals))+" samples="+repr(vals[:35])[:4500],flush=True)
+            for term in ("https:","http:","Ajax","ajax","WebSocket","ws://","wss://",".php","cgi","json","getData","getOdds","単勝"):
+                p=scripts.lower().find(term.lower())
+                if p>=0: print("[odds-urls] term="+term+" excerpt="+repr(scripts[max(0,p-130):p+220])[:400],flush=True)
+        except Exception as ex: print("[odds-urls] ERROR "+str(ex)[:150],flush=True)
+    threading.Thread(target=run,daemon=True).start()
+_discover_urls()
