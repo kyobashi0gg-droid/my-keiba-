@@ -1,32 +1,43 @@
-# MY KEIBA LAB — Odds Bridge (experimental)
+# MY KEIBA LAB — Netkeiba odds bridge (private experiment)
 
-Branch: `experiment/odds-api-20261009`. Production GitHub Pages / `main` is unchanged.
+**Status: the complete upstream pipeline passed in the Render test environment on 2026-10-10 JST. This is not yet connected to the production MY KEIBA LAB site.**
 
-## State (2026-10-09)
+## Verified end-to-end
 
-- Render test service exists and was healthy. **The running Render deploy is older than this branch**; later improvements are staged, not deployed.
-- SmartRC v3 is publicly reachable from the Render test server, but its initial HTML includes no actual horse odds. The Ext JS app manifest names `app.js`, which defines `odds_tan` and `pop_tan` and has several `smartrc.php` calls. None is verified as a permissible odds API.
-- Netkeiba's desktop odds URL returned an empty/short response in the earlier connectivity probe. The mobile odds HTML can be a placeholder without horse odds.
-- The current server must return an error, not guessed horse odds: source, date, identity and full horse count are not yet verified.
-- `GET /health` is only a server liveness check, not a verified-upstream indicator. `GET /probe` is connectivity-only.
-- The site button in `odds-live-v49.js` on this branch now rejects incomplete or wrong-race snapshots, including different date/year, incomplete names/ranks, and duplicate rank.
-- The frontend expects **track, raceNo, raceDate (YYYY-MM-DD), full horses (number,name,odds,popularity)**. Each value must come from the upstream and be matched to the current race; no guessed data.
-- The site's newspaper `v3DateLabel` has a month/day but no year (e.g. `10/10(土)`). A full upstream date plus a near-current window is required.
+| Race on 2026-10-10 | Runner count | Status |
+| --- | ---: | --- |
+| Tokyo 9R 陣馬特別 | 9 | PASS |
+| Tokyo 10R JRA電話 | 16 | PASS |
+| Tokyo 11R サウジアラビアRC | 11 | PASS |
+| Kyoto 10R 宇治川特別 | 15 | PASS |
+| Kyoto 11R 御陵S | 13 | PASS |
 
-## How to run repeatable guard tests
+Total: **64 / 64 runners** fetched and cross-checked in the test service. The source updatedAt values were approximately 07:09 JST at testing.
 
-From repository root, with Node.js 18+:
+Pipeline:
+1. Resolve the `dateLabel` (often `10/10(土)`) against Japanese-local current date.
+2. Retrieve `race.netkeiba.com/top/race_list_sub.html?kaisai_date=YYYYMMDD`. Unlike the mobile list, this is date-scoped. Locate a **unique** meeting/race ID.
+3. Retrieve `race.sp.netkeiba.com/race/shutuba.html?race_id=...`; parse the real full-field horse names and check the event date/track/race.
+4. Retrieve netkeiba's JSON odds update endpoint `race.netkeiba.com/api/api_get_jra_odds.html?race_id=...&type=1&action=update`. It returns actual win odds and popularity even when HTML shows `---.-`. Check metadata `yy,jyo,kai,nichi,rno`, freshness, complete runners and unique ranks.
+5. Expose a snapshot in the same contract expected by `odds-live-v49.js`: `{track, raceNo, raceDate, updatedAt, source, horses:[{number,name,odds,popularity}]}`. The frontend independently cross-checks **every** horse name against MY KEIBA LAB before invoking the legacy v12 importer.
 
-`node --test tests/odds-snapshot.test.mjs`
+## Protection and status
 
-Reference snapshot is the **Tokyo 1R 2026-10-10, 16-runner SmartRC screen updated 20:45:44 JST** provided by the user.
+- **No scraping of paywalled content or cookies:** the test uses anonymously accessible source responses only.
+- **Personal use only.** The netkeiba terms restrict sharing/distributing obtained data outside private use. Access to odds output must be limited to the individual user, not opened as a free public proxy.
+- `GET /health` shows experimental service health; it **does not assert legal authorization** to redistribute odds.
+- `GET /odds` remains **OFF by default**: `MYKEIBA_ODDS_ENABLED=0` and no configured `MYKEIBA_ODDS_ACCESS_KEY`.
+- Private access requires server `MYKEIBA_ODDS_ENABLED=1` and `MYKEIBA_ODDS_ACCESS_KEY` of **32+ characters**. A matching key is sent in the `X-MYKEIBA-ACCESS` header. Missing/wrong keys cause 403, without accessing upstream.
+- The **experiment-branch frontend** adds one-time `自動取得設定` UI for the HTTPS endpoint and private access key; the key is only stored on the individual's device, never in repository source.
+- Backend caching: 30 minutes for date-scoped race list, 60 minutes for racecard, 45 seconds for odds. Frontend has 15-second duplicate-request cache.
+- The data source and update timestamp must remain visible. Do not claim guaranteed final, official or near-real-time odds.
+- Keep `MYKEIBA_RUN_TEST_ON_BOOT=0` normally. Enable temporarily in test service only to rerun five-race validation.
 
-## Remaining before enabling auto-import
+## Remaining before production
 
-1. Verify an authorized, stable way to retrieve actual race-specific win odds from SmartRC or netkeiba.
-2. Confirm race date, place and meeting/race identity from the same upstream source.
-3. Validate all horses vs the screenshot at the same source update time. Avoid comparing old and new snapshots as if simultaneous.
-4. Confirm response origin, access terms, rate limits, cache semantics and Render connectivity.
-5. Deploy tested branch, set endpoint explicitly, and observe button success/failure without changing unrelated MY KEIBA LAB data.
+1. Confirm personal-use-only authorization, configure a strong private key in Render and a matching browser configuration; verify full browser CORS flow and response.
+2. Test both successful and intentionally failing snapshots (race mismatch, missing horses, stale date, wrong key).
+3. Only after private integration is tested, update the production `main` frontend and inspect the green button on mobile.
+4. Continue to use the legacy manual text importer when netkeiba is unavailable.
 
-**Never put stale, predicted, partial or fabricated odds into automatic import.**
+**Existing MY KEIBA LAB production main/site remains unchanged.**
