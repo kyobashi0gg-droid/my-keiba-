@@ -64,7 +64,10 @@ def race_id_from_index(html, *, track, race_no, race_date):
     candidates=set()
     for a in soup.select("a[href]"):
         url=a.get("href","")
-        values=parse_qs(urlsplit(url).query).get("race_id",[])
+        # Both ?race_id=YYYY... and /race/YY... routes are used.
+        # Only accept complete 12-digit netkeiba race IDs, not arbitrary strings.
+        values=set(parse_qs(urlsplit(url).query).get("race_id",[]))
+        values.update(re.findall(r"(?<!\d)20\d{10}(?!\d)",url))
         for val in values:
             if (re.fullmatch(r"20\d{10}",val)
                 and val[:4]==str(race_date.year)
