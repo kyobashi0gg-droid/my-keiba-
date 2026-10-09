@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 import requests
 from bs4 import BeautifulSoup
 from source_parser import parse_sportsnavi_public_html, race_id_from_index, resolve_race_date
+from netkeiba_source import parse_roster, parse_win_odds
 
 app=Flask(__name__)
 TRACKS={"札幌":"01","函館":"02","福島":"03","新潟":"04","東京":"05","中山":"06","中京":"07","京都":"08","阪神":"09","小倉":"10"}
@@ -245,7 +246,7 @@ def _race_id_resolution_probe():
             example_urls=[]
             for a in sou.select("a[href]"):
                 href=a.get("href","")
-                matched=re.findall(r"(?<!\\d)202605\\d{4}09(?!\\d)",href)
+                matched=re.findall(r"202605[0-9]{4}09",href)
                 if matched:
                     ids_by_url.update(matched)
                     if len(example_urls)<2:example_urls.append(href[:100])
@@ -272,11 +273,22 @@ def _roster_probe():
             txt=row.get_text(" ",strip=True)
             if "ノクターン" in txt or "ビップチェイス" in txt:
                 samples.append({"tagClass":row.get("class",[]),"cells":[{"class":td.get("class",[]),"text":td.get_text(" ",strip=True)[:65]} for td in row.find_all("td",recursive=False)]})
-        print("[netkeiba-roster-probe] "+json.dumps({"status":r.status_code,"HorseListRows":len(soup.select("tr.HorseList")),"samples":samples[:2]},ensure_ascii=False),flush=True)
+        try:
+            roster=parse_roster(r.content,race_id=rid,race_date=datetime(2026,10,10).date(),track="東京",race_no=9)
+            status={"rosterSize":len(roster),"names":list(roster.items())[:2]}
+        except ValueError as e:
+            status={"rosterError":str(e)}
+        print("[netkeiba-roster-probe] "+json.dumps({"status":r.status_code,"HorseListRows":len(soup.select("tr.HorseList")),"parse":status,"samples":samples[:2]},ensure_ascii=False),flush=True)
         x=requests.get("https://race.netkeiba.com/api/api_get_jra_odds.html",params={"race_id":rid,"type":"1","action":"update"},timeout=12,headers={"User-Agent":"Mozilla/5.0"})
         z=x.json()
         data=z.get("data",{})
-        print("[netkeiba-meta-probe] "+json.dumps({"meta":{key:data.get(key) for key in ("send_date","send_time","official_datetime","update_datetime","yy","jyo","kai","nichi","rno","touroku","shusso")},"status":z.get("status"),"reason":z.get("reason")},ensure_ascii=False),flush=True)
+        verified={}
+        if isinstance(status,dict) and "rosterSize" in status:
+            try:
+                output=parse_win_odds(z,race_id=rid,race_date=datetime(2026,10,10).date(),track="東京",race_no=9,roster=roster)
+                verified={"verifiedCount":len(output["horses"]),"verifiedUpdatedAt":output["updatedAt"],"first":output["horses"][0]}
+            except ValueError as e: verified={"verifyError":str(e)}
+        print("[netkeiba-meta-probe] "+json.dumps({"meta":{key:data.get(key) for key in ("send_date","send_time","official_datetime","update_datetime","yy","jyo","kai","nichi","rno","touroku","shusso")},"status":z.get("status"),"verified":verified},ensure_ascii=False),flush=True)
     except (requests.RequestException,ValueError) as e:
         print("[netkeiba-roster-probe] "+json.dumps({"error":type(e).__name__}),flush=True)
 
