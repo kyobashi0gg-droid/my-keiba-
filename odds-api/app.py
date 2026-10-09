@@ -177,3 +177,23 @@ def _discover_urls():
         except Exception as ex: print("[odds-urls] ERROR "+str(ex)[:150],flush=True)
     threading.Thread(target=run,daemon=True).start()
 _discover_urls()
+
+
+def _inspect_manifest():
+    import threading
+    from urllib.parse import urljoin
+    def run():
+        try:
+            base="https://www.smartrc.jp/v3/"
+            for relative in ("app.json","bootstrap.json","app.js"):
+                url=urljoin(base,relative)
+                r=requests.get(url,timeout=12)
+                print("[odds-manifest] "+relative+" status="+str(r.status_code)+" bytes="+str(len(r.content))+" ct="+str(r.headers.get("Content-Type")),flush=True)
+                if relative=="app.json" and r.status_code==200:
+                    try:
+                        j=r.json()
+                        print("[odds-manifest] keys="+repr(list(j.keys()))+" js="+repr(j.get("js",[])[:5])[:900]+" resources="+repr(j.get("resources",{}) if isinstance(j.get("resources"),str) else list(j.get("resources",{}).keys()) if isinstance(j.get("resources"),dict) else '')[:500],flush=True)
+                    except Exception as e: print("[odds-manifest] json error="+str(e)[:100],flush=True)
+        except Exception as e: print("[odds-manifest] ERROR "+str(e)[:160],flush=True)
+    threading.Thread(target=run,daemon=True).start()
+_inspect_manifest()
