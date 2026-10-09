@@ -5,6 +5,7 @@
   window.__MYKEIBA_ODDS_LIVE_V49__ = true;
 
   const ENDPOINT_KEY = 'my-keiba-live-odds-endpoint-v1';
+  const ACCESS_KEY = 'my-keiba-live-odds-private-access-v1';
   const CACHE_MS = 15000;
   const memoryCache = new Map();
 
@@ -20,6 +21,17 @@
 
   function endpoint() {
     return clean(window.MYKEIBA_ODDS_ENDPOINT || localStorage.getItem(ENDPOINT_KEY) || '');
+  }
+
+  function privateAccessKey() {
+    return clean(localStorage.getItem(ACCESS_KEY) || '');
+  }
+
+  function setAccessKey(value) {
+    const secret = clean(value);
+    if (secret) localStorage.setItem(ACCESS_KEY, secret);
+    else localStorage.removeItem(ACCESS_KEY);
+    return !!privateAccessKey();
   }
 
   function cacheKey(race) {
@@ -119,6 +131,7 @@
   async function requestOdds(race, force = false) {
     const ep = endpoint();
     if (!ep) throw Object.assign(new Error('AUTO_ENDPOINT_MISSING'), { code:'AUTO_ENDPOINT_MISSING' });
+    if (!privateAccessKey()) throw Object.assign(new Error('PRIVATE_ACCESS_MISSING'), { code:'PRIVATE_ACCESS_MISSING' });
 
     const key = cacheKey(race);
     const cached = memoryCache.get(key);
@@ -135,7 +148,7 @@
       mode: 'cors',
       credentials: 'omit',
       cache: 'no-store',
-      headers: { 'Accept': 'application/json' }
+      headers: { 'Accept': 'application/json', 'X-MYKEIBA-ACCESS': privateAccessKey() }
     });
     if (!res.ok) throw new Error(`取得先エラー HTTP ${res.status}`);
     const value = validateSnapshot(normalizeResponse(await res.json(), race), race);
@@ -188,6 +201,27 @@
     host.textContent = text;
   }
 
+  function configurePrivateOdds(body) {
+    const suggested = endpoint() || 'https://mykeiba-odds-bridge-test.onrender.com/odds';
+    const chosen = window.prompt('個人用オッズ取得先のURL（初回のみ設定）', suggested);
+    if (chosen === null) return;
+    const trimmed = clean(chosen);
+    if (!trimmed || !/^https:\/\//i.test(trimmed)) {
+      showStatus(body, 'HTTPSの取得先URLを設定してください。', 'warn');
+      return;
+    }
+    const key = window.prompt('個人用アクセスキーを入力してください（端末内に保存）', '');
+    if (key === null) return;
+    if (clean(key).length < 32) {
+      showStatus(body, '32文字以上の個人用アクセスキーが必要です。', 'warn');
+      return;
+    }
+    setEndpoint(trimmed);
+    setAccessKey(key);
+    showStatus(body, '接続設定を保存しました。「最新オッズ取得」を押して確認してください。', 'ok');
+    decorate();
+  }
+
   function openManualFallback(body) {
     const manual = body?.querySelector('#v12OddsImport');
     if (manual) {
@@ -215,6 +249,7 @@
       showStatus(body, `${result.message} ${source}取得 ${fmtTime(data.fetchedAt)}${data.cached ? '（15秒キャッシュ）' : ''}`, 'ok');
     } catch (err) {
       if (err?.code === 'AUTO_ENDPOINT_MISSING' || err?.message === 'AUTO_ENDPOINT_MISSING') openManualFallback(body);
+      else if (err?.code === 'PRIVATE_ACCESS_MISSING') showStatus(body, '個人用アクセスキーが未設定です。「自動取得設定」を開いてください。', 'warn');
       else showStatus(body, `自動取得できませんでした：${err?.message || '通信エラー'}。手動取込はそのまま使えます。`, 'ng');
     } finally {
       btn.disabled = false;
@@ -248,6 +283,17 @@
       : '自動取得先は未接続。押すと手動取込へフォールバックします。';
     btn.onclick = () => handleFetch(btn, race, body);
 
+    let cfg = body.querySelector('#v49OddsConfig');
+    if (!cfg) {
+      cfg = document.createElement('button');
+      cfg.type = 'button';
+      cfg.id = 'v49OddsConfig';
+      cfg.className = 'v49-config';
+      cfg.textContent = '自動取得設定';
+      bar.appendChild(cfg);
+    }
+    cfg.onclick = () => configurePrivateOdds(body);
+
     const manual = body.querySelector('#v12OddsImport');
     if (manual) {
       manual.textContent = '手動オッズ取込';
@@ -267,6 +313,7 @@
   style.textContent = `
     #v49OddsFetch{border-color:#4f8f6a;background:#1f7a4c;color:#fff}
     #v49OddsFetch:disabled{opacity:.62}
+    #v49OddsConfig{font-size:11px;border:1px solid #c4d2c9;border-radius:8px;background:#f2f7f3;color:#175f3c;padding:7px 9px}
     .v49-stamp{font-size:9px;opacity:.85;margin-left:5px;white-space:nowrap}
     .v49-status{margin:8px 0 10px;padding:9px 11px;border-radius:11px;font-size:10px;line-height:1.5}
     .v49-status.info{background:#eef5ff;color:#2d5f91}.v49-status.ok{background:#eaf8ef;color:#17613d}.v49-status.warn{background:#fff5df;color:#8a6118}.v49-status.ng{background:#fff0ef;color:#99352d}
@@ -286,5 +333,5 @@
   window.addEventListener('mykeiba:modules-ready', () => schedule(100));
   schedule(300);
 
-  window.MyKeibaLiveOddsV49 = { requestOdds, applyToRace, normalizeResponse, validateSnapshot, setEndpoint, endpoint, cacheMs:CACHE_MS };
+  window.MyKeibaLiveOddsV49 = { requestOdds, applyToRace, normalizeResponse, validateSnapshot, setEndpoint, endpoint, setAccessKey, cacheMs:CACHE_MS };
 })();
