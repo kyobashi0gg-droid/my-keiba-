@@ -45,9 +45,68 @@
       track: data?.track || data?.開催場 || race.track,
       raceNo: data?.raceNo || data?.race || data?.R || race.raceNo,
       updatedAt: data?.updatedAt || data?.sourceUpdatedAt || data?.jraUpdatedAt || '',
+      raceDate: data?.raceDate || data?.date || '',
       fetchedAt: new Date().toISOString(),
       horses
     };
+  }
+
+  // Experimental fail-closed guard. A partial or mismatched response must never
+  // overwrite existing odds. Keep this on the experiment branch until verified.
+  function normHorseName(value = '') {
+    return clean(value).replace(/[\\s　・･]/g, '').toLowerCase();
+  }
+
+  function dateParts(value = '') {
+    const text = clean(value);
+    // Supported: YYYY-MM-DD, YYYY/MM/DD, M/D, M月D日.
+    let m = text.match(/(?:^|\\D)(20\\d{2})[-/.年](\\d{1,2})[-/.月](\\d{1,2})(?:日|\\D|$)/);
+    if (m) return { year:Number(m[1]), month:Number(m[2]), day:Number(m[3]) };
+    m = text.match(/(?:^|\\D)(\\d{1,2})[/.月](\\d{1,2})(?:日|\\D|$)/);
+    return m ? { year:null, month:Number(m[1]), day:Number(m[2]) } : null;
+  }
+
+  function validateSnapshot(data, race) {
+    if (clean(data.track) !== clean(race.track) ||
+        Number(data.raceNo) !== Number(race.raceNo)) {
+      throw new Error('取得先の競馬場・レース番号が一致しません');
+    }
+
+    const wantedDate = dateParts(race.v3DateLabel);
+    const actualDate = dateParts(data.raceDate);
+    if (!wantedDate || !actualDate || wantedDate.month !== actualDate.month ||
+        wantedDate.day !== actualDate.day ||
+        (wantedDate.year && actualDate.year && wantedDate.year !== actualDate.year)) {
+      throw new Error('開催日の照合ができません。反映を中止しました');
+    }
+
+    const existing = race.horses || [];
+    if (!existing.length || data.horses.length !== existing.length) {
+      throw new Error('全出走馬のオッズが取得できていません');
+    }
+    const seenNumbers = new Set();
+    const seenRanks = new Set();
+    for (const incoming of data.horses) {
+      const number = Number(incoming.number);
+      const odds = Number(incoming.odds);
+      const popularity = Number(incoming.popularity);
+      if (!Number.isInteger(number) || number < 1 || number > 18 ||
+          seenNumbers.has(number)) throw new Error('馬番に重複・欠落があります');
+      seenNumbers.add(number);
+
+      const existingHorse = existing.find(h => Number(h.number) === number);
+      if (!existingHorse || !normHorseName(incoming.name) ||
+          normHorseName(incoming.name) !== normHorseName(existingHorse.name)) {
+        throw new Error(number + '番の馬名が一致しません');
+      }
+      if (!Number.isFinite(odds) || odds <= 0 || !Number.isInteger(popularity) ||
+          popularity < 1 || popularity > existing.length || seenRanks.has(popularity)) {
+        throw new Error(number + '番の単勝オッズ・人気が不正です');
+      }
+      seenRanks.add(popularity);
+    }
+    if (seenRanks.size !== existing.length) throw new Error('人気順に欠落があります');
+    return data;
   }
 
   async function requestOdds(race, force = false) {
@@ -72,7 +131,7 @@
       headers: { 'Accept': 'application/json' }
     });
     if (!res.ok) throw new Error(`取得先エラー HTTP ${res.status}`);
-    const value = normalizeResponse(await res.json(), race);
+    const value = validateSnapshot(normalizeResponse(await res.json(), race), race);
     memoryCache.set(key, { at:Date.now(), value });
     return value;
   }
@@ -220,5 +279,5 @@
   window.addEventListener('mykeiba:modules-ready', () => schedule(100));
   schedule(300);
 
-  window.MyKeibaLiveOddsV49 = { requestOdds, applyToRace, normalizeResponse, setEndpoint, endpoint, cacheMs:CACHE_MS };
+  window.MyKeibaLiveOddsV49 = { requestOdds, applyToRace, normalizeResponse, validateSnapshot, setEndpoint, endpoint, cacheMs:CACHE_MS };
 })();
