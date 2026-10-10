@@ -320,6 +320,53 @@
     #v49OddsFetch{border-color:#4f8f6a;background:#1f7a4c;color:#fff}
     #v49OddsFetch:disabled{opacity:.62}
     #v49OddsConfig{font-size:11px;border:1px solid #c4d2c9;border-radius:8px;background:#f2f7f3;color:#175f3c;padding:7px 9px}
+    /* Mobile race-detail actions: avoid narrow vertical-writing buttons.
+       Pure layout rules; do not change handlers, odds, marks or DB data. */
+    @media (max-width: 800px) {
+      #v4DetailBody .v4-edit-bar {
+        display:grid !important;
+        grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+        gap:9px !important;
+        align-items:stretch !important;
+        flex-wrap:unset !important;
+        width:100% !important;
+        box-sizing:border-box !important;
+      }
+      #v4DetailBody .v4-edit-bar > button {
+        width:100% !important;
+        min-width:0 !important;
+        max-width:100% !important;
+        margin:0 !important;
+        padding:12px 9px !important;
+        box-sizing:border-box !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        flex-direction:column !important;
+        gap:3px !important;
+        white-space:normal !important;
+        overflow-wrap:normal !important;
+        word-break:keep-all !important;
+        writing-mode:horizontal-tb !important;
+        text-orientation:mixed !important;
+        font-size:13px !important;
+        line-height:1.4 !important;
+        min-height:48px !important;
+      }
+      #v4DetailBody .v4-edit-bar > #v49OddsFetch {
+        grid-column:1 / -1 !important;
+        font-size:17px !important;
+        min-height:56px !important;
+      }
+      #v4DetailBody .v4-edit-bar > #v12OddsImport {
+        grid-column:1 / -1 !important;
+        background:#edf5ff;
+      }
+      #v4DetailBody .v4-edit-bar .v49-stamp {
+        font-size:11px !important;
+        margin:0 !important;
+      }
+    }
     .v49-stamp{font-size:9px;opacity:.85;margin-left:5px;white-space:nowrap}
     .v49-status{margin:8px 0 10px;padding:9px 11px;border-radius:11px;font-size:10px;line-height:1.5}
     .v49-status.info{background:#eef5ff;color:#2d5f91}.v49-status.ok{background:#eaf8ef;color:#17613d}.v49-status.warn{background:#fff5df;color:#8a6118}.v49-status.ng{background:#fff0ef;color:#99352d}
