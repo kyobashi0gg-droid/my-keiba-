@@ -19,31 +19,51 @@ _CACHE={}
 _LOCK=threading.RLock()
 _LIST_TTL=60*30
 _ROSTER_TTL=60*60
-_ODDS_TTL=45
+_ODDS_TTL=180
+_MIN_REQUEST_GAP=3.0
+_LAST_UPSTREAM_AT=0.0
+_BLOCK_UNTIL=0.0
 
 class UpstreamFailure(ValueError):
     pass
 
 def _fetch(url,params):
-    try:
-        response=_SESSION.get(url,params=params,timeout=(5,15),headers=HEADERS)
-        response.raise_for_status()
-        if len(response.content)>2_000_000:
-            raise UpstreamFailure("取得元の応答が大きすぎます")
-        return response
-    except requests.RequestException as exc:
-        raise UpstreamFailure("取得元との通信に失敗しました") from exc
+    global _LAST_UPSTREAM_AT, _BLOCK_UNTIL
+    # Serialize upstream fetches across all races; never spin/retry on 429/403.
+    with _LOCK:
+        now=time.monotonic()
+        if now < _BLOCK_UNTIL:
+            raise UpstreamFailure("取得元の通信制限中です")
+        wait=_MIN_REQUEST_GAP-(now-_LAST_UPSTREAM_AT)
+        if wait>0:
+            time.sleep(wait)
+        _LAST_UPSTREAM_AT=time.monotonic()
+        try:
+            response=_SESSION.get(url,params=params,timeout=(5,15),headers=HEADERS)
+            if response.status_code in (403,429):
+                _BLOCK_UNTIL=time.monotonic()+3600
+                raise UpstreamFailure("取得元から通信制限を受けました")
+            if response.status_code>=500:
+                _BLOCK_UNTIL=time.monotonic()+300
+                raise UpstreamFailure("取得元が一時的に利用できません")
+            response.raise_for_status()
+            if len(response.content)>2_000_000:
+                raise UpstreamFailure("取得元の応答が大きすぎます")
+            return response
+        except requests.RequestException as exc:
+            raise UpstreamFailure("取得元との通信に失敗しました") from exc
 
 def _cached(key,ttl,fn):
-    now=time.monotonic()
+    # Use one lock for lookup + upstream fetch + cache store.
+    # Prevent concurrent presses from stampeding the provider.
     with _LOCK:
+        now=time.monotonic()
         prior=_CACHE.get(key)
         if prior and now-prior[0]<ttl:
             return prior[1]
-    value=fn()
-    with _LOCK:
+        value=fn()
         _CACHE[key]=(time.monotonic(),value)
-    return value
+        return value
 
 def fetch_snapshot(*,track,race_no,date_label):
     race_no=int(race_no)
