@@ -1,10 +1,10 @@
-// MY KEIBA LAB v49 - 押した時だけ最新オッズ取得（軽量フロント）
-// 自動取得先が接続された場合のみ通信。15秒キャッシュ、最小フィールドだけを既存v12取込へ渡す。
+// MY KEIBA LAB v49 - 押した時だけnetkeiba単勝オッズ取得（個人用・接続先固定）
+// 自動取得先が接続された場合のみ通信。3分キャッシュ、最小フィールドだけを既存v12取込へ渡す。
 (() => {
   if (window.__MYKEIBA_ODDS_LIVE_V49__) return;
   window.__MYKEIBA_ODDS_LIVE_V49__ = true;
 
-  const ENDPOINT_KEY = 'my-keiba-live-odds-endpoint-v1';
+  const PRIVATE_ENDPOINT = 'https://mykeiba-odds-bridge-test.onrender.com/odds';
   const ACCESS_KEY = 'my-keiba-live-odds-private-access-v1';
   const CACHE_MS = 180000;
   const memoryCache = new Map();
@@ -16,11 +16,15 @@
     if (!first) return null;
     const races = (typeof state !== 'undefined' ? state.races : window.state?.races) || [];
     const id = first.dataset.v4Expand;
-    return races.find(r => (r.horses || []).some(h => h.id === id)) || null;
+    const race = races.find(r => (r.horses || []).some(h => h.id === id)) || null;
+    const heading = clean(document.querySelector('#v4DetailTitle h2')?.textContent);
+    if (!race || !heading.includes(clean(race.track)) ||
+        !heading.includes(clean(race.raceNo) + 'R')) return null;
+    return race;
   }
 
   function endpoint() {
-    return clean(window.MYKEIBA_ODDS_ENDPOINT || localStorage.getItem(ENDPOINT_KEY) || '');
+    return PRIVATE_ENDPOINT;
   }
 
   function privateAccessKey() {
@@ -214,21 +218,12 @@
   }
 
   function configurePrivateOdds(body) {
-    const suggested = endpoint() || 'https://mykeiba-odds-bridge-test.onrender.com/odds';
-    const chosen = window.prompt('個人用オッズ取得先のURL（初回のみ設定）', suggested);
-    if (chosen === null) return;
-    const trimmed = clean(chosen);
-    if (!trimmed || !/^https:\/\//i.test(trimmed)) {
-      showStatus(body, 'HTTPSの取得先URLを設定してください。', 'warn');
-      return;
-    }
-    const key = window.prompt('個人用アクセスキーを入力してください（端末内に保存）', '');
+    const key = window.prompt('Renderに設定した個人用アクセスキーを入力してください（この端末内に保存されます。チャットには送らないでください）', '');
     if (key === null) return;
     if (clean(key).length < 32) {
       showStatus(body, '32文字以上の個人用アクセスキーが必要です。', 'warn');
       return;
     }
-    setEndpoint(trimmed);
     setAccessKey(key);
     showStatus(body, '接続設定を保存しました。「最新オッズ取得」を押して確認してください。', 'ok');
     decorate();
@@ -246,7 +241,7 @@
 
   async function handleFetch(btn, race, body) {
     if (!race || btn.disabled) return;
-    if (!endpoint()) { openManualFallback(body); return; }
+    if (!privateAccessKey()) { configurePrivateOdds(body); return; }
 
     const old = btn.textContent;
     btn.disabled = true;
@@ -261,7 +256,7 @@
       showStatus(body, `${result.message} ${source}取得 ${fmtTime(data.fetchedAt)}${data.cached ? '（3分キャッシュ）' : ''}`, 'ok');
     } catch (err) {
       if (err?.code === 'AUTO_ENDPOINT_MISSING' || err?.message === 'AUTO_ENDPOINT_MISSING') openManualFallback(body);
-      else if (err?.code === 'PRIVATE_ACCESS_MISSING') showStatus(body, '個人用アクセスキーが未設定です。「自動取得設定」を開いてください。', 'warn');
+      else if (err?.code === 'PRIVATE_ACCESS_MISSING') configurePrivateOdds(body);
       else showStatus(body, `自動取得できませんでした：${err?.message || '通信エラー'}。手動取込はそのまま使えます。`, 'ng');
     } finally {
       btn.disabled = false;
@@ -315,9 +310,8 @@
   }
 
   function setEndpoint(url) {
-    const value = clean(url);
-    if (value) localStorage.setItem(ENDPOINT_KEY, value);
-    else localStorage.removeItem(ENDPOINT_KEY);
+    // The only accepted endpoint is the pinned personal Render service.
+    if (clean(url) !== PRIVATE_ENDPOINT) throw new Error('接続先を変更できません');
     return endpoint();
   }
 
