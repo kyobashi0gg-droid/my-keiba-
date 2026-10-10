@@ -35,3 +35,41 @@ body.integrated-v4 .sheet-dialog .sheet-actions{background:linear-gradient(180de
   .v4-table-wrap{scroll-behavior:auto}
   .v4-table th{position:static}
 }
+
+
+/* 2026-10-10 Android: detail header overlapping horse rows while scrolling.
+   On phones remove the sticky layer inside the scrolling modal; keep
+   horizontal table scrolling and all handlers/data untouched. */
+@media (max-width: 800px) {
+  #v4Detail .v4-sheet-head {
+    position: relative !important;
+    top: auto !important;
+    z-index: 1 !important;
+    display: flex;
+    align-items: center;
+    min-height: 76px;
+    box-sizing: border-box;
+    background: #fff !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  #v4Detail #v4DetailTitle {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  #v4Detail #v4DetailTitle h2 {
+    font-size: 18px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  #v4Detail .v4-close {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    align-self: flex-start;
+  }
+  #v4Detail .v4-sheet-body {
+    position: relative;
+    z-index: 0;
+  }
+}
