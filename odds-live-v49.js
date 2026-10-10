@@ -1,11 +1,12 @@
-// MY KEIBA LAB v49 - 押した時だけ最新オッズ取得（軽量フロント）
-// 自動取得先が接続された場合のみ通信。15秒キャッシュ、最小フィールドだけを既存v12取込へ渡す。
+// MY KEIBA LAB v49 - 押した時だけnetkeiba単勝オッズ取得（個人用・接続先固定）
+// 自動取得先が接続された場合のみ通信。3分キャッシュ、最小フィールドだけを既存v12取込へ渡す。
 (() => {
   if (window.__MYKEIBA_ODDS_LIVE_V49__) return;
   window.__MYKEIBA_ODDS_LIVE_V49__ = true;
 
-  const ENDPOINT_KEY = 'my-keiba-live-odds-endpoint-v1';
-  const CACHE_MS = 15000;
+  const PRIVATE_ENDPOINT = 'https://mykeiba-odds-bridge-test.onrender.com/odds';
+  const ACCESS_KEY = 'my-keiba-live-odds-private-access-v1';
+  const CACHE_MS = 180000;
   const memoryCache = new Map();
 
   function clean(v = '') { return String(v ?? '').trim(); }
@@ -15,11 +16,26 @@
     if (!first) return null;
     const races = (typeof state !== 'undefined' ? state.races : window.state?.races) || [];
     const id = first.dataset.v4Expand;
-    return races.find(r => (r.horses || []).some(h => h.id === id)) || null;
+    const race = races.find(r => (r.horses || []).some(h => h.id === id)) || null;
+    const heading = clean(document.querySelector('#v4DetailTitle h2')?.textContent);
+    if (!race || !heading.includes(clean(race.track)) ||
+        !heading.includes(clean(race.raceNo) + 'R')) return null;
+    return race;
   }
 
   function endpoint() {
-    return clean(window.MYKEIBA_ODDS_ENDPOINT || localStorage.getItem(ENDPOINT_KEY) || '');
+    return PRIVATE_ENDPOINT;
+  }
+
+  function privateAccessKey() {
+    return clean(localStorage.getItem(ACCESS_KEY) || '');
+  }
+
+  function setAccessKey(value) {
+    const secret = clean(value);
+    if (secret) localStorage.setItem(ACCESS_KEY, secret);
+    else localStorage.removeItem(ACCESS_KEY);
+    return !!privateAccessKey();
   }
 
   function cacheKey(race) {
@@ -42,17 +58,96 @@
       popularity: h.popularity ?? h.rank ?? h.人気 ?? h.人気順 ?? ''
     })).filter(h => clean(h.number) || clean(h.name));
     return {
-      track: data?.track || data?.開催場 || race.track,
-      raceNo: data?.raceNo || data?.race || data?.R || race.raceNo,
+      track: data?.track || data?.開催場 || '',
+      raceNo: data?.raceNo || data?.race || data?.R || '',
       updatedAt: data?.updatedAt || data?.sourceUpdatedAt || data?.jraUpdatedAt || '',
+      raceDate: data?.raceDate || data?.date || '',
       fetchedAt: new Date().toISOString(),
       horses
     };
   }
 
+  // Experimental fail-closed guard. A partial or mismatched response must never
+  // overwrite existing odds. Keep this on the experiment branch until verified.
+  function normHorseName(value = '') {
+    return clean(value).replace(/[\s　・･]/g, '').toLowerCase();
+  }
+
+  function dateParts(value = '') {
+    const text = clean(value);
+    // Supported: YYYY-MM-DD, YYYY/MM/DD, M/D, M月D日.
+    let m = text.match(/(?:^|\D)(20\d{2})[-/.年](\d{1,2})[-/.月](\d{1,2})(?:日|\D|$)/);
+    if (m) return { year:Number(m[1]), month:Number(m[2]), day:Number(m[3]) };
+    m = text.match(/(?:^|\D)(\d{1,2})[/.月](\d{1,2})(?:日|\D|$)/);
+    return m ? { year:null, month:Number(m[1]), day:Number(m[2]) } : null;
+  }
+
+  function validateSnapshot(data, race, clockMs = Date.now()) {
+    if (clean(data.track) !== clean(race.track) ||
+        Number(data.raceNo) !== Number(race.raceNo)) {
+      throw new Error('取得先の競馬場・レース番号が一致しません');
+    }
+
+    const wantedDate = dateParts(race.v3DateLabel);
+    const actualDate = dateParts(data.raceDate);
+    // v3DateLabel often contains only '10/10(土)' and has no year.
+    // The upstream must supply an explicit year, and the race must be recent.
+    if (!wantedDate || !actualDate || !actualDate.year ||
+        wantedDate.month !== actualDate.month || wantedDate.day !== actualDate.day ||
+        (wantedDate.year && actualDate.year !== wantedDate.year)) {
+      throw new Error('開催日の照合ができません。反映を中止しました');
+    }
+    const jstToday = Math.floor((clockMs + 9 * 60 * 60 * 1000) / 86400000);
+    const raceDay = Math.floor(Date.UTC(actualDate.year, actualDate.month - 1, actualDate.day) / 86400000);
+    if (raceDay < jstToday - 1 || raceDay > jstToday + 7) {
+      throw new Error('古い開催日または遠い未来の開催日です。反映を中止しました');
+    }
+
+    const timestampMs = Date.parse(data.updatedAt || '');
+    if (!Number.isFinite(timestampMs) || timestampMs > clockMs + 5 * 60 * 1000) {
+      throw new Error('提供元の更新時刻を確認できません');
+    }
+    // Reject an old same-day snapshot; before 09:00 JST early odds can be
+    // overnight, while daytime quotes must be less than 30 minutes old.
+    const jstHour = new Date(clockMs + 9*3600000).getUTCHours();
+    const maximumAge = jstHour < 9 ? 16*3600000 : 30*60000;
+    if (raceDay === jstToday && clockMs - timestampMs > maximumAge) {
+      throw new Error('取得したオッズの更新時刻が古いため反映しません');
+    }
+
+    const existing = race.horses || [];
+    if (!existing.length || data.horses.length !== existing.length) {
+      throw new Error('全出走馬のオッズが取得できていません');
+    }
+    const seenNumbers = new Set();
+    const seenRanks = new Set();
+    for (const incoming of data.horses) {
+      const number = Number(incoming.number);
+      const odds = Number(incoming.odds);
+      const popularity = Number(incoming.popularity);
+      if (!Number.isInteger(number) || number < 1 || number > 18 ||
+          seenNumbers.has(number)) throw new Error('馬番に重複・欠落があります');
+      seenNumbers.add(number);
+
+      const existingHorse = existing.find(h => Number(h.number) === number);
+      if (!existingHorse || !normHorseName(incoming.name) ||
+          normHorseName(incoming.name) !== normHorseName(existingHorse.name)) {
+        throw new Error(number + '番の馬名が一致しません');
+      }
+      if (!Number.isFinite(odds) || odds <= 0 || !Number.isInteger(popularity) ||
+          popularity < 1 || popularity > existing.length || seenRanks.has(popularity)) {
+        throw new Error(number + '番の単勝オッズ・人気が不正です');
+      }
+      seenRanks.add(popularity);
+    }
+    if (seenRanks.size !== existing.length) throw new Error('人気順に欠落があります');
+    return data;
+  }
+
   async function requestOdds(race, force = false) {
     const ep = endpoint();
     if (!ep) throw Object.assign(new Error('AUTO_ENDPOINT_MISSING'), { code:'AUTO_ENDPOINT_MISSING' });
+    if (!privateAccessKey()) throw Object.assign(new Error('PRIVATE_ACCESS_MISSING'), { code:'PRIVATE_ACCESS_MISSING' });
 
     const key = cacheKey(race);
     const cached = memoryCache.get(key);
@@ -69,10 +164,10 @@
       mode: 'cors',
       credentials: 'omit',
       cache: 'no-store',
-      headers: { 'Accept': 'application/json' }
+      headers: { 'Accept': 'application/json', 'X-MYKEIBA-ACCESS': privateAccessKey() }
     });
     if (!res.ok) throw new Error(`取得先エラー HTTP ${res.status}`);
-    const value = normalizeResponse(await res.json(), race);
+    const value = validateSnapshot(normalizeResponse(await res.json(), race), race);
     memoryCache.set(key, { at:Date.now(), value });
     return value;
   }
@@ -122,6 +217,18 @@
     host.textContent = text;
   }
 
+  function configurePrivateOdds(body) {
+    const key = window.prompt('Renderに設定した個人用アクセスキーを入力してください（この端末内に保存されます。チャットには送らないでください）', '');
+    if (key === null) return;
+    if (clean(key).length < 32) {
+      showStatus(body, '32文字以上の個人用アクセスキーが必要です。', 'warn');
+      return;
+    }
+    setAccessKey(key);
+    showStatus(body, '接続設定を保存しました。「最新オッズ取得」を押して確認してください。', 'ok');
+    decorate();
+  }
+
   function openManualFallback(body) {
     const manual = body?.querySelector('#v12OddsImport');
     if (manual) {
@@ -134,7 +241,7 @@
 
   async function handleFetch(btn, race, body) {
     if (!race || btn.disabled) return;
-    if (!endpoint()) { openManualFallback(body); return; }
+    if (!privateAccessKey()) { configurePrivateOdds(body); return; }
 
     const old = btn.textContent;
     btn.disabled = true;
@@ -145,10 +252,11 @@
       if (!data.horses.length) throw new Error('取得できるオッズがありません');
       const result = applyToRace(data, race);
       if (!result.ok) throw new Error(result.message);
-      const source = data.updatedAt ? `提供元更新 ${fmtTime(data.updatedAt)} / ` : '';
-      showStatus(body, `${result.message} ${source}取得 ${fmtTime(data.fetchedAt)}${data.cached ? '（15秒キャッシュ）' : ''}`, 'ok');
+      const source = data.updatedAt ? `netkeiba提供元更新 ${fmtTime(data.updatedAt)} / ` : '';
+      showStatus(body, `${result.message} ${source}取得 ${fmtTime(data.fetchedAt)}${data.cached ? '（3分キャッシュ）' : ''}`, 'ok');
     } catch (err) {
       if (err?.code === 'AUTO_ENDPOINT_MISSING' || err?.message === 'AUTO_ENDPOINT_MISSING') openManualFallback(body);
+      else if (err?.code === 'PRIVATE_ACCESS_MISSING') configurePrivateOdds(body);
       else showStatus(body, `自動取得できませんでした：${err?.message || '通信エラー'}。手動取込はそのまま使えます。`, 'ng');
     } finally {
       btn.disabled = false;
@@ -178,9 +286,20 @@
       ? `最新オッズ取得 <span class="v49-stamp">${fmtTime(stamp)}</span>`
       : '最新オッズ取得';
     btn.title = endpoint()
-      ? '押した時だけ取得します。同一レースは15秒キャッシュ。'
+      ? '押した時だけ取得します。同一レースは3分キャッシュ。'
       : '自動取得先は未接続。押すと手動取込へフォールバックします。';
     btn.onclick = () => handleFetch(btn, race, body);
+
+    let cfg = body.querySelector('#v49OddsConfig');
+    if (!cfg) {
+      cfg = document.createElement('button');
+      cfg.type = 'button';
+      cfg.id = 'v49OddsConfig';
+      cfg.className = 'v49-config';
+      cfg.textContent = '自動取得設定';
+      bar.appendChild(cfg);
+    }
+    cfg.onclick = () => configurePrivateOdds(body);
 
     const manual = body.querySelector('#v12OddsImport');
     if (manual) {
@@ -191,9 +310,8 @@
   }
 
   function setEndpoint(url) {
-    const value = clean(url);
-    if (value) localStorage.setItem(ENDPOINT_KEY, value);
-    else localStorage.removeItem(ENDPOINT_KEY);
+    // The only accepted endpoint is the pinned personal Render service.
+    if (clean(url) !== PRIVATE_ENDPOINT) throw new Error('接続先を変更できません');
     return endpoint();
   }
 
@@ -201,6 +319,7 @@
   style.textContent = `
     #v49OddsFetch{border-color:#4f8f6a;background:#1f7a4c;color:#fff}
     #v49OddsFetch:disabled{opacity:.62}
+    #v49OddsConfig{font-size:11px;border:1px solid #c4d2c9;border-radius:8px;background:#f2f7f3;color:#175f3c;padding:7px 9px}
     .v49-stamp{font-size:9px;opacity:.85;margin-left:5px;white-space:nowrap}
     .v49-status{margin:8px 0 10px;padding:9px 11px;border-radius:11px;font-size:10px;line-height:1.5}
     .v49-status.info{background:#eef5ff;color:#2d5f91}.v49-status.ok{background:#eaf8ef;color:#17613d}.v49-status.warn{background:#fff5df;color:#8a6118}.v49-status.ng{background:#fff0ef;color:#99352d}
@@ -220,5 +339,5 @@
   window.addEventListener('mykeiba:modules-ready', () => schedule(100));
   schedule(300);
 
-  window.MyKeibaLiveOddsV49 = { requestOdds, applyToRace, normalizeResponse, setEndpoint, endpoint, cacheMs:CACHE_MS };
+  window.MyKeibaLiveOddsV49 = { requestOdds, applyToRace, normalizeResponse, validateSnapshot, setEndpoint, endpoint, setAccessKey, cacheMs:CACHE_MS };
 })();
