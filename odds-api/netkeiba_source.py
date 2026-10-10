@@ -75,6 +75,13 @@ def parse_win_odds(json_data, *, race_id, race_date, track, race_no, roster, now
         raise UnverifiedOdds("更新日が開催日と大きく異なります")
     if update_dt>now+timedelta(minutes=5):
         raise UnverifiedOdds("オッズ更新時刻が未来です")
+    # Do not reflect stale market quotes as "latest" odds. Overnight odds
+    # are allowed only before 09:00 JST on race day; otherwise <= 30 min.
+    if now.astimezone(JST).date()==race_date:
+        current=now.astimezone(JST)
+        maximum_age=timedelta(hours=16) if current.hour<9 else timedelta(minutes=30)
+        if current-update_dt > maximum_age:
+            raise UnverifiedOdds("取得元のオッズ更新時刻が古すぎます")
     wins=data.get("odds",{}).get("1") if isinstance(data.get("odds"),dict) else None
     if not isinstance(wins,dict) or len(wins)!=len(roster):
         raise UnverifiedOdds("出馬表と単勝オッズの全頭数が一致しません")
