@@ -6,7 +6,7 @@
 
   const ENDPOINT_KEY = 'my-keiba-live-odds-endpoint-v1';
   const ACCESS_KEY = 'my-keiba-live-odds-private-access-v1';
-  const CACHE_MS = 15000;
+  const CACHE_MS = 180000;
   const memoryCache = new Map();
 
   function clean(v = '') { return String(v ?? '').trim(); }
@@ -97,6 +97,18 @@
     const raceDay = Math.floor(Date.UTC(actualDate.year, actualDate.month - 1, actualDate.day) / 86400000);
     if (raceDay < jstToday - 1 || raceDay > jstToday + 7) {
       throw new Error('古い開催日または遠い未来の開催日です。反映を中止しました');
+    }
+
+    const timestampMs = Date.parse(data.updatedAt || '');
+    if (!Number.isFinite(timestampMs) || timestampMs > clockMs + 5 * 60 * 1000) {
+      throw new Error('提供元の更新時刻を確認できません');
+    }
+    // Reject an old same-day snapshot; before 09:00 JST early odds can be
+    // overnight, while daytime quotes must be less than 30 minutes old.
+    const jstHour = new Date(clockMs + 9*3600000).getUTCHours();
+    const maximumAge = jstHour < 9 ? 16*3600000 : 30*60000;
+    if (raceDay === jstToday && clockMs - timestampMs > maximumAge) {
+      throw new Error('取得したオッズの更新時刻が古いため反映しません');
     }
 
     const existing = race.horses || [];
@@ -245,8 +257,8 @@
       if (!data.horses.length) throw new Error('取得できるオッズがありません');
       const result = applyToRace(data, race);
       if (!result.ok) throw new Error(result.message);
-      const source = data.updatedAt ? `提供元更新 ${fmtTime(data.updatedAt)} / ` : '';
-      showStatus(body, `${result.message} ${source}取得 ${fmtTime(data.fetchedAt)}${data.cached ? '（15秒キャッシュ）' : ''}`, 'ok');
+      const source = data.updatedAt ? `netkeiba提供元更新 ${fmtTime(data.updatedAt)} / ` : '';
+      showStatus(body, `${result.message} ${source}取得 ${fmtTime(data.fetchedAt)}${data.cached ? '（3分キャッシュ）' : ''}`, 'ok');
     } catch (err) {
       if (err?.code === 'AUTO_ENDPOINT_MISSING' || err?.message === 'AUTO_ENDPOINT_MISSING') openManualFallback(body);
       else if (err?.code === 'PRIVATE_ACCESS_MISSING') showStatus(body, '個人用アクセスキーが未設定です。「自動取得設定」を開いてください。', 'warn');
@@ -279,7 +291,7 @@
       ? `最新オッズ取得 <span class="v49-stamp">${fmtTime(stamp)}</span>`
       : '最新オッズ取得';
     btn.title = endpoint()
-      ? '押した時だけ取得します。同一レースは15秒キャッシュ。'
+      ? '押した時だけ取得します。同一レースは3分キャッシュ。'
       : '自動取得先は未接続。押すと手動取込へフォールバックします。';
     btn.onclick = () => handleFetch(btn, race, body);
 
