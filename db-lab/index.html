@@ -19,6 +19,9 @@
     <button id="horseDbAdd" class="primary" type="button">＋ 馬DBを追加</button>
     <input id="horseDbFiles" type="file" accept=".mht,.mhtml,.html,.htm,text/html,message/rfc822" multiple hidden>
     <div id="horseImportStatus" class="status"></div>
+    <div class="note" style="margin-top:8px">登録馬と全過去走を、加工せずJSONで保存します。DBは変更されず、外部への送信もありません。</div>
+    <button id="exportHorseDb" class="secondary" type="button">馬DB全件を書き出す（JSON）</button>
+    <div id="horseExportStatus" class="status" role="status" aria-live="polite"></div>
   </section>
 
   <section class="card" id="horseManageCard">
@@ -76,6 +79,7 @@
 <script src="./horse-import.js"></script>
 <script src="./horse-import-audit.js"></script>
 <script src="./horse-manage.js"></script>
+<script src="./db-export.js?v=20261013-1"></script>
 <script src="./pdf-import.js?v=20261003-0108"></script>
 <script src="./app.js?v=20261003-0935"></script>
 <script src="./persistent-results-v44.js"></script>
