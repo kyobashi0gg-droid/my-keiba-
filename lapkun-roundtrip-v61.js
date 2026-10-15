@@ -250,6 +250,7 @@
         finished=true;clearTimeout(timeout);
         script.removeEventListener('load',onload);
         script.removeEventListener('error',onerror);
+        if(error&&script.dataset?.v61Load===src)script.remove?.();
         if(error)reject(error);else resolve();
       };
       const onload=()=>done(window[globalName]?null:Error(src+' の初期化が完了していません。'));
