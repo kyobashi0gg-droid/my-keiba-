@@ -22,31 +22,6 @@
       if(typeof state!=='undefined')localStorage.setItem(APP,JSON.stringify(state));
     }catch(e){console.warn('Roundtrip save failed',e);}
   }
-  function dbMap(r){
-    try{
-      const d=window.MyKeibaDbResultBridgeV44?.savedFor?.(r)||window.MyKeibaDbResultBridgeV38?.saved?.();
-      if(!d||norm(d.race?.track)!==norm(r.track)||Number(d.race?.raceNo)!==Number(r.raceNo))return new Map();
-      return new Map((d.horses||[]).map(x=>[norm(x.name),x]));
-    }catch{return new Map();}
-  }
-  function charaMap(r){
-    const i=r.v60PairAnalysis;
-    if(i?.chara)return i.chara;
-    try{
-      const saved=JSON.parse(localStorage.getItem('my-keiba-pair-analysis-v60')||'{}');
-      const k=[r.v3DateLabel||r.date||'',r.track||'',r.raceNo||'',r.raceName||''].map(x=>String(x).trim()).join('|');
-      return saved[k]?.chara||{};
-    }catch{return {};}
-  }
-  function tiers(r){
-    const i=r.v60PairAnalysis;
-    if(i?.tiers)return i.tiers;
-    try{
-      const saved=JSON.parse(localStorage.getItem('my-keiba-pair-analysis-v60')||'{}');
-      const k=[r.v3DateLabel||r.date||'',r.track||'',r.raceNo||'',r.raceName||''].map(x=>String(x).trim()).join('|');
-      return saved[k]?.tiers||{};
-    }catch{return {};}
-  }
   function dataText(r){
     const detailed=window.MyKeibaLapkunV6?.buildConsultText?.(r);
     const lines=[
@@ -169,7 +144,7 @@
     <div class="v61-final-pairs">${result.pairs.length?result.pairs.map(p=>`<div class="v61-final-pair">
       <b>${esc(p.kind)} <small>${title[p.scenario]||p.scenario}</small></b>
       <strong>${esc(p.a)} ＋ ${esc(p.b)}</strong><p>${esc(p.reason)}</p></div>`).join(''):'<div class="v61-empty">組み合わせを無理に買わない判断です。</div>'}</div>
-    ${result.horses.length?`<details><summary>軸・本線・広げる／能力評価（${result.horses.length}頭）</summary><div class="v61-horses">${result.horses.map(h=>`<div><b>${esc(h.tier)} ${esc(h.number)} ${esc(h.name)}：${esc(h.role)}</b><p>${esc(h.reason)}</p></div>`).join('')}</div></details>`:''}
+    ${result.horses.length?`<div class="v61-result-title">軸・本線・相手 / 広げる</div><div class="v61-horses">${result.horses.map(h=>`<div class="v61-horse-card"><span class="v61-horse-tier ${esc(h.tier)}">${esc(h.tier)}</span><div><b>${esc(h.number)} ${esc(h.name)} — ${esc(h.role)}</b><p>${esc(h.reason)}</p></div></div>`).join('')}</div>`:''}
     ${result.note?`<p class="v61-final-note">${esc(result.note)}</p>`:''}</div>`;
   }
   function copy(text,feedback){
@@ -186,17 +161,16 @@
   function draw(panel,r){
     const result=load(r),body=panel.querySelector('.v61-inside');
     if(!body)return;
-    body.innerHTML=`<p class="v61-help">①ラップ君が隊列・33・能力・2頭の同時好走を検討 → ②分析結果を貼り付けて反映。自動予想ではありません。</p>
+    body.innerHTML=`<p class="v61-help">CHARANIZEの新聞スクショはこのチャットに送ってください。サイトには指数を登録せず、ラップ君がDB・展開・調教と合わせて分析し、その結果だけをここへ保存します。</p>
     ${summaryHTML(result)}
-    <div class="v61-step"><strong>① ラップ君へ送る</strong><p>レース・テン順・DB33・CHARANIZE・調教をまとめた分析依頼を作ります。</p>
+    <div class="v61-step"><strong>① ラップ君に相談する</strong><p>従来の全馬・DB33・調教・テン順などをまとめた依頼文を作ります。CHARANIZEの画像は別途チャットへ送ります。</p>
       <button type="button" class="v61-copy">分析用データをコピー</button>
       <p class="v61-help">コピーした文章をこのChatGPTに貼り付けてください。ラップ君が分析結果の取込用ブロックを返します。</p></div>
     <div class="v61-step"><strong>② ラップ君の結果をサイトへ戻す</strong><p>返信中の「MYKEIBA_PAIRRESULT_V1」から「【結果ブロック終わり】」までを貼り付けます。</p>
       <textarea class="v61-input" rows="5" placeholder="MYKEIBA_PAIRRESULT_V1&#10;RACE|東京|11|富士S&#10;SCENARIO|MAIN|+0.3|+0.9|..."></textarea>
       <button type="button" class="v61-import">結果を反映する</button></div>
     <div class="v61-status" role="status" aria-live="polite"></div>
-    <details class="v61-advanced"><summary>参考：DBコア一致候補・CHARANIZE取り込み（旧比較機能）</summary>
-      <button type="button" class="v61-legacy">旧比較パネルを表示する</button><p>先にCHARANIZE指数を登録したい場合に使います。従来の機械的なペア一覧は補助材料です。</p></details>`;
+    <p class="v61-help">※結果の反映は現在コピー・貼り付け式です。ChatGPTとの自動同期は行いません。</p>`;
     const status=body.querySelector('.v61-status');
     body.querySelector('.v61-copy')?.addEventListener('click',async()=>{
       const b=body.querySelector('.v61-copy');b.textContent='データを作成中…';
@@ -217,12 +191,7 @@
         panel.querySelector('.v61-status').textContent=`反映しました。本線33と2頭セット${v.pairs.length}組を保存しました。`;
       }catch(e){status.textContent=`取込できません：${e.message}`;}
     });
-    body.querySelector('.v61-legacy')?.addEventListener('click',()=>{
-      const legacy=document.querySelector('#v60PairPanel');
-      if(!legacy){status.textContent='旧比較パネルは準備中です。';return;}
-      legacy.classList.toggle('v61-show-legacy');
-      body.querySelector('.v61-legacy').textContent=legacy.classList.contains('v61-show-legacy')?'旧比較パネルを閉じる':'旧比較パネルを表示する';
-    });
+
   }
   function ensureModule(src,globalName){
     if(window[globalName])return Promise.resolve();
@@ -242,7 +211,7 @@
     let panel=body.querySelector('#v61RoundtripPanel');
     if(panel)return;
     panel=document.createElement('section');panel.id='v61RoundtripPanel';panel.className='v61-panel';
-    panel.innerHTML='<details class="v61-root"><summary>ラップ君分析・同時好走2頭 <small>展開33・能力・A＋A/B＋B</small></summary><div class="v61-inside"></div></details>';
+    panel.innerHTML='<details class="v61-root"><summary>ラップ君の分析結果 <small>本線33・能力評価・同時好走2頭／結果の取込</small></summary><div class="v61-inside"></div></details>';
     const legacy=body.querySelector('#v60PairPanel');
     const pace=body.querySelector('#v42PaceSim');
     const table=body.querySelector('.v4-table-wrap')||body.querySelector('.v4-table');
@@ -253,12 +222,24 @@
       if(e.target.open){const race=currentRace();if(race)draw(panel,race);}
     });
   }
+  function openConsult(race) {
+    const detail=document.querySelector('#v4Detail');
+    if(!detail||detail.hidden)return;
+    decorate();
+    const panel=document.querySelector('#v61RoundtripPanel');
+    const root=panel?.querySelector('.v61-root');
+    if(!root)return;
+    root.open=true;
+    const active=currentRace()||race;
+    if(active)draw(panel,active);
+    panel.scrollIntoView?.({behavior:'smooth',block:'start'});
+  }
   let timer=0;
   function schedule(){clearTimeout(timer);timer=setTimeout(decorate,110);}
   document.addEventListener('click',e=>{if(e.target?.closest?.('[data-v4-race],.v4-race-card,[data-v4-expand],.v4-nav'))schedule();},true);
   for(const ev of ['pageshow','mykeiba:resume','mykeiba:modules-ready','mykeiba:db-result-decorated'])window.addEventListener(ev,schedule);
   const style=document.createElement('style');
-  style.textContent=`.v60-panel:not(.v61-show-legacy){display:none!important}
+  style.textContent=`
   .v61-panel{margin:11px 0;border:1px solid #bcdccc;border-radius:17px;background:#fff;padding:12px;color:#345b45}
   .v61-root>summary{font-size:14px;font-weight:950;cursor:pointer;color:#196141}
   .v61-root>summary small{display:block;color:#789588;font-size:10px;margin-top:3px}
@@ -276,11 +257,11 @@
   .v61-final-pairs{display:grid;gap:7px}.v61-final-pair{border:1px solid #d9eadf;border-radius:13px;padding:10px;display:grid;gap:4px}
   .v61-final-pair b{color:#247a4d}.v61-final-pair b small{border-radius:6px;background:#e7f3eb;padding:3px 5px}
   .v61-final-pair strong{font-size:13px;color:#184e32}
-  .v61-horses>div{border-bottom:1px solid #e8eee8;padding:7px 0}.v61-horses p{margin:4px 0;font-size:11px;color:#627e6b}
+  .v61-horses{display:grid;gap:7px}.v61-horse-card{display:flex;align-items:flex-start;gap:9px;border:1px solid #e3ede6;border-radius:11px;padding:9px}.v61-horse-card>div{flex:1;min-width:0}.v61-horse-tier{background:#e6f4eb;border-radius:7px;font-size:13px;color:#176444;font-weight:900;padding:4px 8px}.v61-horse-tier.B{background:#fff2d8;color:#9a6818}.v61-horse-tier.X{background:#eee;color:#777}.v61-horses p{margin:4px 0;font-size:11px;color:#627e6b;line-height:1.6}
   .v61-final-note,.v61-empty{background:#f6f8f6;padding:9px 10px;border-radius:10px;color:#60756b;line-height:1.6;font-size:11px}
   .v61-analysis details{margin-top:12px}.v61-analysis summary,.v61-advanced summary{font-size:11px;font-weight:900;cursor:pointer}
   .v61-advanced{margin-top:12px;border-top:1px solid #e4eee7;padding-top:9px}.v61-advanced p{font-size:10px;color:#83948a}`;
   document.head.appendChild(style);
   schedule();
-  window.MyKeibaRoundtripV61={dataText,parse,summaryHTML,decorate,load};
+  window.MyKeibaRoundtripV61={dataText,parse,summaryHTML,decorate,load,openConsult};
 })();
