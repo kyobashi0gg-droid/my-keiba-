@@ -75,7 +75,7 @@
     const result=[];
     for(let i=0;i<rows.length;i++)for(let j=i+1;j<rows.length;j++){
       const a=rows[i],b=rows[j];
-      const kind=a.tier&&b.tier?`${a.tier}＋${b.tier}`:'区分未設定';
+      const kind=a.tier&&b.tier?(a.tier===b.tier?`${a.tier}＋${b.tier}`:'A＋B'):'区分未設定';
       if(a.tier==='X'||b.tier==='X')continue;
       let conflict='';
       const ar=finite(a.h.tenRank),br=finite(b.h.tenRank);
@@ -89,7 +89,15 @@
       const score=(a.tier==='A'?2:a.tier==='B'?1:0)+(b.tier==='A'?2:b.tier==='B'?1:0)+(a.gap===0?2:1)+(b.gap===0?2:1);
       result.push({a,b,kind,conflict,score});
     }
-    return {rows,pairs:result.sort((x,y)=>y.score-x.score||x.a.gap+x.b.gap-y.a.gap-y.b.gap).slice(0,8),allCount:result.length,fitCount:rows.length};
+    const sorted=result.sort((x,y)=>y.score-x.score||x.a.gap+x.b.gap-y.a.gap-y.b.gap);
+    const selected=[],used=new Set();
+    for(const kind of ['A＋A','B＋B','A＋B','区分未設定']){
+      for(const item of sorted.filter(p=>p.kind===kind).slice(0,2)){
+        if(selected.length>=8)break;selected.push(item);used.add(item);
+      }
+    }
+    for(const item of sorted){if(selected.length>=8)break;if(!used.has(item))selected.push(item);}
+    return {rows,pairs:selected,allCount:result.length,fitCount:rows.length};
   }
   function charaText(c){
     if(!c)return '未取込';
@@ -204,6 +212,8 @@
         const race=currentRace();if(race)draw(area,race,loadData(race));
       });
     }
+    const paceNow=body.querySelector('#v42PaceSim');
+    if(paceNow&&panel.previousElementSibling!==paceNow)paceNow.insertAdjacentElement('afterend',panel);
   }
   let timer=0;
   function schedule(){clearTimeout(timer);timer=setTimeout(decorate,150);}
