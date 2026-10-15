@@ -157,12 +157,13 @@
     const venues=venueOrder(new Set(state.races.map(venueName).filter(Boolean)));
     if(v61Venue && !venues.includes(v61Venue)){v61Venue='';v61Day='';}
     const picked=filteredRaces();
-    const venueButtons=[{name:'',label:'全場'},...venues.map(name=>({name,label:name}))]
-      .map(x=>`<button type="button" class="v61-venue ${v61Venue===x.name?'active':''}" data-v61-venue="${esc(x.name)}" aria-pressed="${v61Venue===x.name}">${esc(x.label)}</button>`).join('');
+    const venueButtons=[{name:'',label:'全'},...venues.map(name=>({name,label:name}))]
+      .map(x=>`<button type="button" class="v61-venue ${v61Venue===x.name?'active':''}" data-v61-venue="${esc(x.name)}" aria-pressed="${v61Venue===x.name}" aria-label="${x.name?esc(x.name):'全場'}">${esc(x.label)}</button>`).join('');
     const days=v61Venue?[...new Set(state.races.filter(r=>venueName(r)===v61Venue).map(dateOf))].filter(Boolean).sort():[];
     const dayButtons=days.length>1?`<div class="v61-day-tabs" role="group" aria-label="開催日">${days.map(x=>`<button type="button" class="v61-day ${v61Day===x?'active':''}" data-v61-day="${esc(x)}" aria-pressed="${v61Day===x}">${esc(x)}</button>`).join('')}</div>`:'';
-    return `<div class="v4-section-head"><div><p class="v4-eyebrow">RACE BOARD</p><h1 class="v4-h1" style="margin:0">レース</h1></div><button class="v4-link" data-v4-action="pdf">新聞取込</button></div>
-      <div class="v61-venues" role="group" aria-label="開催場で絞り込む">${venueButtons}</div>${dayButtons}
+    return `<div class="v4-section-head v61-race-head"><div class="v61-race-title"><p class="v4-eyebrow">RACE BOARD</p><h1 class="v4-h1" style="margin:0">レース</h1></div>
+      <div class="v61-venues" role="group" aria-label="開催場で絞り込む">${venueButtons}</div>
+      <button class="v4-link" data-v4-action="pdf">新聞取込</button></div>${dayButtons}
       <p class="v61-filter-count">${v61Venue?`${esc(v61Venue)} ${picked.length}レースを表示`:`全場 ${picked.length}レースを表示`}</p>${raceCardsHtml(picked)}`;
   }
     function ktmHtml() {
