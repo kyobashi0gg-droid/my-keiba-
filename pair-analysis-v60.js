@@ -99,14 +99,29 @@
     for(const item of sorted){if(selected.length>=8)break;if(!used.has(item))selected.push(item);}
     return {rows,pairs:selected,allCount:result.length,fitCount:rows.length};
   }
+  function earlyPressure(r,d){
+    const all=(r.horses||[]).map(h=>({h,c:d.chara[norm(h.name)]||null,rank:finite(h.tenRank)}));
+    const ten=all.filter(x=>x.rank!=null).sort((a,b)=>a.rank-b.rank);
+    const index=all.filter(x=>finite(x.c?.escape)!=null||finite(x.c?.front)!=null);
+    const escape=index.filter(x=>finite(x.c?.escape)!=null).sort((a,b)=>finite(b.c.escape)-finite(a.c.escape)).slice(0,3);
+    const front=index.filter(x=>finite(x.c?.front)!=null).sort((a,b)=>finite(b.c.front)-finite(a.c.front)).slice(0,3);
+    const picked=new Map();
+    for(const x of [...ten.slice(0,4),...escape,...front])picked.set(norm(x.h.name),x);
+    const names=[...picked.values()].slice(0,7).map(x=>`${x.h.number||'—'} ${x.h.name}`);
+    const hasBoth=ten.length>0&&index.length>0;
+    return {names,tenCount:ten.length,charaCount:index.length,
+      note:hasBoth?'テン順と逃・先指数の両方で候補を抽出':ten.length?'テン順のみで候補を抽出':index.length?'逃・先指数のみで候補を抽出':'テン順・逃先指数とも未登録',
+      caution:'指数を計測した競馬場・芝ダ・距離の違いと、実通過順を別途照合。初動の位置取り資料であり33区間の緩みや実33は確定しません。'};
+  }
   function charaText(c){
     if(!c)return '未取込';
     return `逃${c.escape??'—'} / 先${c.front??'—'} / 追${c.follow??'—'} / 脚${c.leg??'—'} / ギア${c.gear??'—'}`;
   }
   function report(r,d,target){
-    const m=pairsFor(r,d,target),arr=[
+    const m=pairsFor(r,d,target),front=earlyPressure(r,d),arr=[
       MARKER,`${r.track}${r.raceNo}R ${r.raceName}`,`比較33：${fmt(target)}（実33予測ではない）`,
       `共通コア近接馬：${m.fitCount}頭 / 組合せ：${m.allCount}組`,
+      `初動の先行候補（${front.note}）：${front.names.join(' / ')||'未判定'} / テン順登録${front.tenCount}頭・CHARANIZE登録${front.charaCount}頭`,
       ...m.pairs.map((p,i)=>{
         const a=p.a,b=p.b;
         return `${i+1}. ${a.h.number||'—'} ${a.h.name} ＋ ${b.h.number||'—'} ${b.h.name} [${p.kind}]`
@@ -122,10 +137,13 @@
     return arr.join('\n');
   }
   function draw(box,r,d){
-    const base=avg33(r),target=finite(d.target)??base,rows=candidateRows(r,d,target);
+    const base=avg33(r),target=finite(d.target)??base,rows=candidateRows(r,d,target),front=earlyPressure(r,d);
     const calc=target==null?null:pairsFor(r,d,target);
     const selectOptions=([{k:'',label:'未分類'},{k:'A',label:'A 軸・本線・相手'},{k:'B',label:'B 広げる'},{k:'X',label:'保留・除外'}]);
     box.innerHTML=`<div class="v60-help">この比較は<strong>33予測ではありません</strong>。テン1F未登録でもテン順・CHARANIZEの入力済み項目と、保存済みDBコア33から候補を表示します。</div>
+      <div class="v60-early"><strong>初動・先行候補（参考）</strong>
+      <span>${esc(front.names.join(' / ')||'未判定')}</span>
+      <small>${esc(front.note)} ／ テン順${front.tenCount}頭・CHARANIZE${front.charaCount}頭。33区間の先行圧・緩みは未確定。</small></div>
       <div class="v60-tools"><label>比較する33 <input class="v60-target" type="number" step="0.1" inputmode="decimal" value="${target==null?'':esc(target)}" placeholder="例 +0.5"></label>
       <button type="button" class="v60-run">比較する</button></div>
       <p class="v60-note">新聞平均33：${fmt(base)}。速い側・遅い側は値を変えて比較してください。コア近接許容幅±0.25秒。値を変えただけでは既存のDB33評価印は再計算しません。</p>
@@ -227,6 +245,7 @@
   const css=document.createElement('style');
   css.textContent=`.v60-panel{margin:12px 0;border:1px solid #d9e8df;border-radius:17px;background:#fff;padding:12px}
   .v60-root>summary{font-size:14px;font-weight:900;color:#24583a;cursor:pointer}.v60-root>summary small{font-size:10px;color:#65866f}
+  .v60-early{display:grid;gap:4px;padding:9px;border-radius:11px;background:#f2f7f3;margin-top:9px}.v60-early strong{font-size:11px;color:#2f684c}.v60-early span{font-size:11px}.v60-early small{font-size:9px;color:#66796e;line-height:1.5}
   .v60-content{margin-top:10px;font-size:12px;color:#405549}.v60-help,.v60-note{font-size:11px;line-height:1.65;color:#65796e}
   .v60-tools{display:flex;gap:9px;align-items:end;flex-wrap:wrap;margin:10px 0}.v60-tools label{font-weight:800}
   .v60-tools input{display:block;max-width:125px;margin-top:3px;padding:8px;border:1px solid #c7d6ce;border-radius:9px;font-size:14px}
