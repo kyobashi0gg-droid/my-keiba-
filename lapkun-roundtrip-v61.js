@@ -136,16 +136,90 @@
     return result;
   }
   function summaryHTML(result){
-    if(!result)return '<div class="v61-empty">まだ分析結果は保存されていません。下の「①分析用データをコピー」から始めます。</div>';
-    const title={MAIN:'本線',FAST:'速い側',SLOW:'遅い側'};
-    return `<div class="v61-analysis"><div class="v61-result-title">ラップ君の事前分析 <small>${esc(result.updatedAt?.slice(0,10)||'')}</small></div>
-    <div class="v61-scenarios">${result.scenarios.map(s=>`<div><strong>${title[s.kind]||s.kind} ${fmt(s.lo)}〜${fmt(s.hi)}</strong><p>${esc(s.reason)}</p></div>`).join('')}</div>
-    <div class="v61-result-title">同時好走2頭セット</div>
-    <div class="v61-final-pairs">${result.pairs.length?result.pairs.map(p=>`<div class="v61-final-pair">
-      <b>${esc(p.kind)} <small>${title[p.scenario]||p.scenario}</small></b>
-      <strong>${esc(p.a)} ＋ ${esc(p.b)}</strong><p>${esc(p.reason)}</p></div>`).join(''):'<div class="v61-empty">組み合わせを無理に買わない判断です。</div>'}</div>
-    ${result.horses.length?`<div class="v61-result-title">軸・本線・相手 / 広げる</div><div class="v61-horses">${result.horses.map(h=>`<div class="v61-horse-card"><span class="v61-horse-tier ${esc(h.tier)}">${esc(h.tier)}</span><div><b>${esc(h.number)} ${esc(h.name)} — ${esc(h.role)}</b><p>${esc(h.reason)}</p></div></div>`).join('')}</div>`:''}
-    ${result.note?`<p class="v61-final-note">${esc(result.note)}</p>`:''}</div>`;
+    if(!result) return '<div class="v61-empty">まだ分析結果は保存されていません。「分析用データをコピー」から始めます。</div>';
+    const scenarioNames={MAIN:'本線',FAST:'速い側',SLOW:'遅い側'};
+    const roleNames={A:'軸・本線・相手',B:'広げる',X:'見送り'};
+    const scenarios=result.scenarios||[], horses=result.horses||[], pairs=result.pairs||[];
+    const main=scenarios.find(x=>x.kind==='MAIN');
+    const roleRank=h=>/軸/.test(h.role||'')?0:/本線/.test(h.role||'')?1:/相手/.test(h.role||'')?2:3;
+    const aHorses=horses.filter(h=>h.tier==='A').sort((a,b)=>roleRank(a)-roleRank(b));
+    const circled=n=>{
+      const x=Number(n);
+      return Number.isInteger(x)&&x>=1&&x<=20?String.fromCodePoint(9311+x):String(n||'—');
+    };
+    const horseByName=new Map(horses.map(h=>[norm(h.name),h]));
+    const horseTitle=name=>{
+      const h=horseByName.get(norm(name));
+      return h?`${circled(h.number)} ${h.name}`:String(name||'');
+    };
+    const selected=[];
+    const add=p=>{if(p&&!selected.includes(p)&&selected.length<2)selected.push(p);};
+    add(pairs.find(p=>p.kind==='A+A'&&p.scenario==='MAIN'));
+    add(pairs.find(p=>p.kind==='B+B'));
+    for(const p of pairs) add(p);
+    const pairCompact=p=>`<div class="v64-pair-brief">
+        <span class="v64-pair-meta">${esc(p.kind)} <span>${esc(scenarioNames[p.scenario]||p.scenario)}</span></span>
+        <strong>${esc(horseTitle(p.a))} ＋ ${esc(horseTitle(p.b))}</strong>
+      </div>`;
+    const detailedPairs=pairs.length?pairs.map(p=>`<div class="v61-final-pair">
+      <b>${esc(p.kind)} <small>${esc(scenarioNames[p.scenario]||p.scenario)}</small></b>
+      <strong>${esc(horseTitle(p.a))} ＋ ${esc(horseTitle(p.b))}</strong>
+      <p>${esc(p.reason)}</p></div>`).join(''):'<p class="v61-empty">該当する2頭セットは設定されていません。無理に組み合わせない判断です。</p>';
+    const detailHorses=['A','B','X'].map(tier=>{
+      const list=horses.filter(h=>h.tier===tier);
+      if(!list.length)return '';
+      return `<div class="v64-group-title">${esc(roleNames[tier])} <small>${list.length}頭</small></div>
+      ${list.map(h=>`<div class="v61-horse-card">
+        <span class="v61-horse-tier ${esc(h.tier)}">${esc(h.tier)}</span>
+        <div><b>${esc(circled(h.number))} ${esc(h.name)} — ${esc(h.role)}</b><p>${esc(h.reason)}</p></div>
+      </div>`).join('')}`;
+    }).join('');
+    const nameChips=aHorses.length?`<div class="v64-axis-list">${aHorses.slice(0,4).map(h=>`<div class="v64-axis-chip">
+          <strong>${esc(circled(h.number))} ${esc(h.name)}</strong>
+          <small>${esc(h.role)}</small>
+        </div>`).join('')}${aHorses.length>4?`<span class="v64-more">ほか${aHorses.length-4}頭は全馬評価へ</span>`:''}</div>`:'<p class="v64-muted">A評価は未設定です。無理に軸を作りません。</p>';
+    const scenarioDetail=scenarios.map(s=>`<div class="v64-scenario-line">
+        <strong>${esc(scenarioNames[s.kind]||s.kind)} ${esc(fmt(s.lo))}〜${esc(fmt(s.hi))}</strong>
+        <p>${esc(s.reason)}</p>
+      </div>`).join('');
+    return `<section class="v61-analysis v64-analysis">
+      <div class="v64-topline">
+        <strong>ラップ君の事前分析</strong>
+        <small>${esc(result.updatedAt?.slice(0,10)||'')}</small>
+      </div>
+      <div class="v64-overview">
+        <div class="v64-main-range"><span>本線33</span>
+          <strong>${main?`${esc(fmt(main.lo))}〜${esc(fmt(main.hi))}`:'未設定'}</strong>
+        </div>
+        <div class="v64-overview-divider"></div>
+        <div class="v64-overview-title">軸・本線・相手候補 <small>${aHorses.length}頭</small></div>
+        ${nameChips}
+      </div>
+      <div class="v64-pairs-top">
+        <div class="v64-overview-title">注目の同時好走2頭</div>
+        ${selected.length?`<div class="v64-pairs-brief">${selected.map(pairCompact).join('')}</div>
+          ${pairs.length>selected.length?`<p class="v64-muted">ほか${pairs.length-selected.length}組は「全2頭セットの詳細」で確認</p>`:''}`:'<p class="v64-muted">現時点で組み合わせ候補なし。見送りも選択肢です。</p>'}
+      </div>
+      <div class="v64-details-heading">詳細分析 <small>必要な項目だけ開いて確認</small></div>
+      <div class="v64-accordion">
+        <details class="v64-detail">
+          <summary>33予測と展開根拠 <span class="v64-arrow" aria-hidden="true"></span></summary>
+          <div class="v64-detail-body">
+            ${scenarioDetail}
+            ${result.note?`<div class="v64-checks"><strong>未確認事項・買い方の注意</strong><p>${esc(result.note)}</p></div>`:''}
+          </div>
+        </details>
+        <details class="v64-detail">
+          <summary>全${horses.length}頭の評価と理由 <span class="v64-arrow" aria-hidden="true"></span></summary>
+          <div class="v64-detail-body v64-horses">${horses.length?detailHorses:'<p class="v61-empty">馬別評価は未登録です。</p>'}</div>
+        </details>
+        <details class="v64-detail">
+          <summary>全${pairs.length}組の2頭セット詳細 <span class="v64-arrow" aria-hidden="true"></span></summary>
+          <div class="v64-detail-body v61-final-pairs">${detailedPairs}</div>
+        </details>
+      </div>
+      <p class="v64-qualifier">※各馬の適合・能力・条件を評価した保存結果です。確定買い目ではありません。</p>
+    </section>`;
   }
   async function copy(text){
     try{
@@ -321,6 +395,51 @@
   .v61-horses{display:grid;gap:7px}.v61-horse-card{display:flex;align-items:flex-start;gap:9px;border:1px solid #e3ede6;border-radius:11px;padding:9px}.v61-horse-card>div{flex:1;min-width:0}.v61-horse-tier{background:#e6f4eb;border-radius:7px;font-size:13px;color:#176444;font-weight:900;padding:4px 8px}.v61-horse-tier.B{background:#fff2d8;color:#9a6818}.v61-horse-tier.X{background:#eee;color:#777}.v61-horses p{margin:4px 0;font-size:11px;color:#627e6b;line-height:1.6}
   .v61-final-note,.v61-empty{background:#f6f8f6;padding:9px 10px;border-radius:10px;color:#60756b;line-height:1.6;font-size:11px}
   .v61-analysis details{margin-top:12px}.v61-analysis summary,.v61-advanced summary{font-size:11px;font-weight:900;cursor:pointer}
+  /* v64 compact saved-result dashboard; data format and import unchanged */
+  .v64-analysis{margin:0 0 16px}
+  .v64-topline{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:8px 0 10px}
+  .v64-topline strong{font-size:14px;color:#1b6040}.v64-topline small{font-size:10px;color:#789187}
+  .v64-overview{background:#f2f8f4;border:1px solid #e0ece4;border-radius:15px;padding:12px}
+  .v64-main-range{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .v64-main-range span{font-size:12px;font-weight:900;color:#4c7661}
+  .v64-main-range strong{font-size:20px;font-weight:950;letter-spacing:.01em;color:#164f34}
+  .v64-overview-divider{height:1px;background:#d8e6dc;margin:10px 0}
+  .v64-overview-title{font-size:12px;font-weight:950;color:#23563c;margin:0 0 8px}
+  .v64-overview-title small{font-size:10px;color:#739080;font-weight:700}
+  .v64-axis-list{display:flex;flex-wrap:wrap;gap:7px}
+  .v64-axis-chip{display:flex;flex-direction:column;gap:3px;padding:7px 9px;border-radius:10px;background:#fff;border:1px solid #d9e7dc;max-width:100%}
+  .v64-axis-chip strong{font-size:12px;color:#24563b;line-height:1.4;overflow-wrap:anywhere}
+  .v64-axis-chip small{font-size:10px;color:#708678}
+  .v64-more{font-size:10px;color:#6a8372;align-self:center}
+  .v64-pairs-top{padding:14px 0 3px}
+  .v64-pairs-brief{display:grid;gap:7px}
+  .v64-pair-brief{display:flex;align-items:flex-start;gap:7px;flex-wrap:wrap;padding:9px 10px;border:1px solid #dce8df;border-radius:11px;background:#fff}
+  .v64-pair-meta{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:900;color:#286245}
+  .v64-pair-meta span{padding:2px 5px;border-radius:5px;background:#eaf4ed}
+  .v64-pair-brief>strong{min-width:0;flex:1 1 155px;font-size:12px;line-height:1.55;overflow-wrap:anywhere;color:#234c34}
+  .v64-muted{font-size:10px;color:#73867a;line-height:1.6;margin:7px 1px 0}
+  .v64-details-heading{font-size:13px;font-weight:950;color:#245c41;margin:16px 0 8px}
+  .v64-details-heading small{font-size:10px;color:#87978c;font-weight:500;display:block;margin-top:3px}
+  .v64-accordion{display:grid;gap:7px}
+  .v64-detail{border:1px solid #dae8dd;border-radius:12px;overflow:hidden;background:#f8faf8}
+  .v64-detail>summary{display:flex!important;align-items:center;justify-content:space-between;gap:9px;padding:12px!important;font-size:12px!important;font-weight:900;line-height:1.45;color:#25583f;cursor:pointer;list-style:none}
+  .v64-detail>summary::-webkit-details-marker{display:none}
+  .v64-arrow{display:block;flex:0 0 8px;width:8px;height:8px;border-right:2px solid #5b7b68;border-bottom:2px solid #5b7b68;transform:rotate(45deg);transition:transform .12s ease}
+  .v64-detail[open] .v64-arrow{transform:rotate(225deg)}
+  .v64-detail[open]{background:#fff}
+  .v64-detail-body{padding:0 10px 11px;border-top:1px solid #e9efea}
+  .v64-scenario-line{padding:10px 0;border-bottom:1px solid #edf1ed}
+  .v64-scenario-line:last-child{border-bottom:0}
+  .v64-scenario-line strong{font-size:12px;color:#235940}
+  .v64-scenario-line p,.v64-checks p{font-size:11px;line-height:1.65;margin:5px 0 0;color:#536e5d;overflow-wrap:anywhere}
+  .v64-checks{background:#f5f8f5;border-radius:9px;padding:9px;margin-top:9px}
+  .v64-checks strong{font-size:11px;color:#376047}
+  .v64-horses{display:grid;gap:8px}
+  .v64-group-title{font-size:12px;font-weight:900;color:#325f45;padding:10px 0 0}
+  .v64-group-title small{font-size:10px;font-weight:600;color:#7a9481}
+  .v64-horses .v61-horse-card{margin:0}
+  .v64-detail-body.v61-final-pairs{display:grid;gap:8px}
+  .v64-qualifier{font-size:10px;line-height:1.5;color:#829187;margin:10px 0 0}
   .v61-advanced{margin-top:12px;border-top:1px solid #e4eee7;padding-top:9px}.v61-advanced p{font-size:10px;color:#83948a}`;
   document.head.appendChild(style);
   schedule();
