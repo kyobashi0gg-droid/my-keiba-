@@ -164,11 +164,15 @@
     ${result.note?`<p class="v61-final-note">${esc(result.note)}</p>`:''}</div>`;
   }
   function copy(text,feedback){
-    navigator.clipboard?.writeText(text).then(()=>{feedback.textContent='コピーしました。ChatGPTのラップ君に貼り付けてください。';}).catch(()=>{
+    const request=navigator.clipboard?.writeText?.(text);
+    if(request){request.then(()=>{feedback.textContent='コピーしました。ChatGPTのラップ君に貼り付けてください。';}).catch(()=>{
       const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();
       const ok=document.execCommand?.('copy');t.remove();
       feedback.textContent=ok?'コピーしました。':'コピーに失敗しました。長押しして文章をコピーしてください。';
-    });
+    });return;}
+    const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();
+    const ok=document.execCommand?.('copy');t.remove();
+    feedback.textContent=ok?'コピーしました。':'コピーに失敗しました。';
   }
   function draw(panel,r){
     const result=load(r),body=panel.querySelector('.v61-inside');
