@@ -4,6 +4,8 @@
 
   let v4Tab = 'home';
   let detailRaceId = null;
+  let v61Venue = '';
+  let v61Day = '';
 
   const markOptions = ['', '◎', '○', '▲', '☆', '△', '×', '消'];
 
@@ -129,11 +131,41 @@
       </button>`).join('')}</div>`;
   }
 
-  function racesHtml() {
-    return `<div class="v4-section-head"><div><p class="v4-eyebrow">RACE BOARD</p><h1 class="v4-h1" style="margin:0">レース</h1></div><button class="v4-link" data-v4-action="pdf">新聞取込</button></div>${raceCardsHtml(state.races)}`;
+  function dateOf(race) {
+    return String(race?.v3DateLabel || race?.date || '').trim();
   }
-
-  function ktmHtml() {
+  function venueName(race) {
+    return String(race?.track || '').replace(/競馬場/g, '').trim();
+  }
+  function venueOrder(names) {
+    const standard = ['札幌','函館','福島','新潟','東京','中山','中京','京都','阪神','小倉'];
+    return [...names].sort((a,b)=>{
+      const ai=standard.indexOf(a),bi=standard.indexOf(b);
+      return (ai<0?99:ai)-(bi<0?99:bi)||a.localeCompare(b,'ja');
+    });
+  }
+  function filteredRaces() {
+    if (!v61Venue) return state.races;
+    const selected=state.races.filter(r=>venueName(r)===v61Venue);
+    const dates=[...new Set(selected.map(dateOf))].filter(Boolean).sort();
+    if (dates.length>1 && !dates.includes(v61Day)) v61Day=dates[dates.length-1];
+    if (dates.length<=1) v61Day='';
+    const shown= v61Day?selected.filter(r=>dateOf(r)===v61Day):selected;
+    return [...shown].sort((a,b)=>Number(a.raceNo||99)-Number(b.raceNo||99));
+  }
+  function racesHtml() {
+    const venues=venueOrder(new Set(state.races.map(venueName).filter(Boolean)));
+    if(v61Venue && !venues.includes(v61Venue)){v61Venue='';v61Day='';}
+    const picked=filteredRaces();
+    const venueButtons=[{name:'',label:'全場'},...venues.map(name=>({name,label:name}))]
+      .map(x=>`<button type="button" class="v61-venue ${v61Venue===x.name?'active':''}" data-v61-venue="${esc(x.name)}" aria-pressed="${v61Venue===x.name}">${esc(x.label)}</button>`).join('');
+    const days=v61Venue?[...new Set(state.races.filter(r=>venueName(r)===v61Venue).map(dateOf))].filter(Boolean).sort():[];
+    const dayButtons=days.length>1?`<div class="v61-day-tabs" role="group" aria-label="開催日">${days.map(x=>`<button type="button" class="v61-day ${v61Day===x?'active':''}" data-v61-day="${esc(x)}" aria-pressed="${v61Day===x}">${esc(x)}</button>`).join('')}</div>`:'';
+    return `<div class="v4-section-head"><div><p class="v4-eyebrow">RACE BOARD</p><h1 class="v4-h1" style="margin:0">レース</h1></div><button class="v4-link" data-v4-action="pdf">新聞取込</button></div>
+      <div class="v61-venues" role="group" aria-label="開催場で絞り込む">${venueButtons}</div>${dayButtons}
+      <p class="v61-filter-count">${v61Venue?`${esc(v61Venue)} ${picked.length}レースを表示`:`全場 ${picked.length}レースを表示`}</p>${raceCardsHtml(picked)}`;
+  }
+    function ktmHtml() {
     const ktms = entries().filter(({ horse }) => isKtm(horse));
     return `<div class="v4-section-head"><div><p class="v4-eyebrow">KTM LIST</p><h1 class="v4-h1" style="margin:0">KTM</h1></div><span class="v4-muted">${ktms.length}頭</span></div>
       <div class="v4-horse-list">${ktms.length ? ktms.map(({ race, horse }) => `
@@ -169,6 +201,8 @@
     document.querySelectorAll('[data-v4-tab]').forEach(b => b.onclick = () => setTab(b.dataset.v4Tab));
     document.querySelectorAll('[data-v4-action="pdf"]').forEach(b => b.onclick = () => document.querySelector('#sourceInput')?.click());
     document.querySelectorAll('[data-v4-race]').forEach(b => b.onclick = () => openDetail(b.dataset.v4Race));
+    document.querySelectorAll('[data-v61-venue]').forEach(btn => btn.onclick=()=>{v61Venue=btn.dataset.v61Venue;v61Day='';renderV4();});
+    document.querySelectorAll('[data-v61-day]').forEach(btn => btn.onclick=()=>{v61Day=btn.dataset.v61Day;renderV4();});
 
     const search = document.querySelector('#v4HorseSearch');
     if (search) search.oninput = () => {
