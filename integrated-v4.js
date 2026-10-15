@@ -138,7 +138,7 @@
     return String(race?.track || '').replace(/競馬場/g, '').trim();
   }
   function venueOrder(names) {
-    const standard = ['札幌','函館','福島','新潟','東京','中山','中京','京都','阪神','小倉'];
+    const standard = ['新潟','京都','東京','札幌','函館','福島','中山','中京','阪神','小倉'];
     return [...names].sort((a,b)=>{
       const ai=standard.indexOf(a),bi=standard.indexOf(b);
       return (ai<0?99:ai)-(bi<0?99:bi)||a.localeCompare(b,'ja');
