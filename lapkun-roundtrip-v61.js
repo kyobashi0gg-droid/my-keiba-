@@ -141,7 +141,8 @@
     const roleNames={A:'軸・本線・相手',B:'広げる',X:'見送り'};
     const scenarios=result.scenarios||[], horses=result.horses||[], pairs=result.pairs||[];
     const main=scenarios.find(x=>x.kind==='MAIN');
-    const aHorses=horses.filter(h=>h.tier==='A');
+    const roleRank=h=>/軸/.test(h.role||'')?0:/本線/.test(h.role||'')?1:/相手/.test(h.role||'')?2:3;
+    const aHorses=horses.filter(h=>h.tier==='A').sort((a,b)=>roleRank(a)-roleRank(b));
     const circled=n=>{
       const x=Number(n);
       return Number.isInteger(x)&&x>=1&&x<=20?String.fromCodePoint(9311+x):String(n||'—');
