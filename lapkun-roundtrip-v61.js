@@ -147,16 +147,20 @@
     ${result.horses.length?`<div class="v61-result-title">軸・本線・相手 / 広げる</div><div class="v61-horses">${result.horses.map(h=>`<div class="v61-horse-card"><span class="v61-horse-tier ${esc(h.tier)}">${esc(h.tier)}</span><div><b>${esc(h.number)} ${esc(h.name)} — ${esc(h.role)}</b><p>${esc(h.reason)}</p></div></div>`).join('')}</div>`:''}
     ${result.note?`<p class="v61-final-note">${esc(result.note)}</p>`:''}</div>`;
   }
-  function copy(text,feedback){
-    const request=navigator.clipboard?.writeText?.(text);
-    if(request){request.then(()=>{feedback.textContent='コピーしました。ChatGPTのラップ君に貼り付けてください。';}).catch(()=>{
-      const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();
-      const ok=document.execCommand?.('copy');t.remove();
-      feedback.textContent=ok?'コピーしました。':'コピーに失敗しました。長押しして文章をコピーしてください。';
-    });return;}
-    const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();
-    const ok=document.execCommand?.('copy');t.remove();
-    feedback.textContent=ok?'コピーしました。':'コピーに失敗しました。';
+  async function copy(text){
+    try{
+      if(navigator.clipboard?.writeText){
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    }catch(e){console.warn('Clipboard API unavailable',e);}
+    const t=document.createElement('textarea');
+    t.value=text;t.style.position='fixed';t.style.opacity='0';
+    document.body.appendChild(t);t.focus();t.select();
+    let ok=false;
+    try{ok=!!document.execCommand?.('copy');}catch{}
+    t.remove();
+    return ok;
   }
   function draw(panel,r){
     const result=load(r),body=panel.querySelector('.v61-inside');
@@ -165,7 +169,11 @@
     ${summaryHTML(result)}
     <div class="v61-step"><strong>① ラップ君に相談する</strong><p>従来の全馬・DB33・調教・テン順などをまとめた依頼文を作ります。CHARANIZEの画像は別途チャットへ送ります。</p>
       <button type="button" class="v61-copy">分析用データをコピー</button>
-      <p class="v61-help">コピーした文章をこのChatGPTに貼り付けてください。ラップ君が分析結果の取込用ブロックを返します。</p></div>
+      <p class="v61-readiness" role="status" aria-live="polite">準備状況：待機中。ボタンを押すと全馬データの生成・照合・コピーまで自動で行います。</p>
+      <details class="v61-preview" hidden><summary>生成した相談文の全文を確認する</summary>
+        <textarea readonly rows="9" aria-label="生成した相談文" class="v61-preview-text"></textarea>
+      </details>
+      <p class="v61-help">コピー完了の表示を確認してから、このChatGPTに貼り付けてください。未登録のテン順などは未取得のまま出力されます。</p></div>
     <div class="v61-step"><strong>② ラップ君の結果をサイトへ戻す</strong><p>返信中の「MYKEIBA_PAIRRESULT_V1」から「【結果ブロック終わり】」までを貼り付けます。</p>
       <textarea class="v61-input" rows="5" placeholder="MYKEIBA_PAIRRESULT_V1&#10;RACE|東京|11|富士S&#10;SCENARIO|MAIN|+0.3|+0.9|..."></textarea>
       <button type="button" class="v61-import">結果を反映する</button></div>
@@ -173,16 +181,48 @@
     <p class="v61-help">※結果の反映は現在コピー・貼り付け式です。ChatGPTとの自動同期は行いません。</p>`;
     const status=body.querySelector('.v61-status');
     body.querySelector('.v61-copy')?.addEventListener('click',async()=>{
-      const b=body.querySelector('.v61-copy');b.textContent='データを作成中…';
+      const b=body.querySelector('.v61-copy');
+      const readiness=body.querySelector('.v61-readiness');
+      const preview=body.querySelector('.v61-preview');
+      const textarea=body.querySelector('.v61-preview-text');
+      if(b.disabled)return;
+      b.disabled=true;b.textContent='準備中…';
+      readiness.textContent='準備中：DB33と展開シミュレーションのモジュールを確認しています。';
       try{
         await Promise.all([
           ensureModule('db-result-bridge-v44.js','MyKeibaDbResultBridgeV44'),
           ensureModule('pace-sim-v42.js','MyKeibaPaceSimV42')
         ]);
-        const data=dataText(r);
-        copy(data,status);
-        b.textContent='分析用データをコピー';
-      }catch(e){status.textContent='データ作成時に問題が発生しました。もう一度お試しください。';b.textContent='分析用データをコピー';}
+        if(!window.MyKeibaLapkunV6?.buildConsultText){
+          throw Error('従来の全馬データ生成機能が未読み込みです。ページを再読み込みしてください。');
+        }
+        const data=dataText(r),start=data.indexOf('■全馬データ'),end=data.indexOf('■データ上の事実メモ',start);
+        const horses=r.horses||[];
+        const allHorses=start>=0&&end>start&&horses.length>0
+          &&horses.every(h=>data.slice(start,end).includes('|'+h.name+'|'));
+        if(!allHorses||!data.includes('【サイトへ戻す分析結果】')){
+          throw Error('全馬データの照合が完了していません。コピーせずに停止しました。');
+        }
+        preview.hidden=false;
+        textarea.value=data;
+        const saved=window.MyKeibaDbResultBridgeV44?.savedFor?.(r);
+        const missingTen=horses.filter(h=>!h.tenRank).length;
+        const dbNote=saved?'DB33保存結果あり':'DB33評価はサイト内未保存';
+        readiness.textContent='生成完了：'+horses.length+'頭分・'+dbNote+'・テン順未登録'+missingTen+'頭。コピーしています…';
+        const ok=await copy(data);
+        if(ok){
+          readiness.textContent='コピー完了：'+horses.length+'頭分の相談文（'+data.length.toLocaleString('ja-JP')+'文字）を作成・照合しました。'+dbNote+'。チャットに貼り付けてください。';
+        }else{
+          readiness.textContent='全馬データ生成完了。ただし自動コピーに失敗しました。下の「全文を確認する」を開き、文章を長押ししてコピーしてください。';
+          preview.open=true;
+        }
+      }catch(e){
+        console.warn('Lapkun export is not ready',e);
+        readiness.textContent='未完了：'+String(e?.message||'必要なデータを読み込めませんでした。').replace(/。+$/,'')+'。不完全なデータはコピーしていません。再度お試しください。';
+        status.textContent='相談文の準備または全馬照合が未完了のため、コピーを中止しました。再度お試しください。';
+      }finally{
+        b.disabled=false;b.textContent='分析用データをコピー';
+      }
     });
     body.querySelector('.v61-import')?.addEventListener('click',()=>{
       try{
@@ -195,14 +235,30 @@
   }
   function ensureModule(src,globalName){
     if(window[globalName])return Promise.resolve();
-    const existing=document.querySelector(`script[data-v61-load="${src}"]`)||document.querySelector(`script[src^="${src}"]`);
-    let s=existing;
-    if(!s){s=document.createElement('script');s.src=src;s.async=true;s.dataset.v61Load=src;document.head.appendChild(s);}
-    return new Promise(resolve=>{
+    let script=document.querySelector('script[data-v61-load="'+src+'"]')
+      ||document.querySelector('script[src^="'+src+'"]');
+    if(!script){
+      script=document.createElement('script');
+      script.src=src;script.async=true;script.dataset.v61Load=src;
+      document.head.appendChild(script);
+    }
+    return new Promise((resolve,reject)=>{
       if(window[globalName])return resolve();
-      s.addEventListener('load',resolve,{once:true});
-      s.addEventListener('error',resolve,{once:true});
-      setTimeout(resolve,2500);
+      let finished=false;
+      const done=(error)=>{
+        if(finished)return;
+        finished=true;clearTimeout(timeout);
+        script.removeEventListener('load',onload);
+        script.removeEventListener('error',onerror);
+        if(error&&script.dataset?.v61Load===src)script.remove?.();
+        if(error)reject(error);else resolve();
+      };
+      const onload=()=>done(window[globalName]?null:Error(src+' の初期化が完了していません。'));
+      const onerror=()=>done(Error(src+' を読み込めません。'));
+      const timeout=setTimeout(()=>done(window[globalName]?null:Error(src+' の読み込みが時間切れです。')),3500);
+      script.addEventListener('load',onload,{once:true});
+      script.addEventListener('error',onerror,{once:true});
+      if(window[globalName])done();
     });
   }
   function decorate(){
@@ -247,6 +303,11 @@
   .v61-step{border-top:1px solid #dce9e0;padding-top:12px;margin-top:12px}
   .v61-step>strong{display:block;font-size:13px;color:#245b40}
   .v61-step p{font-size:11px;color:#6a8073;line-height:1.6;margin:6px 0}
+  .v61-readiness{font-size:11px;line-height:1.7;color:#276547;font-weight:800;padding:8px 10px;margin:8px 0;border:1px solid #dceadf;border-radius:10px;background:#f5faf6}
+  .v61-panel button:disabled{opacity:.5;cursor:wait}
+  .v61-preview{margin:9px 0;border:1px solid #dce7e0;border-radius:10px;padding:9px}
+  .v61-preview summary{font-size:11px;font-weight:900;color:#286044;cursor:pointer}
+  .v61-preview-text{width:100%;box-sizing:border-box;margin-top:9px;border:1px solid #dde8df;border-radius:9px;resize:vertical;font-size:10px;line-height:1.5;padding:8px}
   .v61-panel button{border:1px solid #a8cfb9;border-radius:11px;padding:10px 12px;color:#1b633f;background:#e8f6ec;font-weight:900;font-size:12px}
   .v61-input{display:block;width:100%;box-sizing:border-box;border:1px solid #d3e0d7;border-radius:10px;padding:9px;font-size:12px;line-height:1.5;margin:9px 0;min-height:100px;background:#fcfefd}
   .v61-status{font-size:11px;color:#166d44;line-height:1.6;white-space:pre-wrap;margin-top:9px}
