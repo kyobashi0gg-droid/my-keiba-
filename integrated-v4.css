@@ -73,3 +73,25 @@ body.integrated-v4 .sheet-dialog .sheet-actions{background:linear-gradient(180de
     z-index: 0;
   }
 }
+
+/* v61: venue-only race-board navigation (no effect on stored races) */
+.v61-venues{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0 8px}
+.v61-venue{flex:1 1 auto;min-width:65px;max-width:145px;min-height:40px;background:#f6fbf8;border:1px solid #bcd9c9;border-radius:13px;color:#236348;font-weight:900;font-size:14px;padding:8px 10px;white-space:nowrap}
+.v61-venue.active{background:#16643e;color:#fff;border-color:#16643e;box-shadow:0 2px 5px rgba(20,90,55,.13)}
+.v61-venue:focus-visible,.v61-day:focus-visible{outline:3px solid #74b597;outline-offset:2px}
+.v61-day-tabs{display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px}
+.v61-day{white-space:nowrap;border:1px solid #cddbd2;border-radius:9px;padding:6px 10px;background:#fff;color:#4e6758;font-size:11px;font-weight:800}
+.v61-day.active{background:#e2f3e8;color:#145738;border-color:#98c9aa}
+.v61-filter-count{font-size:11px;color:#74887a;margin:3px 3px 12px;font-weight:800}
+@media(max-width:400px){.v61-venues{gap:6px}.v61-venue{min-width:55px;padding:8px 6px;font-size:13px}}
+
+/* v61 compact inline layout: レース [全 新潟 京都 東京] 新聞取込 */
+.v61-race-head{gap:5px;align-items:center;flex-wrap:nowrap}
+.v61-race-head .v61-race-title{flex:0 0 auto;min-width:0}
+.v61-race-head .v61-race-title .v4-h1{font-size:24px}
+.v61-race-head .v61-race-title .v4-eyebrow{font-size:9px;letter-spacing:.07em}
+.v61-race-head .v61-venues{display:flex;flex:1 1 auto;min-width:0;margin:0;gap:3px;flex-wrap:nowrap}
+.v61-race-head .v61-venue{flex:1 1 0;min-width:0;max-width:none;min-height:36px;padding:6px 1px;font-size:11px;border-radius:10px}
+.v61-race-head .v61-venue:first-child{flex:0 0 26px;font-size:10px;padding:5px 0}
+.v61-race-head .v4-link{flex:0 0 auto;font-size:11px;padding:4px 1px;white-space:nowrap}
+@media(max-width:375px){.v61-race-head .v61-venue{font-size:10px}.v61-race-head .v61-race-title .v4-h1{font-size:22px}.v61-race-head .v4-link{font-size:10px}}
