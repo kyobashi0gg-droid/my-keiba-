@@ -110,17 +110,6 @@
         <div class="v4-action-grid"><button class="v4-primary wide" data-v4-action="pdf">＋ 新聞PDFを読み込む</button><button class="v4-secondary" data-v4-tab="races">レース一覧</button><button class="v4-secondary" data-v4-tab="ktm">KTMを見る</button></div>
       </article>
 
-      <article class="v4-card">
-        <div class="v4-section-head"><div><p class="v4-eyebrow">WALLBOARD LAB</p><h2 class="v4-h2">壁打ち材料</h2></div><span class="v4-muted">拡張前提</span></div>
-        <div class="v4-roadmap">
-          <div class="v4-road on"><strong>33ラップ</strong><small>自動評価</small></div>
-          <div class="v4-road future"><strong>ラップ君</strong><small>次段階</small></div>
-          <div class="v4-road future"><strong>テン</strong><small>次段階</small></div>
-          <div class="v4-road future"><strong>上がり</strong><small>次段階</small></div>
-        </div>
-        <p class="v4-muted" style="margin:12px 0 0">今後はこの4軸を同じ馬ごとに並べ、展開・人気・調教と合わせて壁打ちしやすい形へ拡張します。</p>
-      </article>
-
       <div class="v4-section-head"><div><p class="v4-eyebrow">VALUE RANKING</p><h2 class="v4-h2">穴候補 上位</h2></div><button class="v4-link" data-v4-tab="races">全レース</button></div>
       <div class="v4-horse-list">
         ${ranked.length ? ranked.map(({ race, horse, score }, i) => `
