@@ -172,6 +172,16 @@
       if(good){const opened=box.querySelector('.v60-extra')?.open;draw(box,r,d);if(opened)box.querySelector('.v60-extra').open=true;box.querySelector('.v60-status').textContent=`${good}頭取り込み${bad.length?`／未照合${bad.length}行`:''}`;}
     });
   }
+  function ensureModule(path,globalName){
+    if(window[globalName])return Promise.resolve();
+    let script=document.querySelector('script[data-v60-dep="'+path+'"]');
+    if(!script){script=document.createElement('script');script.src=path;script.async=true;script.dataset.v60Dep=path;document.head.appendChild(script);}
+    return new Promise(resolve=>{
+      if(window[globalName])return resolve();
+      script.addEventListener('load',()=>resolve(),{once:true});
+      script.addEventListener('error',()=>resolve(),{once:true});
+    });
+  }
   function decorate(){
     const r=currentRace(),body=document.querySelector('#v4DetailBody');
     if(!r||!body)return;
@@ -182,10 +192,16 @@
       const pace=body.querySelector('#v42PaceSim');
       if(pace)pace.insertAdjacentElement('afterend',panel);else table?.insertAdjacentElement('beforebegin',panel);
       panel.innerHTML='<details class="v60-root"><summary>展開・同時好走2頭分析 <small>軽量版</small></summary><div class="v60-content"></div></details>';
-      panel.querySelector('.v60-root')?.addEventListener('toggle',e=>{
-        if(e.target.open){
-          const race=currentRace();if(race)draw(panel.querySelector('.v60-content'),race,loadData(race));
-        }
+      panel.querySelector('.v60-root')?.addEventListener('toggle',async e=>{
+        if(!e.target.open)return;
+        const area=panel.querySelector('.v60-content');
+        area.textContent='DB33と展開データを確認しています…';
+        await Promise.all([
+          ensureModule('db-result-bridge-v44.js','MyKeibaDbResultBridgeV44'),
+          ensureModule('pace-sim-v42.js','MyKeibaPaceSimV42')
+        ]);
+        if(!e.target.open)return;
+        const race=currentRace();if(race)draw(area,race,loadData(race));
       });
     }
   }
