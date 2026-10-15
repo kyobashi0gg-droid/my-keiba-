@@ -299,7 +299,7 @@
     const fresh = old.cloneNode(true);
     fresh.dataset.v6 = '1';
     fresh.textContent = 'ラップ君に相談';
-    fresh.onclick = () => openConsult(race);
+    fresh.onclick = () => { const integrated = window.MyKeibaRoundtripV61; if (integrated?.openConsult) integrated.openConsult(race); else openConsult(race); };
     old.replaceWith(fresh);
   }
 

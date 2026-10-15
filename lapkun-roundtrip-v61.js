@@ -22,80 +22,64 @@
       if(typeof state!=='undefined')localStorage.setItem(APP,JSON.stringify(state));
     }catch(e){console.warn('Roundtrip save failed',e);}
   }
-  function dbMap(r){
-    try{
-      const d=window.MyKeibaDbResultBridgeV44?.savedFor?.(r)||window.MyKeibaDbResultBridgeV38?.saved?.();
-      if(!d||norm(d.race?.track)!==norm(r.track)||Number(d.race?.raceNo)!==Number(r.raceNo))return new Map();
-      return new Map((d.horses||[]).map(x=>[norm(x.name),x]));
-    }catch{return new Map();}
-  }
-  function charaMap(r){
-    const i=r.v60PairAnalysis;
-    if(i?.chara)return i.chara;
-    try{
-      const saved=JSON.parse(localStorage.getItem('my-keiba-pair-analysis-v60')||'{}');
-      const k=[r.v3DateLabel||r.date||'',r.track||'',r.raceNo||'',r.raceName||''].map(x=>String(x).trim()).join('|');
-      return saved[k]?.chara||{};
-    }catch{return {};}
-  }
-  function tiers(r){
-    const i=r.v60PairAnalysis;
-    if(i?.tiers)return i.tiers;
-    try{
-      const saved=JSON.parse(localStorage.getItem('my-keiba-pair-analysis-v60')||'{}');
-      const k=[r.v3DateLabel||r.date||'',r.track||'',r.raceNo||'',r.raceName||''].map(x=>String(x).trim()).join('|');
-      return saved[k]?.tiers||{};
-    }catch{return {};}
-  }
   function dataText(r){
-    const db=dbMap(r),cm=charaMap(r),ts=tiers(r);
+    const detailed=window.MyKeibaLapkunV6?.buildConsultText?.(r);
     const lines=[
-      '【MY KEIBA LAB / ラップ君 事前展開・同時好走分析】',
-      `対象: ${r.track} ${r.raceNo}R ${r.raceName}`,
-      `登録日付: ${r.v3DateLabel||'未取得'}`,
-      `条件: ${r.v3Course||'未取得'} / 馬場: ${r.going||'未設定'} / 天気: ${r.weather||'未設定'}`,
-      `新聞平均33: ${fmt(num(r.v3Avg33))} / 展開・馬場メモ: ${safe(r.paceMemo)}`,
-      '※新聞PDF掲載オッズは採用しない。確認済み実オッズが無ければ人気・オッズ妙味を断定しない。',
-      '※テン1Fの欠損は欠損として扱い、テン順・CHARANIZE逃先と実通過順で初動先行圧を検証。',
-      '※33はラスト6Fの前半3F−後半3F。1400mは1F目を除外し2F〜4Fを前半3Fとして扱う。',
-      '※事前33予測を先に確定し、DB適合が増えるように予測値を動かさない。',
-      '※DBコア帯の重なりは「同時に勝ち負けする根拠」ではない。過去走総評・格・相手関係・勝ち方・クラス昇級・競馬場移動を個別に調べる。',
-      '馬番|馬名|テン1F過去|テン1F前走|テン順|上がり順|調教印|調教採点|前走比|DB33印|DB分類|コア33|全好走33|CHAR逃|CHAR先|CHAR追走|CHAR脚|CHARギア|仮候補区分',
+      '【MY KEIBA LAB｜ラップ君・事前予想＆サイト保存】',
+      `開催・レース：${r.track} ${r.raceNo}R ${r.raceName}`,
+      `開催日：${r.v3DateLabel||'未設定'}`,
+      '【情報源と優先順位】',
+      '・以下のMY KEIBA LAB資料はサイトの現時点の登録内容。過去走のレベル・総評・相手関係は別途DB Lab原本を確認して評価する。',
+      '・CHARANIZE指数はサイトに取り込まない。この会話へ別途送った新聞画像からラップ君が読み取って組み合わせる。画像がなければ「未確認」と明記し、指数や能力を推測しない。',
+      '・テン1Fが欠損でもテン順とCHARANIZEの逃・先指数、過去の実通過順を使って隊列を確認する。テン/上がり順位は33適性へ直接加点しない。',
+      '・CHARANIZE追走は負荷、脚指数は差し有利の偏りに注意。芝ダを混ぜず、他場・異距離での指数再現性は慎重に扱う。',
+      '・33はラスト6Fの前半3F−後半3F。芝1400mは2F目〜4F目が前半3F。',
+      '・DBレース総評の「ハイ」「超ハイ」はレースの質で、新聞のペース指数とは別。',
+      '・新聞PDFの人気・オッズは信用しない。最新の実オッズを確認できた場合にのみ妙味を判定。',
+      '【今回の分析順序】',
+      '1. 逃/先指数と実通過順から初動先行圧を確認し、33区間の緩み・途中進出・直線再加速から本線/速い側/遅い側33を先に予測。DB適合が増える方向へ予測を合わせない。',
+      '2. 各馬の実績クラス・過去走総評・勝ち方・相手関係・昇級実績・成長・休養・調教を精査し、33適合と勝ち切る能力を別々に評価する。',
+      '3. 軸・本線・相手（A）と広げる（B）、見送り（X）を設定。同じ33・馬場・位置取りの条件で2頭が同時好走する根拠があるA+A/B+B/A+Bだけ提示する。別シナリオでのみ好走する2頭は無理に組み合わせない。',
+      '4. レース結果を参照せずに事前分析を固定する。未確認の情報は明記し、根拠が弱ければ「見送り」も提示する。',
+      '',
+      '【サイトから送った馬別資料】',
     ];
-    for(const h of r.horses||[]){
-      const d=db.get(norm(h.name)),c=cm[norm(h.name)]||{},t=ts[norm(h.name)]||'';
-      lines.push([
-        h.number||'—',h.name,h.tenPast1f||'—',h.tenPrev1f||'—',h.tenRank||'—',h.agariRank||'—',
-        h.mark||'—',h.trainingScore||'—',h.diff??'—',
-        d?.mark||'—',d?.groupLabel||d?.label||'—',d?.zone||'—',d?.allZone||'—',
-        c.escape??'—',c.front??'—',c.follow??'—',c.leg??'—',c.gear??'—',
-        t||(/^[◎○▲]$/.test(h.userMark||'')?'A':/^[☆△]$/.test(h.userMark||'')?'B':'未分類')
-      ].map(safe).join('|'));
+    if(detailed){
+      lines.push(detailed);
+    }else{
+      lines.push(`コース: ${r.v3Course||'—'} / 平均33: ${r.v3Avg33??'—'} / 馬場: ${r.going||'未設定'}`);
+      lines.push('馬番|馬名|テン順|上がり順|調教印|調教採点|前走比');
+      for(const h of r.horses||[]){
+        lines.push([h.number||'—',h.name,h.tenRank||'—',h.agariRank||'—',h.mark||'—',h.trainingScore||'—',h.diff??'—'].map(safe).join('|'));
+      }
+      lines.push('※従来の詳細DB33データは一部取得できていません。サイトでDB評価の保存状況を確認してください。');
     }
     const pace=window.MyKeibaPaceSimV42?.consultSection?.(r);
-    if(pace)lines.push('',pace);
+    if(pace)lines.push('', '【サイトの展開シミュレーション（補助）】',pace);
+    const rank=window.MyKeibaLapConsultV46?.siteRankingSection?.();
+    if(rank)lines.push('',rank);
+    const c1400=window.MyKeibaLapConsultV46?.caution1400Section?.(r);
+    if(c1400)lines.push('',c1400);
     lines.push(
       '',
-      '【ラップ君への分析指示】',
-      '1. 今回の実33を、初動先行圧と33区間先行圧を分離し、区間開始地点、緩みの位置、途中進出、直線再加速を因果で予測。本線・速い側・遅い側の範囲を確定する。',
-      '2. 各馬のDB過去走・総評（ハイ/超ハイはレースの質）・上級相手関係と勝ち切り能力を精査。元データに無いものは未確認とする。',
-      '3. CHARANIZE追走は負荷、脚指数は差し有利傾向。指数は他場での再現性を確認する。芝ダ混用不可。',
-      '4. 本線・相手・広げるを個別評価し、A+A、B+B、A+Bを「2頭が同時に好走する因果」がある場合だけ提案する。別展開専用同士は買い目にしない。',
-      '5. 次の形式で最後にコピペできる結果ブロックを作る。縦棒|は列区切り専用。理由文では使わず、改行しない。対象外馬や組合せは無理に出さない。',
+      '【サイトへ戻す分析結果】',
+      'まず通常の文章で、33形成、全馬の能力比較、A/Bの取捨理由、同時好走の可否を説明する。',
+      'その最後に必ず以下の形式でコピペ用の「結果ブロック」を作る。',
+      'これは入力形式の説明であり、ダミーの馬名・数値を残してはいけない。実際に評価した馬・33に置き換え、不要な行は省く。',
+      '本線SCENARIOは必須。FAST/SLOWはシナリオが合理的に成立するときだけ。HORSE・PAIRは無理に増やさず、理由を具体的に。',
+      '「|」は列の区切り専用。理由本文に縦棒や改行を入れない。RACE名は以下と完全一致させる。',
       '',
       'MYKEIBA_PAIRRESULT_V1',
       `RACE|${safe(r.track)}|${safe(r.raceNo)}|${safe(r.raceName)}`,
-      'SCENARIO|MAIN|+0.0|+0.8|33区間前半の緩み位置と後半の再加速を記述（数値は実際に予測した値に置換）',
-      'SCENARIO|FAST|-0.8|-0.1|速い側に振れる原因を記述',
-      'SCENARIO|SLOW|+1.0|+1.6|遅い側に振れる原因を記述',
-      'HORSE|馬番|馬名|A|軸|能力・適合・位置取りの根拠（実在の馬に置換）',
-      'HORSE|馬番|馬名|B|広げる|能力・条件付き浮上の根拠（実在の馬に置換）',
-      'PAIR|A+A|1頭目の馬名|2頭目の馬名|MAIN|2頭とも好走する因果（実在の組合せに置換）',
-      'PAIR|B+B|1頭目の馬名|2頭目の馬名|FAST|条件が揃えば同時浮上する理由',
-      'NOTE|現時点の未確認材料と見送り判断',
-      '【結果ブロック終わり】',
-      '',
-      '※シナリオ数値・馬番・馬名・根拠は必ず今回の分析で置換する。不要な行は省略可。'
+      'SCENARIO|MAIN|33下限数値|33上限数値|区間の緩みと再加速を含む根拠',
+      'SCENARIO|FAST|33下限数値|33上限数値|速い側の原因（必要な場合のみ）',
+      'SCENARIO|SLOW|33下限数値|33上限数値|遅い側の原因（必要な場合のみ）',
+      'HORSE|実際の馬番|実際の馬名|A|軸・本線・相手の別|33適合と能力・位置取りの根拠',
+      'HORSE|実際の馬番|実際の馬名|B|広げる|好走条件・能力不確実性と採用理由',
+      'PAIR|A+A|1頭目の実際の馬名|2頭目の実際の馬名|MAIN|2頭が同時好走する理由',
+      'PAIR|B+B|1頭目の実際の馬名|2頭目の実際の馬名|FAST|条件変化で両馬が浮上する理由（必要な場合のみ）',
+      'NOTE|馬場・調教・CHARANIZE画像の未確認事項、買い目上の見送り理由',
+      '【結果ブロック終わり】'
     );
     return lines.join('\n');
   }
@@ -160,7 +144,7 @@
     <div class="v61-final-pairs">${result.pairs.length?result.pairs.map(p=>`<div class="v61-final-pair">
       <b>${esc(p.kind)} <small>${title[p.scenario]||p.scenario}</small></b>
       <strong>${esc(p.a)} ＋ ${esc(p.b)}</strong><p>${esc(p.reason)}</p></div>`).join(''):'<div class="v61-empty">組み合わせを無理に買わない判断です。</div>'}</div>
-    ${result.horses.length?`<details><summary>軸・本線・広げる／能力評価（${result.horses.length}頭）</summary><div class="v61-horses">${result.horses.map(h=>`<div><b>${esc(h.tier)} ${esc(h.number)} ${esc(h.name)}：${esc(h.role)}</b><p>${esc(h.reason)}</p></div>`).join('')}</div></details>`:''}
+    ${result.horses.length?`<div class="v61-result-title">軸・本線・相手 / 広げる</div><div class="v61-horses">${result.horses.map(h=>`<div class="v61-horse-card"><span class="v61-horse-tier ${esc(h.tier)}">${esc(h.tier)}</span><div><b>${esc(h.number)} ${esc(h.name)} — ${esc(h.role)}</b><p>${esc(h.reason)}</p></div></div>`).join('')}</div>`:''}
     ${result.note?`<p class="v61-final-note">${esc(result.note)}</p>`:''}</div>`;
   }
   function copy(text,feedback){
@@ -177,17 +161,16 @@
   function draw(panel,r){
     const result=load(r),body=panel.querySelector('.v61-inside');
     if(!body)return;
-    body.innerHTML=`<p class="v61-help">①ラップ君が隊列・33・能力・2頭の同時好走を検討 → ②分析結果を貼り付けて反映。自動予想ではありません。</p>
+    body.innerHTML=`<p class="v61-help">CHARANIZEの新聞スクショはこのチャットに送ってください。サイトには指数を登録せず、ラップ君がDB・展開・調教と合わせて分析し、その結果だけをここへ保存します。</p>
     ${summaryHTML(result)}
-    <div class="v61-step"><strong>① ラップ君へ送る</strong><p>レース・テン順・DB33・CHARANIZE・調教をまとめた分析依頼を作ります。</p>
+    <div class="v61-step"><strong>① ラップ君に相談する</strong><p>従来の全馬・DB33・調教・テン順などをまとめた依頼文を作ります。CHARANIZEの画像は別途チャットへ送ります。</p>
       <button type="button" class="v61-copy">分析用データをコピー</button>
       <p class="v61-help">コピーした文章をこのChatGPTに貼り付けてください。ラップ君が分析結果の取込用ブロックを返します。</p></div>
     <div class="v61-step"><strong>② ラップ君の結果をサイトへ戻す</strong><p>返信中の「MYKEIBA_PAIRRESULT_V1」から「【結果ブロック終わり】」までを貼り付けます。</p>
       <textarea class="v61-input" rows="5" placeholder="MYKEIBA_PAIRRESULT_V1&#10;RACE|東京|11|富士S&#10;SCENARIO|MAIN|+0.3|+0.9|..."></textarea>
       <button type="button" class="v61-import">結果を反映する</button></div>
     <div class="v61-status" role="status" aria-live="polite"></div>
-    <details class="v61-advanced"><summary>参考：DBコア一致候補・CHARANIZE取り込み（旧比較機能）</summary>
-      <button type="button" class="v61-legacy">旧比較パネルを表示する</button><p>先にCHARANIZE指数を登録したい場合に使います。従来の機械的なペア一覧は補助材料です。</p></details>`;
+    <p class="v61-help">※結果の反映は現在コピー・貼り付け式です。ChatGPTとの自動同期は行いません。</p>`;
     const status=body.querySelector('.v61-status');
     body.querySelector('.v61-copy')?.addEventListener('click',async()=>{
       const b=body.querySelector('.v61-copy');b.textContent='データを作成中…';
@@ -208,12 +191,7 @@
         panel.querySelector('.v61-status').textContent=`反映しました。本線33と2頭セット${v.pairs.length}組を保存しました。`;
       }catch(e){status.textContent=`取込できません：${e.message}`;}
     });
-    body.querySelector('.v61-legacy')?.addEventListener('click',()=>{
-      const legacy=document.querySelector('#v60PairPanel');
-      if(!legacy){status.textContent='旧比較パネルは準備中です。';return;}
-      legacy.classList.toggle('v61-show-legacy');
-      body.querySelector('.v61-legacy').textContent=legacy.classList.contains('v61-show-legacy')?'旧比較パネルを閉じる':'旧比較パネルを表示する';
-    });
+
   }
   function ensureModule(src,globalName){
     if(window[globalName])return Promise.resolve();
@@ -233,7 +211,7 @@
     let panel=body.querySelector('#v61RoundtripPanel');
     if(panel)return;
     panel=document.createElement('section');panel.id='v61RoundtripPanel';panel.className='v61-panel';
-    panel.innerHTML='<details class="v61-root"><summary>ラップ君分析・同時好走2頭 <small>展開33・能力・A＋A/B＋B</small></summary><div class="v61-inside"></div></details>';
+    panel.innerHTML='<details class="v61-root"><summary>ラップ君の分析結果 <small>本線33・能力評価・同時好走2頭／結果の取込</small></summary><div class="v61-inside"></div></details>';
     const legacy=body.querySelector('#v60PairPanel');
     const pace=body.querySelector('#v42PaceSim');
     const table=body.querySelector('.v4-table-wrap')||body.querySelector('.v4-table');
@@ -244,12 +222,24 @@
       if(e.target.open){const race=currentRace();if(race)draw(panel,race);}
     });
   }
+  function openConsult(race) {
+    const detail=document.querySelector('#v4Detail');
+    if(!detail||detail.hidden)return;
+    decorate();
+    const panel=document.querySelector('#v61RoundtripPanel');
+    const root=panel?.querySelector('.v61-root');
+    if(!root)return;
+    root.open=true;
+    const active=currentRace()||race;
+    if(active)draw(panel,active);
+    panel.scrollIntoView?.({behavior:'smooth',block:'start'});
+  }
   let timer=0;
   function schedule(){clearTimeout(timer);timer=setTimeout(decorate,110);}
   document.addEventListener('click',e=>{if(e.target?.closest?.('[data-v4-race],.v4-race-card,[data-v4-expand],.v4-nav'))schedule();},true);
   for(const ev of ['pageshow','mykeiba:resume','mykeiba:modules-ready','mykeiba:db-result-decorated'])window.addEventListener(ev,schedule);
   const style=document.createElement('style');
-  style.textContent=`.v60-panel:not(.v61-show-legacy){display:none!important}
+  style.textContent=`
   .v61-panel{margin:11px 0;border:1px solid #bcdccc;border-radius:17px;background:#fff;padding:12px;color:#345b45}
   .v61-root>summary{font-size:14px;font-weight:950;cursor:pointer;color:#196141}
   .v61-root>summary small{display:block;color:#789588;font-size:10px;margin-top:3px}
@@ -267,11 +257,11 @@
   .v61-final-pairs{display:grid;gap:7px}.v61-final-pair{border:1px solid #d9eadf;border-radius:13px;padding:10px;display:grid;gap:4px}
   .v61-final-pair b{color:#247a4d}.v61-final-pair b small{border-radius:6px;background:#e7f3eb;padding:3px 5px}
   .v61-final-pair strong{font-size:13px;color:#184e32}
-  .v61-horses>div{border-bottom:1px solid #e8eee8;padding:7px 0}.v61-horses p{margin:4px 0;font-size:11px;color:#627e6b}
+  .v61-horses{display:grid;gap:7px}.v61-horse-card{display:flex;align-items:flex-start;gap:9px;border:1px solid #e3ede6;border-radius:11px;padding:9px}.v61-horse-card>div{flex:1;min-width:0}.v61-horse-tier{background:#e6f4eb;border-radius:7px;font-size:13px;color:#176444;font-weight:900;padding:4px 8px}.v61-horse-tier.B{background:#fff2d8;color:#9a6818}.v61-horse-tier.X{background:#eee;color:#777}.v61-horses p{margin:4px 0;font-size:11px;color:#627e6b;line-height:1.6}
   .v61-final-note,.v61-empty{background:#f6f8f6;padding:9px 10px;border-radius:10px;color:#60756b;line-height:1.6;font-size:11px}
   .v61-analysis details{margin-top:12px}.v61-analysis summary,.v61-advanced summary{font-size:11px;font-weight:900;cursor:pointer}
   .v61-advanced{margin-top:12px;border-top:1px solid #e4eee7;padding-top:9px}.v61-advanced p{font-size:10px;color:#83948a}`;
   document.head.appendChild(style);
   schedule();
-  window.MyKeibaRoundtripV61={dataText,parse,summaryHTML,decorate,load};
+  window.MyKeibaRoundtripV61={dataText,parse,summaryHTML,decorate,load,openConsult};
 })();
