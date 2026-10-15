@@ -218,8 +218,8 @@
         }
       }catch(e){
         console.warn('Lapkun export is not ready',e);
-        readiness.textContent='未完了：'+(e?.message||'必要なデータを読み込めませんでした。')+'。不完全なデータはコピーしていません。再度お試しください。';
-        status.textContent='モジュール未準備のため、コピーを中止しました。通信状況を確認して再度押してください。';
+        readiness.textContent='未完了：'+String(e?.message||'必要なデータを読み込めませんでした。').replace(/。+$/,'')+'。不完全なデータはコピーしていません。再度お試しください。';
+        status.textContent='相談文の準備または全馬照合が未完了のため、コピーを中止しました。再度お試しください。';
       }finally{
         b.disabled=false;b.textContent='分析用データをコピー';
       }
