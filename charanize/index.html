@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>CHARANIZE LAB｜指数水準・追走負荷経験・キャラ偏差値</title>
+<meta name="theme-color" content="#0c4547"/><meta name="description" content="CHARANIZE指数新聞の原指数と同級比較を可視化。逃げ・追走負荷経験・脚力・ギアの特徴を過去5走から照合"/>
+<link rel="manifest" href="./manifest.webmanifest"/>
+<style>
+:root{--bg:#f5f6f8;--ink:#192633;--muted:#697584;--line:#e1e7ec;--accent:#0f6a69;--blue:#2a6fbe;--card:#fff;--warm:#f7eecf;--shadow:0 3px 15px rgba(21,41,52,.05)}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif;font-size:14px;line-height:1.5}.wrap{max-width:1220px;margin:auto;padding:0 18px 46px}header{background:#142b39;color:white;padding:23px 0 21px;border-bottom:4px solid #1a7c79}header .wrap{padding-bottom:0}h1{font-size:22px;font-weight:820;margin:0;letter-spacing:.01em}.sub{opacity:.78;margin-top:3px;font-size:12px}.brand{display:flex;gap:11px;align-items:center}.brandmark{width:36px;height:36px;border:1px solid #6daeb2;border-radius:10px;display:grid;place-items:center;font-size:20px;color:#b4f2e8}section{margin-top:16px}.panel,.card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}.panel{padding:15px 16px}label{font-size:12px;font-weight:700;color:#435261}select,input[type=text],input[type=search]{border:1px solid #ced9e0;background:#fff;color:var(--ink);border-radius:9px;min-height:40px;padding:8px 10px;font-size:14px;width:100%;outline:0}select:focus,input:focus{border-color:var(--accent);box-shadow:0 0 0 2px #c7e7e4}.controls{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:10px;align-items:end}.control{min-width:0}.control label{display:block;margin-bottom:5px}.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.tools{display:flex;gap:9px;align-items:center;flex-wrap:wrap;justify-content:space-between}.drop{display:inline-flex;gap:7px;align-items:center;justify-content:center;cursor:pointer;padding:9px 13px;background:var(--accent);color:white;border-radius:9px;font-size:13px;font-weight:700;border:0}.drop input{display:none}.btn{background:#fff;color:#243748;border:1px solid #ccd7df;border-radius:9px;padding:9px 12px;font-size:13px;font-weight:700;cursor:pointer}.btn:hover,.tab:hover{border-color:var(--accent)}.btn:disabled{opacity:.4;cursor:not-allowed}.note{font-size:12px;color:var(--muted)}#status{font-size:12px;color:#45666d;min-height:18px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.stat{background:white;border:1px solid var(--line);border-radius:12px;padding:13px 14px}.stat strong{font-size:24px;font-weight:800;letter-spacing:-1px}.stat small{color:var(--muted);display:block;font-size:11px}.stat em{color:var(--accent);font-style:normal;font-weight:800}.tabs{display:flex;gap:8px;overflow:auto;padding-bottom:4px}.tab{border:1px solid #ced7df;border-radius:24px;background:#fff;padding:9px 13px;font-size:13px;font-weight:800;white-space:nowrap;cursor:pointer;color:#415264}.tab.active{background:#142b39;color:#fff;border-color:#142b39}.heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:12px 0}.heading h2{font-size:18px;margin:0}.kicker{font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.07em}.rankgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.rankcard{padding:13px 12px}.ranktitle{font-weight:850;font-size:13px;margin-bottom:7px}.rankline{display:flex;justify-content:space-between;align-items:center;gap:5px;border-top:1px solid #edf0f2;padding:6px 0;font-size:12px}.rankline .name{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:145px}.rankline b{font-variant-numeric:tabular-nums}.tiny{font-size:10px;color:var(--muted)}.tablearea{border-radius:14px;border:1px solid var(--line);background:white;overflow-x:auto;box-shadow:var(--shadow)}table{border-collapse:collapse;width:100%;min-width:780px}th{background:#f0f5f6;color:#50616c;font-size:11px;letter-spacing:.04em;font-weight:800;text-align:left;padding:10px 9px;white-space:nowrap;position:sticky;top:0}td{border-top:1px solid #edf1f4;padding:9px 8px;white-space:nowrap;vertical-align:middle;font-size:12px}tr:hover td{background:#f6fbfa}.horse{font-size:13px;font-weight:800;cursor:pointer;color:#193c4d}.horse:hover{text-decoration:underline}.num{display:inline-grid;place-items:center;min-width:24px;padding:3px 5px;border-radius:6px;background:#ecf0f4;font-weight:800;font-size:11px;margin-right:5px}.idx{display:inline-flex;align-items:center;gap:5px;min-width:74px;font-variant-numeric:tabular-nums}.letter{display:inline-grid;place-items:center;border-radius:5px;width:22px;height:22px;font-weight:900;font-size:11px;background:#ecf1f3;color:#4c5d6b}.S{background:#f0c65c;color:#59401a}.A{background:#e5a354;color:#563619}.B{background:#a8d9bd;color:#185842}.C{background:#bcdce9;color:#285975}.D{background:#dae6ef;color:#4f6476}.E,.F,.G{background:#eef0f2;color:#707b86}.Z{background:#505e6a;color:white}.missing{color:#a7b2b9}.topchip{font-size:10px;background:#e8f5f3;color:#13736a;border-radius:6px;padding:3px 5px;font-weight:800}.switch{display:flex;align-items:center;gap:5px;white-space:nowrap;font-size:12px;color:#516270;font-weight:700}.switch input{accent-color:var(--accent)}.details{border:1px solid #dbe5e8;border-radius:12px;margin:10px 0;background:white;overflow:hidden}.details>summary{padding:12px 14px;cursor:pointer;font-weight:800;display:flex;gap:12px;justify-content:space-between;align-items:center}.detailbody{border-top:1px solid var(--line);padding:12px}.detailmeta{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:11px}.pill{background:#ecf3f4;color:#526a78;border-radius:20px;padding:4px 8px;font-size:11px}.history{overflow:auto}.history table{min-width:860px}.warn{background:#fff8e8;border-left:3px solid #ca9f43;padding:10px 12px;border-radius:6px;font-size:12px;color:#7a5d24}.compare{margin-top:12px}.comparegrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;min-width:460px}.cmpcell{padding:8px;border:1px solid var(--line);border-radius:8px;text-align:center}.bar{height:6px;background:#e9f0f0;border-radius:6px;overflow:hidden;margin-top:4px}.bar span{display:block;height:100%;background:#4d9f97}footer{font-size:11px;color:var(--muted);margin-top:25px;line-height:1.8}#empty{padding:30px;text-align:center;color:var(--muted)}.tag{display:inline-block;background:#f0f3f6;color:#5e6a77;font-size:10px;border-radius:5px;padding:2px 5px}.smallbtn{background:transparent;border:1px solid #dae2e7;color:#466173;border-radius:7px;padding:5px 7px;cursor:pointer;font-size:11px}.focusbox{background:#e7f4f2;border-left:3px solid #158279;border-radius:6px;padding:10px 13px;color:#1c615c;font-size:12px}.visually-hidden{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}#raceMeta{color:#5b7780;font-size:12px}#detailLayer:not(:empty){margin-top:15px}@media(max-width:750px){.wrap{padding:0 11px 30px}h1{font-size:19px}.controls{grid-template-columns:1fr 1fr}.rankgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.heading h2{font-size:16px}.panel{padding:12px}.tools{align-items:flex-start}.rankcard:last-child{grid-column:span 2}.note{font-size:11px}td{padding:9px 7px}.stat strong{font-size:21px}}@media print{header,.filetools,.controls,.tabs,.smallbtn{display:none}.wrap{max-width:none}.tablearea{overflow:visible}table{min-width:0}body{background:white}}
+
+/* v2 additions */
+.grid2{display:grid;grid-template-columns:1.45fr 1fr;gap:12px}.v2label{font-size:12px;font-weight:800;color:#354e5c}.seqpill{display:inline-flex;align-items:center;border:1px solid #dde5e7;padding:2px 6px;border-radius:6px;font-size:10px;color:#637785}.typetag{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:8px;background:#eef5f4;color:#175d58;font-weight:800;font-size:11px;white-space:nowrap}.typetag.muted{background:#f0f2f4;color:#667582}.typehint{color:#76828a;font-size:11px;margin-top:5px;max-width:190px;white-space:normal}.twoby{display:grid;grid-template-columns:1fr 1fr;gap:7px}.qcell{border:1px solid #d8e4e8;border-radius:10px;padding:11px;font-size:12px;background:#f9fbfc}.qcell b{display:block;font-size:12px}.qcell small{display:block;color:#637986;font-size:11px;margin-top:4px}.qcell:nth-child(1){background:#eaf4f0}.qcell:nth-child(2){background:#edf5fb}.qcell:nth-child(3){background:#f3f5fa}.qcell:nth-child(4){background:#fff6ed}.chartbox{background:#fbfcfd;border:1px solid #e3e9ed;border-radius:12px;min-height:280px;padding:4px}.chartbox svg{display:block;width:100%;height:auto;min-height:240px}.chart-controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:8px}.chart-controls label{display:block;margin-bottom:4px}.corr-summary{background:#f0f6f7;padding:8px 10px;border-radius:8px;color:#405b68;margin:8px 0;font-size:12px}.inlinehint{padding:9px 10px;background:#f6f8f9;border-radius:8px;font-size:11px;color:#67747d;line-height:1.6}.benchgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}.benchgrid label{display:block;margin-bottom:4px}.benchgrid input,.benchgrid select{border:1px solid #ced9e0;padding:8px 9px;border-radius:9px;min-height:38px;width:100%;background:white}.benchgrid input[type=checkbox]{width:auto;min-height:auto}.typekey{font-size:10px;color:#627883}.summarybox{padding:11px;border:1px solid #dfe8e7;border-radius:10px;background:#fff}.summarybox b{color:#1a605b}.corrdot{fill:#126e78;stroke:#fff;stroke-width:1.5;cursor:pointer;opacity:.83}.corrdot.active{stroke:#d56e28;stroke-width:3.3}.figsmall{font-size:10px;fill:#607785}.figaxis{stroke:#b5c7ce;stroke-width:1}.figgrid{stroke:#ebeff3;stroke-width:1}.emptychart{padding:38px 12px;text-align:center;color:#687f89;font-size:13px}.bench-title{font-size:15px;font-weight:800;cursor:pointer}.warnsmall{font-size:11px;color:#9c622b}.coursemark{color:#2c7a77;font-weight:700}.readme{font-size:12px;color:#697884}.cmpmeta{font-size:10px;color:#65838a}.wide{min-width:0} .chartfooter{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+@media(max-width:850px){.grid2{grid-template-columns:1fr}.benchgrid{grid-template-columns:1fr 1fr}.chart-controls{grid-template-columns:1fr 1fr}.chart-controls>div:last-child{grid-column:span 2}}@media(max-width:440px){.benchgrid{grid-template-columns:1fr}.qcell{padding:8px}.chartbox{padding:0}.chartbox svg{min-height:200px}.typehint{max-width:140px}}
+
+/* V3: supplied published race-pace benchmark tables, not individual-horse 3F */
+#courseArea{display:none} .v3grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:13px 0}.v3grid label{display:block;font-size:11px;margin-bottom:4px;color:#526477}.v3grid select,.v3grid input{width:100%;border:1px solid #cdd9dd;background:white;color:#183044;padding:9px;border-radius:8px;min-height:39px;font-size:13px}.v3results{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.v3metric{background:#f4f8f9;border:1px solid #e1eaee;padding:11px 12px;border-radius:10px}.v3metric b{display:block;font-size:22px;font-variant-numeric:tabular-nums;letter-spacing:-.03em}.v3metric small{font-size:11px;color:#637686}.v3note{background:#fff7e7;border-left:3px solid #d4a046;border-radius:6px;padding:10px 12px;font-size:12px;color:#6e592b;margin-top:10px}.v3tbl{overflow:auto;margin-top:12px}.v3tbl table{min-width:550px}.v3tbl td,.v3tbl th{font-size:11px;padding:6px 8px}.v3current{background:#e9f7f2;font-weight:800}.v3status{color:#456a6e;font-size:12px;margin-top:9px}.v3subtitle{font-size:12px;color:#6f8290}.v3pill{padding:3px 7px;border:1px solid #d9e2e6;border-radius:20px;font-size:10px;margin-left:6px;color:#637c8b} .v3delta{font-weight:900;color:#096e6b}.v3toggle{display:inline-flex;align-items:center;gap:7px;font-size:12px}
+@media(max-width:800px){.v3grid{grid-template-columns:repeat(2,minmax(0,1fr))}.v3results{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:420px){.v3grid{grid-template-columns:1fr 1fr}.v3metric b{font-size:20px}}
+
+/* v4: raw and tentative relative-course comparators */
+#ratioLab .compare-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+#ratioLab .horse-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+#ratioLab .horse-cards .card{box-shadow:none;padding:13px;background:#f9fbfc}
+#ratioLab .field{margin-bottom:9px;min-width:0}
+#ratioLab .field label{display:block;font-size:12px;margin-bottom:3px}
+#ratioLab .field select,#ratioLab .field input{width:100%;border:1px solid #cbd7db;background:white;border-radius:8px;padding:9px;font-size:14px;min-height:38px}
+#ratioLab .metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+#ratioLab .metrics .metric{border:1px solid #d7e5e5;border-radius:11px;background:white;padding:13px}
+#ratioLab .metric strong{font-size:23px;display:block;letter-spacing:-.6px;font-variant-numeric:tabular-nums}
+#ratioLab .muted{font-size:12px;color:#677786}
+#ratioLab .meter{display:flex;gap:9px;align-items:center;margin:9px 0}
+#ratioLab input[type=range]{flex:1;accent-color:var(--accent)}
+#ratioLab .v4notice{padding:10px 12px;border-radius:10px;background:#f3f6fa;font-size:12px;line-height:1.6;margin-top:12px}
+#ratioLab .v4formula{border-top:1px solid #e3e9eb;padding-top:10px;margin-top:9px;font-size:13px}
+#ratioLab .v4pill{display:inline-flex;background:#e1f3f0;color:#105d59;border-radius:7px;padding:3px 8px;font-size:11px;font-weight:bold}
+@media(max-width:640px){#ratioLab .compare-grid{grid-template-columns:1fr 1fr}#ratioLab .horse-cards{grid-template-columns:1fr}#ratioLab .metrics{grid-template-columns:1fr 1fr}#ratioLab .metrics .metric{padding:10px}#ratioLab .metric strong{font-size:19px}}
+
+/* v5 character-first dashboard */
+#charaDashboard{border:1px solid #b8d6d0;box-shadow:0 6px 20px rgba(18,78,72,.07);background:#fff}
+.charaTools{display:flex;gap:9px;flex-wrap:wrap;align-items:end;margin:12px 0}
+.charaTools label{min-width:125px;flex:1;font-size:11px;color:#4c6b74;display:grid;gap:5px}
+.charaTools select{font-size:13px}
+.charaIntro{padding:9px 12px;background:#eff7f6;color:#2f5960;border-radius:10px;font-size:12px;line-height:1.6;margin:8px 0 12px}
+#charaCards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.charaCard{background:#fbfcfd;border:1px solid #dce7ea;border-radius:11px;padding:10px 11px;min-width:0;cursor:pointer;transition:border-color .1s,box-shadow .1s}
+.charaCard:hover,.charaCard.selected{border-color:#137d76;box-shadow:0 0 0 1px #137d76}
+.charaCard.selected{background:#f2f9f6}
+.charaCardHead{display:flex;align-items:center;gap:6px;justify-content:space-between;flex-wrap:wrap}
+.charaCardTitle{font-size:13px;font-weight:840;color:#193c46;flex:1;min-width:95px}
+.charaNumber{display:inline-block;background:#e5f0ef;padding:3px 6px;border-radius:6px;font-size:12px;font-weight:800}
+.charaType{background:#e5f1ed;color:#0e6966;border-radius:18px;padding:4px 7px;font-size:10px;font-weight:780;white-space:nowrap}
+.charaSub{color:#627986;font-size:10px;margin:2px 0 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.charaMetrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.charaMetric{min-width:0;text-align:center}
+.charaMetricLabel{font-size:10px;color:#657a83}
+.charaMetricVal{font-size:17px;font-weight:900;line-height:1.3;font-variant-numeric:tabular-nums}
+.charaMetricRaw{font-size:9px;color:#748792;white-space:nowrap}
+.charaMicrobar{height:4px;background:#e1e9eb;border-radius:7px;overflow:hidden;margin:2px 2px 0}
+.charaMicrobar span{display:block;height:100%;border-radius:7px;background:#298d87}
+.charaMiniRel{font-size:10px;color:#5b7081;border-top:1px solid #e6edee;margin-top:8px;padding-top:5px;line-height:1.4}
+#charaFocus{margin-top:14px;border-top:1px solid #dde8e9;padding-top:13px}
+.charaFocusGrid{display:grid;grid-template-columns:minmax(200px, .8fr) minmax(0,1.2fr);gap:10px;align-items:start}
+.charaRadar{border:1px solid #e1e9eb;background:#fbfcfd;border-radius:12px;text-align:center;padding:8px;min-height:260px}
+.charaRadar svg{width:100%;height:auto;max-width:300px;display:block;margin:0 auto}
+.charaFocusData{padding:4px 1px;font-size:13px}
+.charaExplain{padding:8px 9px;margin:8px 0;background:#f2f7f7;border-radius:9px;color:#47616c;font-size:12px}
+.charaAxisRow{display:grid;grid-template-columns:52px 45px 1fr 55px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid #edf1f2}
+.charaAxisRow .track{height:9px;background:#e4eced;border-radius:15px;position:relative;overflow:hidden}
+.charaAxisRow .fill{position:absolute;left:0;top:0;height:100%;border-radius:15px;background:#20867e}
+.charaAxisRow .mid{position:absolute;left:50%;top:0;height:100%;border-left:1px dashed #789ca7}
+.charaAxisRow b{font-variant-numeric:tabular-nums;text-align:right}
+.charaAxisRow small{font-size:10px;color:#7e9196;text-align:right}
+.charaTip{font-size:11px;color:#647986}
+.charExtraToggle{margin:18px 0 4px;display:flex;align-items:center;gap:9px;justify-content:space-between}
+.charExtraToggle button{border:1px solid #c5d8d9;border-radius:9px;background:white;padding:9px 13px;font-size:12px;font-weight:760;color:#326767;cursor:pointer}
+.charOptExtra{display:none} body.charExtrasShown .charOptExtra{display:block} body.charExtrasShown #courseArea{display:block}
+#charaDashboard .heading h2{font-size:18px}
+#charaCohort{color:#557481;font-size:12px}
+.charCountWarn{border-left:3px solid #dba048;background:#fff8e7;padding:9px 10px;border-radius:6px;color:#85612b;font-size:12px}
+@media(max-width:790px){#charaCards{grid-template-columns:1fr}.charaFocusGrid{grid-template-columns:1fr}.charaRadar{min-height:0}.charaTools label{flex-basis:45%}.charaMetricVal{font-size:17px}}
+
+/* v6: readable class benchmark and 5-race strength-vs-speed matrix */
+.v6block{margin:16px 0 8px;padding:15px 14px;border:1px solid #dce6e9;border-radius:14px;background:#fbfcfd}
+.v6block h3{font-size:16px;margin:0 0 8px;color:#234a52}
+.v6sub{font-size:12px;color:#697e87;line-height:1.65;margin:4px 0 10px}
+.v6row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:8px 0}
+.v6tile{background:white;border:1px solid #e1e9ed;border-radius:11px;padding:11px;min-width:0}
+.v6tile b{font-size:14px;display:block;line-height:1.4}
+.v6tile small{font-size:11px;display:block;line-height:1.5;color:#667884;margin-top:4px}
+.v6status{display:inline-block;font-size:11px;border-radius:20px;padding:3px 8px;background:#e6efef;color:#235f60;margin-top:3px}
+.v6pill{background:#edf3f5;color:#385c66;border-radius:8px;padding:5px 8px;display:inline-block;font-size:12px;margin:2px 3px 3px 0}
+.v6warn{border-left:3px solid #b18754;background:#fcf5eb;padding:9px 11px;margin:9px 0;border-radius:6px;font-size:12px;line-height:1.6}
+.v6track{height:8px;background:#e5ecef;border-radius:5px;overflow:hidden;margin:5px 0 3px;position:relative}
+.v6track i{display:block;height:100%;background:#12817b;border-radius:5px}
+.v6chart{overflow:hidden;background:#fff;border:1px solid #e0e8eb;border-radius:12px;padding:8px}
+.v6chart svg{display:block;width:100%;height:auto;max-height:390px}
+.v6lab{font-size:11px;fill:#4f6870}
+.v6table{width:100%;border-collapse:collapse;font-size:12px}
+.v6table th,.v6table td{padding:6px 5px;border-bottom:1px solid #e1e8eb;text-align:right}
+.v6table td:first-child,.v6table th:first-child{text-align:left}
+.v6tag{font-size:11px;color:#236f6a;font-weight:700}
+@media(max-width:600px){.v6block{padding:11px 9px}.v6row{gap:7px}.v6tile{padding:9px}.v6tile b{font-size:13px}}
+
+/* v8: Always-visible RACE INDEX between race controls and the character dashboard. */
+.rankOverview{margin-top:16px;margin-bottom:18px}
+.rankOverview .rankline .name{max-width:none;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;flex:1;min-width:0;line-height:1.35}
+.rankOverview .rankline b{flex-shrink:0}
+@media(max-width:750px){.rankOverview .rankcard{min-width:0}.rankOverview .rankline{align-items:flex-start;gap:6px}.rankOverview .rankline b{padding-top:0}}
+
+/* v9: Race-wide class-benchmark counts, independent of the relative-to-field dashboard. */
+.v9ClassOverview{margin:14px 0 19px;padding:17px 15px;border:1px solid #bdd8d5;border-radius:16px;background:#fff;box-shadow:0 3px 15px rgba(21,41,52,.05)}
+.v9ClassOverview .v9head{display:flex;align-items:start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:5px}
+.v9ClassOverview .v9head h2{font-size:19px;margin:1px 0 3px;line-height:1.4;color:#193d46}
+.v9ClassOverview .v9kicker{font-size:11px;font-weight:850;letter-spacing:.08em;color:#15726c}
+.v9ClassOverview .v9Scope{font-size:12px;color:#617786;line-height:1.65;margin:6px 0 12px}
+.v9ClassOverview .v9Tag{border:1px solid #c6e0dc;border-radius:20px;padding:4px 10px;color:#1c6865;font-size:11px;font-weight:760;white-space:nowrap}
+.v9Grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.v9Axis{border:1px solid #dce7e7;border-radius:12px;padding:12px;background:#fbfdfd;min-width:0}
+.v9Axis h3{font-size:14px;color:#203c47;margin:0 0 8px}
+.v9Measure{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-bottom:5px}
+.v9Measure strong{font-size:30px;font-weight:850;line-height:1;font-variant-numeric:tabular-nums;color:#12635d}
+.v9Measure span{font-size:11px;color:#45616a}
+.v9Row{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid #e6ecef;font-size:12px;color:#48616e}
+.v9Row b{font-size:15px;color:#1a3341;font-variant-numeric:tabular-nums}
+.v9Row.v9Strong{color:#087b70;font-weight:760}
+.v9Row.v9Low{color:#805f59}
+.v9Names{font-size:11px;line-height:1.55;margin-top:8px;color:#5c6d7a;overflow-wrap:anywhere}
+.v9Bridge{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0}
+.v9BridgeItem{border-radius:10px;border:1px solid #dae4e7;padding:9px 11px;background:#f8fafb;color:#526473;font-size:12px}
+.v9BridgeItem strong{display:block;font-size:21px;line-height:1.3;color:#1f3b45}
+.v9BridgeItem small{font-size:10px;line-height:1.5;display:block}
+.v9Caution{font-size:11px;line-height:1.7;color:#637885;margin-top:9px}
+.v9AllDetails{margin-top:11px;border-top:1px solid #e4ebec;padding-top:10px}
+.v9AllDetails summary{cursor:pointer;color:#146a68;font-size:13px;font-weight:750}
+.v9TableWrap{margin-top:9px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.v9Table{border-collapse:collapse;width:100%;font-size:12px;min-width:400px}
+.v9Table th,.v9Table td{padding:7px 6px;text-align:center;border-bottom:1px solid #e7ecef;white-space:nowrap}
+.v9Table th:first-child,.v9Table td:first-child{text-align:left}
+.v9Table th{background:#f2f7f7;color:#4e666f}
+.v9Table td:first-child{max-width:165px;white-space:normal}
+.v9Table .v9HorseButton{cursor:pointer;border:0;background:none;text-align:left;padding:1px;color:#14665f;font-weight:700;font-size:12px;line-height:1.4}
+.v9Table .v9HorseButton:hover{text-decoration:underline}
+.v9Score{display:inline-block;min-width:36px;border-radius:6px;padding:3px 5px;font-variant-numeric:tabular-nums;font-weight:800}
+.v9Score.high{color:#09645f;background:#dff3ef}.v9Score.up{color:#25696d;background:#e6f2f1}
+.v9Score.down{color:#91653e;background:#fff2df}.v9Score.low{color:#935c58;background:#fceae7}
+.v9Score.unknown{color:#7b8589;background:#f0f1f3}
+.v9StatusLegend{font-size:11px;color:#607481;line-height:1.7;margin:8px 0 4px}
+@media(max-width:900px){.v9Grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:470px){.v9ClassOverview{padding:13px 10px}.v9Grid{gap:7px}.v9Axis{padding:10px 9px}.v9Measure strong{font-size:27px}.v9Bridge{gap:6px}.v9BridgeItem{padding:8px 7px}.v9BridgeItem strong{font-size:19px}.v9Axis h3{font-size:13px}.v9BridgeItem{font-size:11px}}
+
+/* v10: published raw-index benchmarks, kept STRICTLY independent of deviation scores. */
+.v10Official{border:1px solid #badbd5;border-radius:16px;background:white;padding:16px 15px;margin:16px 0 14px;box-shadow:0 4px 18px rgba(17,75,71,.07)}
+.v10Head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+.v10Eyebrow{font-size:11px;letter-spacing:.08em;font-weight:850;color:#146f68}
+.v10Head h2{font-size:19px;margin:3px 0 6px;color:#183c44;line-height:1.45}
+.v10Desc{font-size:12px;color:#60757f;line-height:1.75;margin:7px 0 12px}
+.v10BenchLabel{font-size:12px;font-weight:750;display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:10px 0 7px;color:#294b53}
+.v10BenchLabel select{border:1px solid #c5d7d7;border-radius:9px;background:#f7fbfb;padding:8px;font-size:13px;color:#244e52;max-width:100%;flex:1;min-width:180px}
+.v10AutoInfo{font-size:11px;color:#576e78;margin:0 0 10px;line-height:1.65}
+.v10Grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.v10Axis{border-radius:13px;background:#fafcfc;border:1px solid #d9e7e6;padding:11px;min-width:0}
+.v10Axis.v10Load{background:#fffaf4;border-color:#ebd6bd}.v10Axis.v10Pair{background:#f1f7f6;border-color:#bdddd8}
+.v10Axis h3{font-size:14px;color:#263f48;line-height:1.4;margin:0 0 6px}
+.v10Axis .v10Num{font-size:29px;font-weight:850;line-height:1.2;color:#0c6760;font-variant-numeric:tabular-nums}
+.v10Axis.v10Load .v10Num{color:#92683a}
+.v10Axis .v10Denom{font-size:11px;color:#68818a}
+.v10Axis .v10AxisRows{font-size:11px;line-height:1.65;color:#526970;margin-top:7px;padding-top:6px;border-top:1px solid #e3eeee}
+.v10Axis .v10Names{font-size:11px;line-height:1.65;overflow-wrap:anywhere;margin-top:8px;color:#345e64}
+.v10Purpose{font-size:11px;color:#697c85;line-height:1.55;margin:5px 0 7px}
+.v10Explain{margin-top:11px;border-left:3px solid #b58b57;background:#fcf7ef;padding:10px 11px;color:#52636b;font-size:12px;line-height:1.75;border-radius:7px}
+.v10TableDetails{margin-top:13px;padding-top:11px;border-top:1px solid #e2eaea}
+.v10TableDetails summary{font-weight:800;color:#1a6661;cursor:pointer;font-size:13px;line-height:1.55}
+.v10TableScroll{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:9px}
+.v10Table{width:100%;min-width:570px;border-collapse:collapse;font-size:12px}
+.v10Table thead th{background:#f0f7f6;color:#4b6770;text-align:left;font-size:11px}
+.v10Table th,.v10Table td{padding:7px 7px;border-bottom:1px solid #e4ecec;vertical-align:middle}
+.v10Table tbody tr:nth-child(even){background:#fbfcfc}
+.v10Table td:first-child{min-width:115px;max-width:180px}
+.v10Horse{border:none;padding:2px 0;text-align:left;background:none;color:#0d6c67;font-weight:760;cursor:pointer;font-size:12px;white-space:normal;line-height:1.5}
+.v10Result{display:inline-flex;align-items:center;border-radius:6px;background:#dff2ed;color:#0f655f;font-size:11px;padding:3px 5px;line-height:1.3;font-weight:800}
+.v10Result.no{background:#fff0e3;color:#886145}.v10Result.missing{background:#eef2f3;color:#617279}
+.v10RunHint{font-size:10px;display:block;color:#617b85;margin-top:3px;line-height:1.55}
+.v10Meta{font-size:11px;color:#667780;line-height:1.7;margin:7px 0}
+@media(max-width:950px){.v10Grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:475px){.v10Official{padding:13px 10px}.v10Grid{gap:7px}.v10Axis{padding:9px}.v10Axis .v10Num{font-size:26px}.v10Axis h3{font-size:13px}}
+</style></head>
+<body><header><div class="wrap"><div class="brand"><div class="brandmark">▥</div><div><h1>CHARANIZE LAB <span style="font-size:12px;color:#90d4cb">v11</span></h1><div class="sub">MY KEIBA LABとは独立 ｜ 逃・先・追走負荷・脚・ギアの「キャラ」を見える化</div></div></div></div></header>
+<main class="wrap"><section class="panel" style="margin-top:12px;border-color:#8db8b1;background:#f2faf7"><b>CHARANIZE LAB（個人用・データ非公開）</b><p class="note">新聞PDFまたは解析済みJSONを端末で読み込むと、公式指数水準と同クラス比較を表示します。読み込みデータはGitHub側には送信せず、お使いのブラウザ内に保存します。</p></section>
+<section class="panel filetools"><div class="tools"><div class="row"><label class="drop" title="PDFを選んで読み込み">📄 PDF新聞を取り込む<input type="file" id="fileInput" accept=".pdf,.json,.txt,application/pdf,application/json"/></label><button class="btn" id="demoBtn">サンプルを初期化</button><button class="btn" id="csvBtn">表示中レースをCSV出力</button><button class="btn" id="jsonBtn">解析データを保存</button></div><span id="status">PDFまたはJSON新聞を読み込んでください</span></div><p class="note" style="margin:9px 0 0">データ処理は端末内で実行し、読み込んだ解析データはこのブラウザに保存します（定期的にJSONバックアップ推奨）。PDF直接取込のみ初回にPDF解析ライブラリの読み込みが必要です。※新聞の版型が異なると読取結果の確認が必要です。</p></section>
+<section class="panel"><div class="controls"><div class="control"><label for="raceSel">日付・開催・レース</label><select id="raceSel"></select></div><div class="control"><label for="surfaceSel">参照する過去走</label><select id="surfaceSel"><option value="course">今回と同じ芝・ダ</option><option value="all">芝・ダ両方（参考）</option></select></div><div class="control"><label for="spanSel">指数の集計方法</label><select id="spanSel"><option value="profile5" selected>過去5走の加重平均（基本）</option><option value="last">直近の該当走</option><option value="max">過去5走の各指数最高</option><option value="3">過去3走の最高</option></select></div><div class="control"><label for="horseSearch">馬名で絞る</label><input type="search" id="horseSearch" placeholder="馬名を入力"/></div></div><div class="row" style="margin-top:11px"><label class="switch"><input id="hideMissing" type="checkbox"/> 記録なしの馬を非表示</label><span class="note" id="raceMeta"></span></div></section>
+<section><div class="stats" id="stats"></div></section>
+<section id="rankOverview" class="rankOverview" aria-label="各指数TOP5"><div class="heading"><div><div class="kicker">RACE INDEX</div><h2>各指数の上位馬</h2></div><div class="note">指数ごとに上位順。過去5走の別々のレースの場合があります。</div></div><div id="ranks" class="rankgrid"></div></section>
+
+<section id="v10OfficialOverview" class="v10Official" aria-label="公式原指数水準の到達と追走負荷経験"></section>
+
+<section id="classRaceOverview" class="v9ClassOverview" aria-label="同クラス水準と出走馬の比較"></section>
+
+<section class="panel" id="charaDashboard" aria-label="CHARANIZEキャラ偏差値メイン画面">
+  <div class="heading"><div><div class="kicker">CHARACTER PROFILE · MAIN</div><h2>馬のキャラ偏差値</h2></div><span class="tag">偏差値50＝比較集団の平均</span></div>
+  <div class="charaIntro"><b>目的：予想より先に馬の個性を把握。</b>「逃・先・追負荷・脚・ギア」を同じ物差しで可視化します。<b>隊列・逃げ先行の判断はsmarRcと照合</b>し、この画面だけで決めません。キャラは過去5走から合成します。<b>集団内偏差値と、指数原値の水準は別</b>です。過去の高指数が近走不振で埋もれないよう、最高値と近況を分けます。追走は負荷の大きさを表し、偏差値が高い＝強いとは限りません。</div>
+  <div class="charaTools">
+    <label>偏差値の比較基準<select id="charaBase"><option value="history">収録過去走：同じ芝ダ・距離</option><option value="race">このレースの出走馬内</option></select></label>
+    <label>カード表示順<select id="charaOrder"><option value="number">馬番順</option><option value="sen">先行偏差値</option><option value="nige">逃げ偏差値</option><option value="ashi">脚力偏差値</option><option value="gear">ギア偏差値</option><option value="balanced">先行＋脚力</option></select></label>
+  </div>
+  <div id="charaCohort"></div>
+  <div id="charaCards"></div>
+  <div id="charaFocus"></div><div id="charaOfficialGuide"></div><div id="charaClassProfile"></div><div id="charaFieldMatrix"></div>
+  <p class="note" style="margin-top:10px">※偏差値＝50＋10×（原指数−比較集団平均）÷標準偏差。データ内の相対的な位置であり、CHARANIZE公式の偏差値ではありません。基本モードは過去5走を新しい順に5・4・3・2・1で加重平均し、芝ダは分けます。最高値モードでは異なるレースの最高値が混在します。芝・ダ混合は比較非推奨。</p>
+</section>
+<div class="charExtraToggle"><b>その他の詳細分析・コース換算</b><button type="button" id="charaExtrasToggle" aria-expanded="false">詳細を表示 ▾</button></div>
+
+<section class="panel charOptExtra" id="typesArea">
+ <div class="heading"><div><div class="kicker">HORSE CHARACTER</div><h2>馬キャラタイプ（独自の暫定分類）</h2></div><div class="row"><label for="typeBorder">指数の高低の境界値</label><select id="typeBorder" style="min-width:90px;width:auto"><option value="65">65</option><option value="70" selected>70</option><option value="75">75</option><option value="80">80</option></select></div></div>
+ <p class="readme">タイプは<strong>同じ過去走の「先行・脚力・ギア」</strong>から判定。別々の過去走の最高値は混ぜません。元新聞の公式キャラ分類ではありません。</p>
+ <div class="grid2"><div class="twoby"><div class="qcell"><b>先行強 × 脚強</b><small>前受け＋末脚を両立</small></div><div class="qcell"><b>先行弱 × 脚強</b><small>差し・末脚寄り</small></div><div class="qcell"><b>先行強 × 脚弱</b><small>前受け・終盤に課題</small></div><div class="qcell"><b>先行弱 × 脚弱</b><small>指数上は比較的弱い／評価保留</small></div></div><div class="summarybox" id="typeSummary">読み込み中…</div></div>
+ <div class="inlinehint" style="margin-top:9px">末脚が強くギアも高い → 加速型の可能性。末脚が強くギアが低め → 持続型の可能性。ギアだけ高い → 一瞬の加速・不発の両面を点検。追走指数は中盤の負荷であり、単純な能力順位ではありません。</div>
+</section>
+<section class="panel charOptExtra" id="corrArea"><div class="heading"><div><div class="kicker">INDEX RELATIONSHIP</div><h2>先行・追走と脚力・ギアの関係</h2></div><span class="tag">同一過去走の指数ペア</span></div>
+<div class="chart-controls"><div><label for="scatterX">横軸（道中）</label><select id="scatterX"><option value="sen">先行指数</option><option value="tsui">追走指数</option><option value="nige">逃げ指数</option><option value="ashi">脚力指数</option></select></div><div><label for="scatterY">縦軸（終盤）</label><select id="scatterY"><option value="ashi">脚力指数</option><option value="gear">ギア指数</option><option value="tsui">追走指数</option></select></div><div><label for="scatterScope">表示対象</label><select id="scatterScope"><option value="race">出走馬の直近該当走</option><option value="selected">チェックした馬の全過去走</option></select></div></div>
+<div id="corrSummary" class="corr-summary">指数の関係を描画します</div><div id="scatterChart" class="chartbox"></div>
+<div class="chartfooter"><span class="note">点を押すと馬の履歴を表示。相関係数は同一条件での優劣や因果関係を保証しません。</span><span class="note" id="corrCount"></span></div>
+</section>
+<section class="panel charOptExtra" id="v3CourseArea">
+<div class="heading"><div><div class="kicker">COURSE STANDARDIZATION · v3</div><h2>芝・ダートのコース別「テン3F」基準換算 <span class="v3pill">提供資料を登録済み</span></h2></div><button type="button" class="btn" id="v3csv">基準65件をCSVで保存</button></div>
+<p class="readme">提供資料の<strong>良馬場・クラス別平均</strong>に基づき、過去レースの前半3Fを別コースの目安へ換算します。芝は1200mのみ、ダートは1000〜1600mの掲載コースです。<strong>同じ芝ダ・同じ距離・同じクラス</strong>で比較します。</p>
+<div class="v3grid">
+ <div><label for="v3surface">芝・ダート</label><select id="v3surface"><option value="芝">芝</option><option value="ダ">ダート</option></select></div>
+ <div><label for="v3class">クラス（基準）</label><select id="v3class"></select></div>
+ <div><label for="v3source">過去走のコース</label><select id="v3source"></select></div>
+ <div><label for="v3target">換算先のコース</label><select id="v3target"></select></div>
+ <div><label for="v3time">過去レース前半3F（秒）</label><input id="v3time" inputmode="decimal" type="number" step="0.1" min="25" max="50" value="34.0"/></div>
+</div>
+<div id="v3result" class="v3results"></div>
+<div class="v3status" id="v3formula"></div>
+<div class="v3note"><strong>注意：</strong>この表は<strong>レース全体の前半600m平均ラップを集計した基準</strong>です。実際の馬個別の3Fタイムとは別の項目です。先行位置・出遅れ・競り合い・当日の馬場・風などが違えば、同じ馬でも再現は保証されません。<strong>CHARANIZE原指数は変更しません。</strong> 指数への何pt補正かは、実測データで別途校正が必要です。</div>
+<details style="margin-top:13px"><summary class="bench-title">登録済みの全コース基準を確認</summary><div class="v3tbl" id="v3table"></div><p class="readme">芝1200mは「テンに下り坂を含むコース（グループA＋小倉）」「含まないコース（グループB＋札幌）」という提供表の分類も掲載。ダートは別資料の1・2勝クラス平均です。掲載のないクラス・コース・馬場には外挿しません。</p></details>
+</section>
+<section class="panel charOptExtra" id="courseArea"><details><summary class="bench-title">競馬場・コース補正の準備（基準タイムCSV） <span class="tag">初期状態は原指数・補正OFF</span></summary><div style="margin-top:11px">
+<p class="readme">基準タイムは今後提供されるデータを登録します。スタートから600mの基準秒を比較し、当面<strong>逃げ・先行指数のみ</strong>仮補正できます。異なる距離や基準値未登録の過去走は補正比較から除外します。指数と秒の換算率は未検証のため、利用者が明示設定した場合だけ試算します。</p>
+<div class="benchgrid"><div><label for="benchFile">基準タイムCSVを読み込む</label><input id="benchFile" type="file" accept=".csv,.json,text/csv,application/json"></div><div><label for="benchEnabled">指数の仮補正</label><label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input id="benchEnabled" type="checkbox"> 検証用補正をON</label></div><div><label for="pointsPerSec">1秒差あたりの仮換算（指数pt）</label><input id="pointsPerSec" type="number" min="0" step="0.1" placeholder="未設定（補正しない）"></div></div>
+<div class="row"><button class="btn" id="benchTemplate">入力用CSVひな型を保存</button><button class="btn" id="benchExport">登録基準をCSV保存</button><button class="btn" id="benchClear">登録基準を消去</button></div><p id="benchStatus" class="inlinehint" style="margin-top:10px">基準タイム未登録。</p><p class="warnsmall">※仮補正の方向：過去走のコースのテン3F基準が今回のコースより速ければ、その過去指数を減算。算式と係数は暫定。基準タイムが確定しても、指数との換算率は別途検証が必要です。</p></div></details></section>
+<section class="charOptExtra"><div class="heading"><div><div class="kicker">COMPARE</div><h2>全馬比較</h2></div><span class="note">馬名を押すと全過去走を表示・選択で馬同士を比較</span></div><div class="tabs" id="tabs"><button class="tab active" data-sort="nige">逃げ指数順</button><button class="tab" data-sort="sen">先行指数順</button><button class="tab" data-sort="ashi">脚力順</button><button class="tab" data-sort="tsui">追走順</button><button class="tab" data-sort="gear">ギア順</button><button class="tab" data-sort="number">馬番順</button></div><div class="tablearea"><table><thead><tr><th>比較</th><th>馬番・馬名</th><th>馬キャラ（直近走）</th><th>逃</th><th>先</th><th>追</th><th>脚</th><th>ギ</th><th>該当走</th><th>騎手・条件</th></tr></thead><tbody id="tbody"></tbody></table></div><div class="note" style="margin:8px 4px">※高指数が今回のコースで再現するとは限りません。タイプは非公式の仮分類です。追走指数は高いほど能力上位という意味ではなく、その過去走で受けた追走負荷を表します。芝・ダ混用に注意してください。</div></section>
+<section id="compareArea" class="compare charOptExtra" style="display:none"><div class="heading"><h2>選択した馬を比較</h2><button id="clearCmp" class="btn">比較を解除</button></div><div id="compareContent" class="panel"></div></section>
+<section id="detailLayer" class="charOptExtra"></section>
+
+<section class="panel charOptExtra" id="ratioLab">
+ <div class="heading"><div><div class="kicker">NEW · V4 EXPERIMENT</div><h2>コース差の「倍率」試験比較 <span class="v4pill">原指数は保存・維持</span></h2></div></div>
+ <p class="readme">2頭の逃・先指数と記録コースを入力し、<b>同じ基準コースに換算した場合</b>の値を比較します。
+ 補正係数は <b>過去走コースの前半3F基準 ÷ 比較先コースの前半3F基準</b> 。指数への掛け方はまだ未検証の仮説です。</p>
+ <div class="compare-grid">
+   <div class="field"><label for="v4surface">芝・ダート</label><select id="v4surface"><option value="芝">芝</option><option value="ダ">ダート</option></select></div>
+   <div class="field"><label for="v4distance">距離</label><select id="v4distance"></select></div>
+   <div class="field"><label for="v4class">クラス別基準</label><select id="v4class"><option value="u">2・3歳未勝利</option><option value="1" selected>古馬1勝</option><option value="2">2勝</option><option value="3">3勝</option></select></div>
+ </div>
+ <div class="field"><label for="v4target">どのコースに揃えるか（比較先）</label><select id="v4target"></select></div>
+ <div class="horse-cards">
+  <div class="card"><div style="font-weight:800;margin-bottom:8px">A馬</div>
+   <div class="field"><label for="v4aTrack">実際に指数を記録したコース</label><select id="v4aTrack"></select></div>
+   <div class="compare-grid"><div class="field"><label for="v4aIndex">原指数（逃／先）</label><input type="number" id="v4aIndex" min="0" max="200" step="0.1" value="85"></div><div class="field"><label for="v4aPace">そのレース前半3F</label><input type="number" id="v4aPace" min="25" max="50" step="0.1" value="33.0"></div></div>
+  </div>
+  <div class="card"><div style="font-weight:800;margin-bottom:8px">B馬</div>
+   <div class="field"><label for="v4bTrack">実際に指数を記録したコース</label><select id="v4bTrack"></select></div>
+   <div class="compare-grid"><div class="field"><label for="v4bIndex">原指数（逃／先）</label><input type="number" id="v4bIndex" min="0" max="200" step="0.1" value="75"></div><div class="field"><label for="v4bPace">そのレース前半3F</label><input type="number" id="v4bPace" min="25" max="50" step="0.1" value="34.0"></div></div>
+  </div>
+ </div>
+ <div class="meter"><label for="v4alpha" style="min-width:86px">試験補正強度 <span id="v4alphaV">1.0</span>倍</label><input id="v4alpha" type="range" min="0" max="3" step="0.1" value="1"><span class="muted">0＝OFF</span></div>
+ <div class="metrics" id="v4result"></div><div class="v4formula" id="v4formula"></div>
+ <div class="v4notice"><b>データ上の限界：</b>芝の参考資料は1200m・未勝利以外の一部クラスのみに限定。G1/G2/G3と1勝クラスを同じ基準として扱っていません。
+ コース別基準はレース全体の前半3F平均であり、個別馬の3Fタイムとは区別してください。<b>指数の倍率は校正前の仮表示であり、原指数・キャラタイプ・ランキングには反映しません。</b><br>
+ <b>参考実例：</b>モズスーパーフレアは中山芝1200mのスプリンターズSで2019・2020年とも前半32.8秒。京都では2019年京阪杯33.4秒、2020年シルクロードS33.9秒。ただし時期・出走馬・展開が異なるため差の全量はコース効果ではありません。
+ ピューロマジックは2024年中山32.1秒／京都33.2秒という例の一方、同じ中山でもペースが大きく変化。2025年中山の3-3の競馬や新潟直線1000mは別扱いです。</div>
+</section>
+<footer>参照元：ユーザーのCHARANIZE指数新聞。指数の定義はCHARANIZE公式の説明書に準拠し、独自キャラ分類・仮補正は非公式です。競走馬の過去走に表示された生指数を抽出した補助ツールであり、CHARANIZE公式のAI予想・印・評価を再現するものではありません。予想用の確率や勝率は計算しません。読み取りに不明点のある項目は「—」と表示します。自分で条件とレース内容を確かめながらご使用ください。</footer>
+</main>
+<script id="initialData" type="application/json">[]</script>
+<script>
+'use strict';
+const $=(s)=>document.querySelector(s);const escapeHtml=(s)=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const KEYS=[['nige','逃'],['sen','先'],['tsui','追'],['ashi','脚'],['gear','ギ']];
+function storedRaces(){try{let saved=JSON.parse(localStorage.getItem('charanize-lab-races-v11')||'null');if(Array.isArray(saved)&&saved.length&&saved.every(x=>x&&Array.isArray(x.horses)))return saved;}catch(e){}return JSON.parse($('#initialData').textContent)}
+function saveImportedRaces(){try{localStorage.setItem('charanize-lab-races-v11',JSON.stringify(state.races));return true}catch(e){return false}}
+const state={races:storedRaces(), raceId:null, surface:'course', span:'profile5',sort:'nige',filter:'',selected:new Set(),activeHorse:null,hideMissing:false, typeBorder:70, scatterX:'sen',scatterY:'ashi',scatterScope:'race',benchEnabled:false,pointsPerSec:null,bench:[]};
+const num=x=>x===null||x===undefined?null:Number(x);const fmt=x=>x===null||x===undefined||!isFinite(x)?'—':Number(x).toFixed(1);
+const ind=(x)=>x&&x.value!=null?'<span class="idx"><span class="letter '+(x.rank||'G')+'">'+escapeHtml(x.rank||'?')+'</span><b>'+fmt(x.value)+'</b></span>':'<span class="missing">—</span>';
+const sameSurface=(r,run)=>!r.condition||r.condition.startsWith('障')||(run.surfaceDistance||'').startsWith(r.condition[0]);
+const eligible=(r,h)=>h.runs.filter(run=>state.surface==='all'||sameSurface(r,run)).filter(run=>state.span!=='3'||run.seq<=3);
+const venueFull={東:'東京',中:'中山',京:'京都',阪:'阪神',名:'中京',新:'新潟',小:'小倉',福:'福島',札:'札幌',函:'函館'};
+function courseKey(venue,surface,distance){return [venue,surface,String(distance)].join('|')}
+function parseRunCourse(z){let short=(z.where||'').charAt(0);let vd=venueFull[short];let m=(z.surfaceDistance||'').match(/^(芝|ダ|障)(\d+)$/);if(!m||!vd)return null;return {venue:vd,surface:m[1],distance:Number(m[2])*100}}
+function parseTargetCourse(r){let m=(r.condition||'').match(/^(芝|ダ|障)(\d+)/);return m?{venue:r.venue,surface:m[1],distance:Number(m[2])}:null}
+function baseline(course){return course&&state.bench.find(b=>b.venue===course.venue&&b.surface===course.surface&&b.distance===course.distance)}
+function calculateAdjustment(r,z,k){if(!['nige','sen'].includes(k)||!state.benchEnabled||state.pointsPerSec===null||!Number.isFinite(state.pointsPerSec)||state.pointsPerSec<=0)return {value:z.indices[k].value,adjusted:false};let src=parseRunCourse(z),target=parseTargetCourse(r);if(!src||!target||src.surface!==target.surface||src.distance!==target.distance)return null;let bs=baseline(src),bt=baseline(target);if(!bs||!bt)return null;return {value:z.indices[k].value+(bs.time-bt.time)*state.pointsPerSec,adjusted:true,seconds:bs.time-bt.time,source:src}}
+const pick=(r,h,k)=>{let arr=eligible(r,h).filter(x=>x.indices?.[k]?.value!==null&&x.indices?.[k]?.value!==undefined).map(run=>({run,adjust:calculateAdjustment(r,run,k)})).filter(x=>x.adjust!==null);if(state.span==='last'||state.span==='profile5')arr.sort((a,b)=>a.run.seq-b.run.seq);else arr.sort((a,b)=>b.adjust.value-a.adjust.value || a.run.seq-b.run.seq);if(!arr.length)return null;const z=arr[0];return {index:{...z.run.indices[k],value:z.adjust.value,rawValue:z.run.indices[k].value,adjusted:z.adjust.adjusted},run:z.run,adjust:z.adjust}};
+const ranks=(r,h)=>{let z={};for(const [k] of KEYS) z[k]=pick(r,h,k);return z};
+
+// Type classification is an independent provisional visualization, not an official CHARANIZE character label.
+function charRun(r,h){return eligible(r,h).filter(z=>z.indices?.sen?.value!=null&&z.indices?.ashi?.value!=null).sort((a,b)=>a.seq-b.seq)[0]||null}
+function horseType(r,h){const z=charRun(r,h);if(!z)return {short:'判定保留',description:'先行・脚力の同一走データが不足',muted:true,run:null};const t=state.typeBorder,s=z.indices.sen.value,a=z.indices.ashi.value,g=z.indices.gear?.value;let base,detail;
+if(s>=t&&a>=t){base='先行・末脚両立';detail='前受けしても脚を使えた走歴'}
+else if(s>=t){base='先行寄り';detail='先行値優勢・終盤の脚は要確認'}
+else if(a>=t){base='末脚寄り';detail='末脚優勢・位置取り実現性を確認'}
+else {base='条件待ち';detail='指数だけでは強みを確定しにくい'}
+let suffix=g==null?'ギア不明':a>=t?(g>=t?'加速＋末脚':'持続寄り'):(g>=t?'瞬間加速（脚不足）':'脚・ギア控えめ');let short=base+'／'+suffix;
+let ts=z.indices.tsui?.value; if(ts!=null&&ts>=t&&a>=t)detail+='。高追走負荷でも高い脚を記録';return {short,description:detail,muted:base==='条件待ち',run:z,sen:s,ashi:a,gear:g,tsui:ts}}
+function typePill(t){return `<span class="typetag${t.muted?' muted':''}">${escapeHtml(t.short)}</span><div class="typehint">${escapeHtml(t.description)}${t.run?' · '+t.run.seq+'走前':''}</div>`}
+function corrCoef(rows){if(rows.length<5)return null;const av=(v)=>v.reduce((a,b)=>a+b,0)/v.length;let ax=av(rows.map(v=>v.x)),ay=av(rows.map(v=>v.y));let num=0,dx=0,dy=0;for(let z of rows){let x=z.x-ax,y=z.y-ay;num+=x*y;dx+=x*x;dy+=y*y}return dx>0&&dy>0?num/Math.sqrt(dx*dy):null}
+function scatterPoints(rows,title){if(rows.length===0)return `<div class="emptychart">同じ過去走で両指数が揃うデータがありません。<br>追走指数は1600m以下のレースでは原則掲載されません。</div>`;
+ const xl=KEYS.find(([k])=>k===state.scatterX)?.[1]||state.scatterX,yl=KEYS.find(([k])=>k===state.scatterY)?.[1]||state.scatterY;
+ let xx=rows.map(z=>z.x),yy=rows.map(z=>z.y),xmin=Math.min(...xx),xmax=Math.max(...xx),ymin=Math.min(...yy),ymax=Math.max(...yy);let xp=Math.max(8,(xmax-xmin)*.1),yp=Math.max(8,(ymax-ymin)*.13);xmin-=xp;xmax+=xp;ymin-=yp;ymax+=yp;let w=680,h=330,ml=52,mr=20,mt=20,mb=49,X=(x)=>ml+(x-xmin)/(xmax-xmin)*(w-ml-mr),Y=(y)=>h-mb-(y-ymin)/(ymax-ymin)*(h-mt-mb);
+ let content=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${escapeHtml(title)}、横軸${xl}、縦軸${yl}、${rows.length}点"><rect x="${ml}" y="${mt}" width="${w-ml-mr}" height="${h-mt-mb}" fill="#fff" rx="6"/>`;
+ for(let i=0;i<=4;i++){let x=xmin+(xmax-xmin)*i/4,y=ymin+(ymax-ymin)*i/4;content+=`<line class="figgrid" x1="${X(x)}" y1="${mt}" x2="${X(x)}" y2="${h-mb}"/><line class="figgrid" x1="${ml}" y1="${Y(y)}" x2="${w-mr}" y2="${Y(y)}"/><text class="figsmall" x="${X(x)}" y="${h-mb+17}" text-anchor="middle">${x.toFixed(0)}</text><text class="figsmall" x="${ml-7}" y="${Y(y)+3}" text-anchor="end">${y.toFixed(0)}</text>`}
+ if(state.typeBorder>xmin&&state.typeBorder<xmax)content+=`<line x1="${X(state.typeBorder)}" x2="${X(state.typeBorder)}" y1="${mt}" y2="${h-mb}" stroke="#5d9d98" stroke-dasharray="4,4"/>`;
+ if(state.typeBorder>ymin&&state.typeBorder<ymax)content+=`<line x1="${ml}" x2="${w-mr}" y1="${Y(state.typeBorder)}" y2="${Y(state.typeBorder)}" stroke="#5d9d98" stroke-dasharray="4,4"/>`;
+ for(let i=0;i<rows.length;i++){let z=rows[i],x=X(z.x),y=Y(z.y);let jx=(i%3-1)*1.6,jy=((i*7)%3-1)*1.6;let hot=state.selected.has(z.h.name);content+=`<circle class="corrdot${hot?' active':''}" cx="${(x+jx).toFixed(1)}" cy="${(y+jy).toFixed(1)}" r="${hot?7:5.1}" data-open="${escapeHtml(z.h.name)}"><title>${escapeHtml(z.h.name)}｜${z.run.seq}走前 ${escapeHtml((z.run.where||'')+' '+(z.run.surfaceDistance||''))}｜${xl} ${z.x.toFixed(1)} / ${yl} ${z.y.toFixed(1)}</title></circle>`}
+ content+=`<text class="figsmall" x="${w/2}" y="${h-10}" text-anchor="middle">${xl}指数</text><text class="figsmall" transform="translate(16 ${h/2}) rotate(-90)" text-anchor="middle">${yl}指数</text></svg>`;return content}
+function plotRows(r){let hs=r.horses.filter(h=>h.name.includes(state.filter));let rows=[];for(let h of hs){let a=eligible(r,h).filter(z=>z.indices?.[state.scatterX]?.value!=null&&z.indices?.[state.scatterY]?.value!=null).sort((a,b)=>a.seq-b.seq);if(state.scatterScope==='race'){if(a.length)rows.push({h,run:a[0],x:a[0].indices[state.scatterX].value,y:a[0].indices[state.scatterY].value})}else if(state.selected.has(h.name)){for(let z of a)rows.push({h,run:z,x:z.indices[state.scatterX].value,y:z.indices[state.scatterY].value})}}return rows}
+function renderScatter(r){let rows=plotRows(r),c=corrCoef(rows),nameX=KEYS.find(a=>a[0]===state.scatterX)?.[1],nameY=KEYS.find(a=>a[0]===state.scatterY)?.[1];$('#corrSummary').innerHTML= rows.length?`<b>${nameX} × ${nameY}</b>｜${rows.length}点・${new Set(rows.map(x=>x.h.name)).size}頭 ｜ Pearson r = <b>${c==null?'標本不足':c.toFixed(2)}</b>　<span class="note">（n≧5の場合のみ表示・条件差の未補正）</span>`:'比較可能な過去走がありません。指標の組み合わせや表示対象を切り替えてください。';$('#scatterChart').innerHTML=scatterPoints(rows,nameX+'×'+nameY);$('#corrCount').textContent='過去5走の同一レース値のみ';}
+function renderTypeSummary(r){let arr=r.horses.map(h=>horseType(r,h)),good=arr.filter(x=>x.short.startsWith('先行・末脚両立')),diff=arr.filter(x=>x.short.startsWith('末脚寄り'));$('#typeSummary').innerHTML=`<b>今回の${r.horses.length}頭</b><div style="margin:8px 0">先行・末脚両立 <b>${good.length}頭</b> ／ 末脚寄り <b>${diff.length}頭</b></div><div class="readme">基準値：${state.typeBorder}以上を「高」と仮定。タイプは直近の適合走1レースで判定し、前走の条件を含めて確認してください。</div>`}
+function csvSplit(line){let cells=[],cur='',quoted=false;for(let i=0;i<line.length;i++){let ch=line[i];if(ch==='"'){if(quoted&&line[i+1]==='"'){cur+='"';i++}else quoted=!quoted}else if(ch===','&&!quoted){cells.push(cur.trim());cur=''}else cur+=ch}cells.push(cur.trim());return cells}
+function benchCSV(data){let lines=data.replace(/^\uFEFF/,'').split(/\r?\n/).filter(x=>x.trim());if(!lines.length)throw Error('基準タイムがありません');let records=[],bad=0;for(let line of lines){let a=csvSplit(line);if(a[0]==='競馬場'||a[0]==='venue')continue;let [venue,surface,dist,time,gradient,memo]=a;if(!venue||!surface||!dist||!time)continue;let d=Number(dist),t=Number(time);if(!Number.isFinite(d)||!Number.isFinite(t)||t<20||t>70||d<800||d>4000||!['芝','ダ','障'].includes(surface)){bad++;continue}records.push({venue,surface,distance:d,time:t,gradient:gradient||'',memo:memo||''})}if(!records.length)throw Error('有効な基準秒がありません。列は 競馬場,芝ダ,距離m,テン3F基準秒,勾配区分,備考');return {records,bad}}
+function dumpBench(){return '競馬場,芝ダ,距離m,テン3F基準秒,勾配区分,備考\r\n'+state.bench.map(b=>[b.venue,b.surface,b.distance,b.time,b.gradient,b.memo].map(c=>'"'+String(c??'').replace(/"/g,'""')+'"').join(',')).join('\r\n')}
+function benchState(){let r=race(),target=parseTargetCourse(r),x=baseline(target);$('#benchStatus').innerHTML=`登録基準：<b>${state.bench.length}コース</b>。今回 ${escapeHtml(r.venue+' '+r.condition)} の基準：<b>${x?fmt(x.time)+'秒':'未登録'}</b>。${state.benchEnabled?state.pointsPerSec>0?'仮補正 ON（逃・先のみ）':'換算係数未入力なので無効':'仮補正 OFF（原指数表示）'}。<br>※補正モードでは同一距離・同一芝ダで基準が両方登録された過去走だけ逃・先の比較に使用。`}
+function saveBench(){try{localStorage.setItem('charanize-bench-v2',JSON.stringify(state.bench))}catch(e){}}
+function loadBench(){try{let v=JSON.parse(localStorage.getItem('charanize-bench-v2')||'[]');if(Array.isArray(v))state.bench=v.filter(x=>x.venue&&Number.isFinite(Number(x.time)))}catch(e){}}
+
+function race(){return state.races.find(r=>r.id===state.raceId)||state.races[0]}
+function setStatus(s){$('#status').textContent=s}
+function raceTitle(r){return `${r.date?.slice(5)||'--'} ${r.venue}${r.raceNo}R ${r.name} ${r.condition}`}
+function setupRaces(){state.races.sort((a,b)=>a.date.localeCompare(b.date)||(['新潟','東京','京都'].indexOf(a.venue)-['新潟','東京','京都'].indexOf(b.venue))||a.raceNo-b.raceNo);$('#raceSel').innerHTML=state.races.map(r=>`<option value="${escapeHtml(r.id)}">${escapeHtml(raceTitle(r))} (${r.horses.length}頭)</option>`).join('');let desired=state.races.find(r=>r.date==='2026-10-18'&&r.venue==='新潟'&&r.raceNo===8)||state.races[0];state.raceId=desired?.id;$('#raceSel').value=state.raceId}
+function render(){let r=race();if(!r){$('#tbody').innerHTML='<tr><td colspan="10">データなし</td></tr>';return;}state.raceId=r.id;$('#raceSel').value=r.id;let horses=r.horses.filter(h=>h.name.includes(state.filter));let scored=horses.map(h=>({h,ix:ranks(r,h)}));if(state.hideMissing)scored=scored.filter(x=>KEYS.some(([k])=>x.ix[k]));
+ let sorted=[...scored].sort((a,b)=>state.sort==='number'?(Number(a.h.number)||100)-(Number(b.h.number)||100):((b.ix[state.sort]?.index.value??-9999)-(a.ix[state.sort]?.index.value??-9999))|| (Number(a.h.number)||100)-(Number(b.h.number)||100));
+ const isMix=state.surface==='all';$('#raceMeta').textContent=`${r.horses.length}頭 / 過去走${r.horses.reduce((n,h)=>n+eligible(r,h).length,0)}件 / ${r.date} / PDF掲載時点`+(isMix?' ・注意：芝ダ混在':'');
+ $('#stats').innerHTML=[['出走馬',`${r.horses.length}頭`,'指数のある馬と未出走馬を含む'],['過去走記録',r.horses.reduce((n,h)=>n+eligible(r,h).length,0),'現在の芝ダ・表示条件で絞った数'],['逃指数 ≥80',scored.filter(x=>(x.ix.nige?.index.value??-999)>=80).length,'過去に80以上を記録'],['脚指数 ≥80',scored.filter(x=>(x.ix.ashi?.index.value??-999)>=80).length,'過去に80以上を記録']].map(x=>`<div class="stat"><small>${x[0]}</small><strong>${x[1]}</strong><small>${x[2]}</small></div>`).join('');
+ $('#ranks').innerHTML=KEYS.map(([k,v])=>{let top=[...scored].filter(x=>x.ix[k]).sort((a,b)=>b.ix[k].index.value-a.ix[k].index.value).slice(0,5);return `<div class="panel rankcard"><div class="ranktitle">${v}指数 TOP 5</div>${top.length?top.map((x,i)=>`<div class="rankline"><span class="name">${i+1}. ${escapeHtml(x.h.name)}</span><b>${fmt(x.ix[k].index.value)}</b></div>`).join(''):'<p class="tiny">有効指数なし</p>'}</div>`}).join('');
+ $('#tbody').innerHTML=sorted.length?sorted.map(({h,ix})=>`<tr><td><input type="checkbox" class="cmp" aria-label="${escapeHtml(h.name)}を比較" data-horse="${escapeHtml(h.name)}" ${state.selected.has(h.name)?'checked':''}></td><td><span class="horse" data-open="${escapeHtml(h.name)}"><span class="num">${escapeHtml(h.number)}</span>${escapeHtml(h.name)}</span><div class="tiny">${h.age}歳${h.sex}・${h.runs.length}走</div></td><td>${typePill(horseType(r,h))}</td>${KEYS.map(([k])=>`<td>${ind(ix[k]?.index)}${ix[k]?.index.adjusted?`<div class="cmpmeta">原${fmt(ix[k].index.rawValue)} → 仮補正</div>`:''}</td>`).join('')}<td>${escapeHtml(ix.ashi?.run?.where||ix.nige?.run?.where||'—')}</td><td><span class="tiny">${escapeHtml(h.rider||'')}</span>${h.flags?.length?`<div class="tiny">${h.flags.map(escapeHtml).join(' · ')}</div>`:''}</td></tr>`).join(''):'<tr><td colspan="10" id="empty">該当する馬がありません</td></tr>';
+ $('#tabs').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.sort===state.sort));renderDetails(r);renderCompare(r);renderTypeSummary(r);renderScatter(r);benchState();
+}
+function getHorse(r,name){return r.horses.find(h=>h.name===name)}
+function renderDetails(r){const h=getHorse(r,state.activeHorse);if(!h){$('#detailLayer').innerHTML='';return}let a=h.runs;$('#detailLayer').innerHTML=`<div class="panel" style="padding:15px"><div class="heading"><h2>${escapeHtml(h.number)} ${escapeHtml(h.name)}｜全過去走</h2><button class="btn" id="closeDetail">閉じる ×</button></div><div class="detailmeta"><span class="pill">${h.age}歳${h.sex}</span><span class="typetag">${escapeHtml(horseType(r,h).short)}</span><span class="pill">${escapeHtml(h.rider)}</span><span class="pill">今回 ${escapeHtml(r.condition)}</span>${h.flags.map(x=>`<span class="pill">${escapeHtml(x)}</span>`).join('')}</div><p class="note">順位・着差・通過順・上がり・指数は、新聞の過去走をそのまま整理。<strong>芝ダが異なる過去走は行の色で区別せず、表記を確認してください。</strong></p><div class="history"><table><thead><tr><th>過去走</th><th>レース・馬場</th><th>結果</th><th>通過・上がり</th><th>逃</th><th>先</th><th>追</th><th>脚</th><th>ギア</th></tr></thead><tbody>${a.map(z=>`<tr><td>${z.seq}走前</td><td>${escapeHtml((z.date||'')+' '+(z.where||'')+' '+(z.surfaceDistance||'')+' '+(z.going||''))}<div class="tiny">${escapeHtml(z.summary||'')}</div></td><td>${z.finish||'—'}着 / 着差${z.margin??'—'}</td><td>${escapeHtml(z.passing||'—')} / ${z.final3f==null?'—':fmt(z.final3f)}</td>${KEYS.map(([k])=>`<td>${ind(z.indices?.[k])}</td>`).join('')}</tr>`).join('')}</tbody></table></div><div class="inlinehint" style="margin-top:10px">${escapeHtml(horseType(r,h).description)}。タイプに使ったのは直近の同一走であり、最高指数を寄せ集めたものではありません。正式キャラ名ではありません。</div></div>`;$('#closeDetail').onclick=()=>{state.activeHorse=null;renderDetails(r)}}
+function renderCompare(r){let horses=[...state.selected].map(name=>getHorse(r,name)).filter(Boolean);$('#compareArea').style.display=horses.length?'block':'none';if(!horses.length)return;$('#compareContent').innerHTML=`<div class="warn">異なる馬の最高指数が、同じ競馬場・距離・馬場で記録されたとは限りません。上限の目安として比較してください。</div><div style="overflow:auto"><table><thead><tr><th>馬名・キャラ</th>${KEYS.map(([k,v])=>`<th>${v}</th>`).join('')}</tr></thead><tbody>${horses.map(h=>{let z=ranks(r,h);return `<tr><td><b>${escapeHtml(h.name)}</b><div class="cmpmeta">${escapeHtml(horseType(r,h).short)}</div></td>${KEYS.map(([k])=>{let item=z[k],v=item?.index.value;return `<td>${ind(item?.index)}<div class="bar"><span style="width:${v==null?0:Math.max(0,Math.min(100,v))}%"></span></div><div class="tiny">${item?escapeHtml((item.run.surfaceDistance||'')+' '+(item.run.where||'')+' '+(item.run.going||'')+' '+item.run.seq+'走前'):'記録なし'}</div></td>`}).join('')}</tr>`}).join('')}</tbody></table></div>`}
+function download(filename,type,data){let a=document.createElement('a'),blob=new Blob([data],{type});a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2500)}
+function asCSV(){let r=race(),cols=['馬番','馬名','年齢','性','騎手','過去走数',...KEYS.flatMap(([k,v])=>[v+'指数',v+'ランク',v+'根拠走'])];let csv=[cols,...r.horses.map(h=>{let z=ranks(r,h);return [h.number,h.name,h.age,h.sex,h.rider,h.runs.length,...KEYS.flatMap(([k])=>[z[k]?.index.value??'',z[k]?.index.rank??'',z[k]?.run.raw??''])]})].map(a=>a.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');download('CHARANIZE_'+r.date+'_'+r.venue+r.raceNo+'R.csv','text/csv;charset=utf-8','\uFEFF'+csv)}
+$('#raceSel').onchange=e=>{state.raceId=e.target.value;state.selected.clear();state.activeHorse=null;render()};$('#surfaceSel').onchange=e=>{state.surface=e.target.value;render()};$('#spanSel').onchange=e=>{state.span=e.target.value;render()};$('#horseSearch').oninput=e=>{state.filter=e.target.value.trim();render()};$('#hideMissing').onchange=e=>{state.hideMissing=e.target.checked;render()};$('#tabs').onclick=e=>{let x=e.target.closest('button[data-sort]');if(x){state.sort=x.dataset.sort;render()}};$('#tbody').onclick=e=>{let el=e.target.closest('[data-open]');if(el){state.activeHorse=el.dataset.open;renderDetails(race());$('#detailLayer').scrollIntoView({behavior:'smooth',block:'start'})}};$('#tbody').onchange=e=>{let el=e.target.closest('input.cmp');if(el){if(el.checked)state.selected.add(el.dataset.horse);else state.selected.delete(el.dataset.horse);renderCompare(race())}};$('#clearCmp').onclick=()=>{state.selected.clear();render()};$('#csvBtn').onclick=asCSV;$('#jsonBtn').onclick=()=>download('CHARANIZE_解析データ.json','application/json;charset=utf-8',JSON.stringify({format:'charanize-viewer-v1',races:state.races},null,1));$('#demoBtn').onclick=()=>{state.races=JSON.parse($('#initialData').textContent);try{localStorage.removeItem('charanize-lab-races-v11')}catch(e){}state.selected.clear();state.activeHorse=null;setupRaces();render();setStatus('サンプルを初期化データを表示')};
+// PDF file import: on-device only, pdfjs-dist loaded from CDN at first use.
+function N(s){return (s||'').normalize('NFKC').replace(/[\u2007\u00a0]/g,' ').replace(/\s+/g,' ').trim()}
+function readValues(t){let ans={};for(let [k,j] of [['逃','nige'],['先','sen'],['追','tsui'],['脚','ashi'],['ギ','gear']]){let m=t.match(new RegExp(k+'\\s*([SABCDEFGZ/])\\s*(-?[0-9]+(?:\\.[0-9]+)?|/)?'));if(m)ans[j]={rank:m[1],value:m[2]&&m[2]!=='/'?Number(m[2]):null}}return ans}
+function fromPageItems(items,height){const lines=[];for(const it of items){if(!it.str?.trim())continue;let x=it.transform?.[4]??0,y=height-(it.transform?.[5]??0);if(x>565)continue;let col=x<294?'L':'R';let found=lines.find(l=>l.col===col&&Math.abs(l.y-y)<2.0);if(!found){found={col,y,parts:[]};lines.push(found)}found.parts.push({x,text:it.str})}for(let l of lines)l.text=N(l.parts.sort((a,b)=>a.x-b.x).map(z=>z.text).join(' '));return lines.sort((a,b)=>a.y-b.y)}
+async function parsePDF(file){setStatus('PDF解析ライブラリを準備中…');let pdfjs;try{pdfjs=await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs');pdfjs.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs'}catch(e){throw Error('PDF解析ライブラリを取得できません。ネット接続を確認するか、解析済みJSONをご利用ください。')}
+const bytes=new Uint8Array(await file.arrayBuffer());const pdf=await pdfjs.getDocument({data:bytes}).promise;let races=[],cur=null,horse=null,date='',vn='';for(let pg=1;pg<=pdf.numPages;pg++){if(pg%4===1)setStatus(`PDFを解析中… ${pg}/${pdf.numPages}ページ`);let page=await pdf.getPage(pg),items=(await page.getTextContent()).items;let lines=fromPageItems(items,page.view[3]);let left=lines.filter(x=>x.col==='L'),right=lines.filter(x=>x.col==='R'&&x.text.includes('逃')&&x.text.includes('脚'));let taken=new Set();
+for(let l of left){let t=l.text;let md=t.match(/(新潟|東京|京都|阪神|中山|中京|小倉|札幌|函館|福島)\s*(\d{1,2})\/(\d{1,2})/);if(md){vn=md[1];date=`2026-${md[2].padStart(2,'0')}-${md[3].padStart(2,'0')}`}
+let mr=t.match(/(新潟|東京|京都|阪神|中山|中京|小倉|札幌|函館|福島)\s*(\d{1,2})\s*R\s*(.*)/);if(mr){vn=mr[1];cur={id:`${date}|${vn}|${mr[2]}`,date,venue:vn,raceNo:Number(mr[2]),name:mr[3]||'',condition:'',horses:[],sourcePages:[]};races.push(cur);horse=null}
+let mc=t.match(/^(芝|ダ|障)\s*(\d{3,4})\s*m/);if(mc&&cur)cur.condition=mc[1]+mc[2]+'m';
+let mh=t.match(/(\d+)\s*\(([牡牝セ])\)/);if(mh&&cur){let pre=t.slice(0,mh.index).replace(/^(\s*(仮|未|B|\d+)\s*)+/,'').trim();let rider=t.slice(mh.index+mh[0].length).trim();if(pre&& !pre.includes('前走') && pre.length<55){let nn=t.slice(0,mh.index).match(/^\s*(?:\d+\s+)?(\d+)\s+/);horse={number:nn?nn[1]:'未',name:pre,age:Number(mh[1]),sex:mh[2],rider,flags:['延長','短縮','乗替','斤量増','斤量減'].filter(x=>t.includes(x)),runs:[],page:pg};cur.horses.push(horse)}}
+let mm=t.match(/^(前走|[2-5]走前)\s*(\d{6})_([^ ]+)/);if(mm&&horse){let seq=mm[1]==='前走'?1:Number(mm[1][0]);let dr=t.match(/(\d{6})_([東新京阪中小札函名福]\d+R)_((?:芝|ダ|障)\d{2})([良稍重不])/);let f=t.match(/(\d+|止|除|中)着\s*\(([-+\d.]+|----)\)\/([\d]+)頭/);let cand=right.map((s,i)=>({i,d:Math.abs(s.y-l.y)})).filter(x=>x.d<12&&!taken.has(x.i)).sort((a,b)=>a.d-b.d)[0];let ix={};if(cand){taken.add(cand.i);ix=readValues(right[cand.i].text)}horse.runs.push({seq,raw:t,summary:'',date:dr?.[1]||null,where:dr?.[2]||null,surfaceDistance:dr?.[3]||null,going:dr?.[4]||null,finish:f&&/^\d+$/.test(f[1])?Number(f[1]):null,margin:f&&f[2]!=='----'?Number(f[2]):null,passing:'',final3f:null,indices:ix})}
+if(horse?.runs?.length&&!mm&&!mh&&!mr&&/通[\d-]+|上\d{1,2}\.\d/.test(t)&&t.length<140){let run=horse.runs[horse.runs.length-1];if(!run.summary){run.summary=t;run.passing=t.match(/通([\d-]+)/)?.[1]||'';run.final3f=Number(t.match(/上(\d{1,2}\.\d)/)?.[1])||null}}
+if(cur&&!cur.sourcePages.includes(pg))cur.sourcePages.push(pg)
+}await new Promise(resolve=>setTimeout(resolve,0))}
+let count=races.reduce((n,r)=>n+r.horses.length,0),runs=races.reduce((n,r)=>n+r.horses.reduce((m,h)=>m+h.runs.length,0),0);if(races.length===0||count===0||runs===0)throw Error('このPDFから馬名や指数を抽出できません。原本の版型またはテキスト抽出可否を確認してください。');return {races,count,runs}}
+$('#fileInput').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{if(/\.(json|txt)$/i.test(file.name)){let obj=JSON.parse(await file.text());let races=Array.isArray(obj)?obj:obj.races;if(!Array.isArray(races))throw Error('JSONの形式が違います');state.races=races;setStatus('JSONを読み込みました：'+file.name)}else{let parsed=await parsePDF(file);state.races=parsed.races;setStatus(`PDF読込成功：${parsed.races.length}レース・${parsed.count}頭・${parsed.runs}走`)}state.selected.clear();state.activeHorse=null;setupRaces();render();if(!saveImportedRaces())setStatus('読込成功。ただし端末保存容量の制限で永続保存できませんでした。JSONを保存してください。')}catch(err){setStatus('読取エラー：'+err.message);alert('読込できませんでした。'+err.message)}finally{e.target.value=''}};
+
+$('#typeBorder').onchange=e=>{state.typeBorder=Number(e.target.value);render()};
+$('#scatterX').onchange=e=>{state.scatterX=e.target.value;renderScatter(race())};
+$('#scatterY').onchange=e=>{state.scatterY=e.target.value;renderScatter(race())};
+$('#scatterScope').onchange=e=>{state.scatterScope=e.target.value;renderScatter(race())};
+$('#scatterChart').onclick=e=>{let p=e.target.closest('[data-open]');if(!p)return;state.activeHorse=p.dataset.open;renderDetails(race());$('#detailLayer').scrollIntoView({behavior:'smooth',block:'start'})};
+$('#benchEnabled').onchange=e=>{state.benchEnabled=e.target.checked;render()};
+$('#pointsPerSec').oninput=e=>{let v=e.target.value;state.pointsPerSec=v===''?null:Math.max(0,Number(v)||0);render()};
+$('#benchFile').onchange=async e=>{let file=e.target.files?.[0];if(!file)return;try{let t=await file.text(),parsed;if(/\.json$/i.test(file.name)){let obj=JSON.parse(t),ls=Array.isArray(obj)?obj:obj.benchmarks;if(!Array.isArray(ls))throw Error('JSONの基準タイム配列がありません');parsed={records:ls.map(b=>({venue:b.venue,surface:b.surface,distance:Number(b.distance),time:Number(b.time),gradient:b.gradient||'',memo:b.memo||''})),bad:0}}else parsed=benchCSV(t);let keys=new Map(state.bench.map(b=>[courseKey(b.venue,b.surface,b.distance),b]));for(let b of parsed.records)keys.set(courseKey(b.venue,b.surface,b.distance),b);state.bench=[...keys.values()];saveBench();render();setStatus('コース基準 '+parsed.records.length+'件読込み / 合計 '+state.bench.length+'件'+(parsed.bad?' / 無効'+parsed.bad+'件':''))}catch(err){setStatus('基準CSVエラー：'+err.message)}finally{e.target.value=''}};
+$('#benchTemplate').onclick=()=>download('CHARANIZE_基準タイム_入力用ひな型.csv','text/csv;charset=utf-8','\uFEFF競馬場,芝ダ,距離m,テン3F基準秒,勾配区分,備考\r\n"新潟","ダ",1200,,"下り","基準タイム入力待ち"\r\n"東京","芝",1600,,"","基準タイム入力待ち"');
+$('#benchExport').onclick=()=>download('CHARANIZE_コース基準タイム.csv','text/csv;charset=utf-8','\uFEFF'+dumpBench());
+$('#benchClear').onclick=()=>{if(!confirm('登録済みのコース基準を削除しますか？'))return;state.bench=[];saveBench();state.benchEnabled=false;$('#benchEnabled').checked=false;render()};
+loadBench();
+setupRaces();render();
+</script><script>
+// V3 course benchmark. Source: images provided by user on 2026-10-22.
+// Purpose: race-front-600m pace benchmark; not an individual horse's first 600m split.
+(()=>{'use strict';
+const benchmarks=[{"surface":"芝","venue":"中山","distance":1200,"cls":"1","f3":33.7,"l3":34.9,"total":"1.08.66","group":"A"},{"surface":"芝","venue":"中山","distance":1200,"cls":"2","f3":34.0,"l3":34.7,"total":"1.08.71","group":"A"},{"surface":"芝","venue":"中山","distance":1200,"cls":"3","f3":33.6,"l3":34.8,"total":"1.08.40","group":"A"},{"surface":"芝","venue":"阪神","distance":1200,"cls":"u","f3":34.3,"l3":35.0,"total":"1.09.28","group":"A"},{"surface":"芝","venue":"阪神","distance":1200,"cls":"1","f3":34.2,"l3":34.5,"total":"1.08.72","group":"A"},{"surface":"芝","venue":"阪神","distance":1200,"cls":"2","f3":34.0,"l3":34.6,"total":"1.08.66","group":"A"},{"surface":"芝","venue":"阪神","distance":1200,"cls":"3","f3":34.1,"l3":34.4,"total":"1.08.54","group":"A"},{"surface":"芝","venue":"中京","distance":1200,"cls":"u","f3":34.1,"l3":35.2,"total":"1.09.25","group":"A"},{"surface":"芝","venue":"中京","distance":1200,"cls":"1","f3":34.1,"l3":34.6,"total":"1.08.73","group":"A"},{"surface":"芝","venue":"中京","distance":1200,"cls":"2","f3":34.2,"l3":34.2,"total":"1.08.34","group":"A"},{"surface":"芝","venue":"中京","distance":1200,"cls":"3","f3":34.0,"l3":34.2,"total":"1.08.13","group":"A"},{"surface":"芝","venue":"小倉","distance":1200,"cls":"u","f3":33.5,"l3":35.4,"total":"1.08.87","group":"A"},{"surface":"芝","venue":"小倉","distance":1200,"cls":"1","f3":33.5,"l3":34.9,"total":"1.08.39","group":"A"},{"surface":"芝","venue":"小倉","distance":1200,"cls":"2","f3":33.3,"l3":34.7,"total":"1.08.03","group":"A"},{"surface":"芝","venue":"小倉","distance":1200,"cls":"3","f3":33.3,"l3":34.6,"total":"1.07.87","group":"A"},{"surface":"芝","venue":"京都","distance":1200,"cls":"u","f3":34.4,"l3":34.6,"total":"1.09.02","group":"B"},{"surface":"芝","venue":"京都","distance":1200,"cls":"1","f3":34.4,"l3":34.4,"total":"1.08.76","group":"B"},{"surface":"芝","venue":"京都","distance":1200,"cls":"2","f3":34.2,"l3":34.5,"total":"1.08.72","group":"B"},{"surface":"芝","venue":"京都","distance":1200,"cls":"3","f3":34.2,"l3":34.5,"total":"1.08.65","group":"B"},{"surface":"芝","venue":"函館","distance":1200,"cls":"u","f3":34.0,"l3":35.4,"total":"1.09.37","group":"B"},{"surface":"芝","venue":"函館","distance":1200,"cls":"1","f3":33.9,"l3":35.0,"total":"1.08.98","group":"B"},{"surface":"芝","venue":"函館","distance":1200,"cls":"2","f3":33.7,"l3":35.1,"total":"1.08.76","group":"B"},{"surface":"芝","venue":"函館","distance":1200,"cls":"3","f3":33.7,"l3":34.7,"total":"1.08.37","group":"B"},{"surface":"芝","venue":"福島","distance":1200,"cls":"u","f3":34.3,"l3":35.7,"total":"1.09.91","group":"B"},{"surface":"芝","venue":"福島","distance":1200,"cls":"1","f3":34.1,"l3":35.2,"total":"1.09.26","group":"B"},{"surface":"芝","venue":"福島","distance":1200,"cls":"2","f3":33.7,"l3":35.0,"total":"1.08.70","group":"B"},{"surface":"芝","venue":"福島","distance":1200,"cls":"3","f3":33.6,"l3":34.7,"total":"1.08.31","group":"B"},{"surface":"芝","venue":"新潟","distance":1200,"cls":"u","f3":34.2,"l3":35.3,"total":"1.09.45","group":"B"},{"surface":"芝","venue":"新潟","distance":1200,"cls":"1","f3":34.2,"l3":35.0,"total":"1.09.20","group":"B"},{"surface":"芝","venue":"新潟","distance":1200,"cls":"2","f3":34.2,"l3":34.6,"total":"1.08.87","group":"B"},{"surface":"芝","venue":"新潟","distance":1200,"cls":"3","f3":34.7,"l3":34.4,"total":"1.09.10","group":"B"},{"surface":"芝","venue":"札幌","distance":1200,"cls":"u","f3":34.3,"l3":35.4,"total":"1.09.61","group":"B"},{"surface":"芝","venue":"札幌","distance":1200,"cls":"1","f3":34.0,"l3":35.2,"total":"1.09.23","group":"B"},{"surface":"芝","venue":"札幌","distance":1200,"cls":"2","f3":34.2,"l3":34.9,"total":"1.09.12","group":"B"},{"surface":"芝","venue":"札幌","distance":1200,"cls":"3","f3":34.0,"l3":34.3,"total":"1.08.30","group":"B"},{"surface":"ダ","venue":"札幌","distance":1000,"cls":"1","f3":34.8,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"札幌","distance":1000,"cls":"2","f3":34.0,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"函館","distance":1000,"cls":"1","f3":34.4,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"函館","distance":1000,"cls":"2","f3":34.4,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"福島","distance":1150,"cls":"1","f3":34.7,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"福島","distance":1150,"cls":"2","f3":34.6,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"新潟","distance":1200,"cls":"1","f3":34.5,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"新潟","distance":1200,"cls":"2","f3":34.1,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"東京","distance":1300,"cls":"1","f3":35.9,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"東京","distance":1300,"cls":"2","f3":35.5,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"東京","distance":1400,"cls":"1","f3":35.8,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"東京","distance":1400,"cls":"2","f3":35.4,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"東京","distance":1600,"cls":"1","f3":35.8,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"東京","distance":1600,"cls":"2","f3":35.4,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"中山","distance":1200,"cls":"1","f3":34.2,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"中山","distance":1200,"cls":"2","f3":34.1,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"中京","distance":1200,"cls":"1","f3":35.1,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"中京","distance":1200,"cls":"2","f3":34.6,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"中京","distance":1400,"cls":"1","f3":34.9,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"中京","distance":1400,"cls":"2","f3":34.9,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"京都","distance":1200,"cls":"1","f3":35.2,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"京都","distance":1200,"cls":"2","f3":34.8,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"京都","distance":1400,"cls":"1","f3":35.1,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"京都","distance":1400,"cls":"2","f3":35.1,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"阪神","distance":1200,"cls":"1","f3":35.0,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"阪神","distance":1200,"cls":"2","f3":34.9,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"阪神","distance":1400,"cls":"1","f3":34.8,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"阪神","distance":1400,"cls":"2","f3":34.7,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"小倉","distance":1000,"cls":"1","f3":34.3,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"小倉","distance":1000,"cls":"2","f3":33.8,"l3":null,"total":null,"group":""}];
+const q=id=>document.getElementById(id), f=x=>Number(x).toFixed(1), classNames={u:'3歳未勝利',1:'1勝クラス',2:'2勝クラス',3:'3勝クラス'};
+let surface='芝',cls='1', src='',dst='';
+const label=z=>`${z.venue} ${z.surface}${z.distance}m`;
+const fmtDelta=d=>`${d>=0?'+':''}${f(d)}秒`;
+function courseList(){return benchmarks.filter(z=>z.surface===surface&&z.cls===cls).sort((a,b)=>a.distance-b.distance||a.f3-b.f3||a.venue.localeCompare(b.venue,'ja'))}
+function addOptions(el,options,value){el.innerHTML=options.map(o=>`<option value="${o.value}">${o.label}</option>`).join('');if(options.some(o=>o.value===value))el.value=value;return el.value}
+function getKey(z){return z.venue+'|'+z.distance}
+function copyClass(){let prev=cls,ls=surface==='芝'?['u','1','2','3']:['1','2'];cls=ls.includes(prev)?prev:'1';addOptions(q('v3class'),ls.map(x=>({value:x,label:classNames[x]})),cls)}
+function updateCourseChoices(){const ls=courseList();src=addOptions(q('v3source'),ls.map(z=>({value:getKey(z),label:label(z)})),src||(surface==='芝'?'京都|1200':'京都|1200'));let z=ls.find(x=>getKey(x)===src);let targets=ls.filter(x=>x.distance===z?.distance);dst=addOptions(q('v3target'),targets.map(z=>({value:getKey(z),label:label(z)})),dst||(surface==='芝'?'中山|1200':'中山|1200'));render()}
+function render(){let ls=courseList(),source=ls.find(z=>getKey(z)===src),target=ls.find(z=>getKey(z)===dst);let num=Number(q('v3time').value),valid=q('v3time').value.trim()!==''&&Number.isFinite(num)&&num>0;
+if(!source||!target||!valid){q('v3result').innerHTML='<div class="readme">同じ距離で基準が揃うコースと、過去レースの前半3Fを指定してください。</div>';q('v3formula').textContent='';return}
+let difference=target.f3-source.f3,converted=num+difference,deviation=num-source.f3;
+let cards=[['元コース基準',`${f(source.f3)}秒`,`${label(source)}・${classNames[cls]}`],['換算先の基準',`${f(target.f3)}秒`,`${label(target)}・${classNames[cls]}`],['基準のコース差',fmtDelta(difference),'換算先 − 元コース'],['換算した前半3F',`${f(converted)}秒`,`元のレースは基準より${fmtDelta(deviation)}（+は遅い）`]];
+q('v3result').innerHTML=cards.map(([head,value,sub])=>`<div class="v3metric"><small>${head}</small><b>${value}</b><small>${sub}</small></div>`).join('');
+q('v3formula').textContent=`計算：${f(num)}秒 ＋ (${f(target.f3)} − ${f(source.f3)}) ＝ ${f(converted)}秒。原指数はこの計算からは変更できません。`;
+let rows=ls.map(z=>`<tr class="${getKey(z)===src||getKey(z)===dst?'v3current':''}"><td>${label(z)}</td><td>${classNames[z.cls]}</td><td>${f(z.f3)}</td><td>${z.l3==null?'—':f(z.l3)}</td><td>${z.group||'—'}</td><td>${z.total||'—'}</td></tr>`).join('');q('v3table').innerHTML=`<table><thead><tr><th>コース</th><th>クラス</th><th>前半3F</th><th>後半3F</th><th>グループ</th><th>全体時計</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+q('v3surface').onchange=e=>{surface=e.target.value;src='';dst='';copyClass();updateCourseChoices()};
+q('v3class').onchange=e=>{cls=e.target.value;src='';dst='';updateCourseChoices()};
+q('v3source').onchange=e=>{src=e.target.value;dst='';updateCourseChoices()};
+q('v3target').onchange=e=>{dst=e.target.value;render()};
+q('v3time').oninput=render;
+q('v3csv').onclick=()=>{const header=['芝ダ','競馬場','距離m','クラス','前半3F秒','後半3F秒','全体時計','グループ'];let csv=[header,...benchmarks.map(z=>[z.surface,z.venue,z.distance,classNames[z.cls],z.f3,z.l3??'',z.total??'',z.group||''])].map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');let blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='CHARANIZE_芝ダコース別テン3F基準65件.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500)};
+copyClass();src='京都|1200';dst='中山|1200';updateCourseChoices();
+})();
+</script>
+<script>
+(()=>{'use strict';
+const bench=[{"surface":"芝","venue":"中山","distance":1200,"cls":"1","f3":33.7,"l3":34.9,"total":"1.08.66","group":"A"},{"surface":"芝","venue":"中山","distance":1200,"cls":"2","f3":34.0,"l3":34.7,"total":"1.08.71","group":"A"},{"surface":"芝","venue":"中山","distance":1200,"cls":"3","f3":33.6,"l3":34.8,"total":"1.08.40","group":"A"},{"surface":"芝","venue":"阪神","distance":1200,"cls":"u","f3":34.3,"l3":35.0,"total":"1.09.28","group":"A"},{"surface":"芝","venue":"阪神","distance":1200,"cls":"1","f3":34.2,"l3":34.5,"total":"1.08.72","group":"A"},{"surface":"芝","venue":"阪神","distance":1200,"cls":"2","f3":34.0,"l3":34.6,"total":"1.08.66","group":"A"},{"surface":"芝","venue":"阪神","distance":1200,"cls":"3","f3":34.1,"l3":34.4,"total":"1.08.54","group":"A"},{"surface":"芝","venue":"中京","distance":1200,"cls":"u","f3":34.1,"l3":35.2,"total":"1.09.25","group":"A"},{"surface":"芝","venue":"中京","distance":1200,"cls":"1","f3":34.1,"l3":34.6,"total":"1.08.73","group":"A"},{"surface":"芝","venue":"中京","distance":1200,"cls":"2","f3":34.2,"l3":34.2,"total":"1.08.34","group":"A"},{"surface":"芝","venue":"中京","distance":1200,"cls":"3","f3":34.0,"l3":34.2,"total":"1.08.13","group":"A"},{"surface":"芝","venue":"小倉","distance":1200,"cls":"u","f3":33.5,"l3":35.4,"total":"1.08.87","group":"A"},{"surface":"芝","venue":"小倉","distance":1200,"cls":"1","f3":33.5,"l3":34.9,"total":"1.08.39","group":"A"},{"surface":"芝","venue":"小倉","distance":1200,"cls":"2","f3":33.3,"l3":34.7,"total":"1.08.03","group":"A"},{"surface":"芝","venue":"小倉","distance":1200,"cls":"3","f3":33.3,"l3":34.6,"total":"1.07.87","group":"A"},{"surface":"芝","venue":"京都","distance":1200,"cls":"u","f3":34.4,"l3":34.6,"total":"1.09.02","group":"B"},{"surface":"芝","venue":"京都","distance":1200,"cls":"1","f3":34.4,"l3":34.4,"total":"1.08.76","group":"B"},{"surface":"芝","venue":"京都","distance":1200,"cls":"2","f3":34.2,"l3":34.5,"total":"1.08.72","group":"B"},{"surface":"芝","venue":"京都","distance":1200,"cls":"3","f3":34.2,"l3":34.5,"total":"1.08.65","group":"B"},{"surface":"芝","venue":"函館","distance":1200,"cls":"u","f3":34.0,"l3":35.4,"total":"1.09.37","group":"B"},{"surface":"芝","venue":"函館","distance":1200,"cls":"1","f3":33.9,"l3":35.0,"total":"1.08.98","group":"B"},{"surface":"芝","venue":"函館","distance":1200,"cls":"2","f3":33.7,"l3":35.1,"total":"1.08.76","group":"B"},{"surface":"芝","venue":"函館","distance":1200,"cls":"3","f3":33.7,"l3":34.7,"total":"1.08.37","group":"B"},{"surface":"芝","venue":"福島","distance":1200,"cls":"u","f3":34.3,"l3":35.7,"total":"1.09.91","group":"B"},{"surface":"芝","venue":"福島","distance":1200,"cls":"1","f3":34.1,"l3":35.2,"total":"1.09.26","group":"B"},{"surface":"芝","venue":"福島","distance":1200,"cls":"2","f3":33.7,"l3":35.0,"total":"1.08.70","group":"B"},{"surface":"芝","venue":"福島","distance":1200,"cls":"3","f3":33.6,"l3":34.7,"total":"1.08.31","group":"B"},{"surface":"芝","venue":"新潟","distance":1200,"cls":"u","f3":34.2,"l3":35.3,"total":"1.09.45","group":"B"},{"surface":"芝","venue":"新潟","distance":1200,"cls":"1","f3":34.2,"l3":35.0,"total":"1.09.20","group":"B"},{"surface":"芝","venue":"新潟","distance":1200,"cls":"2","f3":34.2,"l3":34.6,"total":"1.08.87","group":"B"},{"surface":"芝","venue":"新潟","distance":1200,"cls":"3","f3":34.7,"l3":34.4,"total":"1.09.10","group":"B"},{"surface":"芝","venue":"札幌","distance":1200,"cls":"u","f3":34.3,"l3":35.4,"total":"1.09.61","group":"B"},{"surface":"芝","venue":"札幌","distance":1200,"cls":"1","f3":34.0,"l3":35.2,"total":"1.09.23","group":"B"},{"surface":"芝","venue":"札幌","distance":1200,"cls":"2","f3":34.2,"l3":34.9,"total":"1.09.12","group":"B"},{"surface":"芝","venue":"札幌","distance":1200,"cls":"3","f3":34.0,"l3":34.3,"total":"1.08.30","group":"B"},{"surface":"ダ","venue":"札幌","distance":1000,"cls":"1","f3":34.8,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"札幌","distance":1000,"cls":"2","f3":34.0,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"函館","distance":1000,"cls":"1","f3":34.4,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"函館","distance":1000,"cls":"2","f3":34.4,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"福島","distance":1150,"cls":"1","f3":34.7,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"福島","distance":1150,"cls":"2","f3":34.6,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"新潟","distance":1200,"cls":"1","f3":34.5,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"新潟","distance":1200,"cls":"2","f3":34.1,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"東京","distance":1300,"cls":"1","f3":35.9,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"東京","distance":1300,"cls":"2","f3":35.5,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"東京","distance":1400,"cls":"1","f3":35.8,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"東京","distance":1400,"cls":"2","f3":35.4,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"東京","distance":1600,"cls":"1","f3":35.8,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"東京","distance":1600,"cls":"2","f3":35.4,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"中山","distance":1200,"cls":"1","f3":34.2,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"中山","distance":1200,"cls":"2","f3":34.1,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"中京","distance":1200,"cls":"1","f3":35.1,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"中京","distance":1200,"cls":"2","f3":34.6,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"中京","distance":1400,"cls":"1","f3":34.9,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"中京","distance":1400,"cls":"2","f3":34.9,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"京都","distance":1200,"cls":"1","f3":35.2,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"京都","distance":1200,"cls":"2","f3":34.8,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"京都","distance":1400,"cls":"1","f3":35.1,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"京都","distance":1400,"cls":"2","f3":35.1,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"阪神","distance":1200,"cls":"1","f3":35.0,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"阪神","distance":1200,"cls":"2","f3":34.9,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"阪神","distance":1400,"cls":"1","f3":34.8,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"阪神","distance":1400,"cls":"2","f3":34.7,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"小倉","distance":1000,"cls":"1","f3":34.3,"l3":null,"total":null,"group":""},{"surface":"ダ","venue":"小倉","distance":1000,"cls":"2","f3":33.8,"l3":null,"total":null,"group":""}];
+const el=id=>document.getElementById(id);
+const q=id=>el(id).value;
+const pref=['中山','京都','阪神','中京','小倉','札幌','函館','福島','新潟','東京'];
+const fmt=x=>Number.isFinite(x)?x.toFixed(2):'—';
+const choose=(id,items,wish)=>{let old=wish||q(id);el(id).innerHTML=items.map(x=>`<option value="${x}">${x}</option>`).join('');el(id).value=items.includes(old)?old:(items[0]||'')};
+const get=venue=>bench.find(x=>x.surface===q('v4surface')&&x.distance===Number(q('v4distance'))&&x.cls===q('v4class')&&x.venue===venue);
+function sync(reset){
+ const surf=q('v4surface');
+ const distances=[...new Set(bench.filter(x=>x.surface===surf).map(x=>x.distance))].sort((a,b)=>a-b).map(String);
+ choose('v4distance',distances,reset?'1200':null);
+ const clsSet=new Set(bench.filter(x=>x.surface===surf&&String(x.distance)===q('v4distance')).map(x=>x.cls));
+ for(const opt of el('v4class').options){opt.disabled=!clsSet.has(opt.value)}
+ if(!clsSet.has(q('v4class'))) el('v4class').value=['1','2','3','u'].find(x=>clsSet.has(x))||'';
+ const tracks=pref.filter(x=>get(x));
+ choose('v4target',tracks,reset?'中山':null);
+ choose('v4aTrack',tracks,reset?'中山':null);
+ choose('v4bTrack',tracks,reset?'京都':null);
+ calc();
+}
+function calc(){
+ const trg=get(q('v4target')),a=get(q('v4aTrack')),b=get(q('v4bTrack'));
+ if(!trg||!a||!b){el('v4result').innerHTML='<div class="v4notice">同じ芝・ダート、距離、クラスで基準が揃うコースを選択してください。</div>';el('v4formula').textContent='';return}
+ const alpha=+q('v4alpha');el('v4alphaV').textContent=alpha.toFixed(1);
+ const da=+q('v4aIndex'),db=+q('v4bIndex'),ta=+q('v4aPace'),tb=+q('v4bPace');
+ const ia=da*Math.pow(a.f3/trg.f3,alpha),ib=db*Math.pow(b.f3/trg.f3,alpha);
+ const ea=ta+(trg.f3-a.f3),eb=tb+(trg.f3-b.f3);
+ const arr=[['A馬 · 原指数',fmt(da),`基準 ${a.f3}秒／倍率 ${fmt(a.f3/trg.f3)}`],['B馬 · 原指数',fmt(db),`基準 ${b.f3}秒／倍率 ${fmt(b.f3/trg.f3)}`],['A馬 · 仮補正指数',fmt(ia),`換算先 ${q('v4target')}／試験値`],['B馬 · 仮補正指数',fmt(ib),`換算先 ${q('v4target')}／試験値`],['A馬 · 前半3F換算',fmt(ea)+'秒',`元レース ${fmt(ta)}秒`],['B馬 · 前半3F換算',fmt(eb)+'秒',`元レース ${fmt(tb)}秒`]];
+ el('v4result').innerHTML=arr.map(x=>`<div class="metric"><div class="muted">${x[0]}</div><strong>${x[1]}</strong><div class="muted">${x[2]}</div></div>`).join('');
+ let ratio=b.f3/trg.f3,needed=(ratio!==1&&da>0&&db>0)?Math.log(da/db)/Math.log(ratio):NaN;
+ el('v4formula').innerHTML=`仮補正：原指数 × (過去走コース基準 ÷ 比較先基準) <sup>${alpha.toFixed(1)}</sup> 。<br>
+ <b>比較：</b>${q('v4target')}の基準 ${trg.f3.toFixed(1)}秒、A馬の仮補正 ${fmt(ia)}、B馬の仮補正 ${fmt(ib)}。
+ <br><span class="muted">※ ${fmt(da)} 対 ${fmt(db)} の差を、今回のコース比率だけで完全に埋める補正強度は${Number.isFinite(needed)?needed.toFixed(1):'計算不可'}です。これは推奨値ではありません。</span>`;
+}
+for(const id of ['v4surface','v4distance','v4class'])el(id).addEventListener('change',()=>sync(false));
+for(const id of ['v4target','v4aTrack','v4bTrack','v4aIndex','v4bIndex','v4aPace','v4bPace','v4alpha'])el(id).addEventListener('input',calc);
+sync(true);
+})();
+</script>
+<script>
+(()=>{'use strict';
+const labs=[['nige','逃'],['sen','先'],['tsui','追負'],['ashi','脚'],['gear','ギ']];
+let selectedHorse=null;
+let baseMode='history';let order='number';let dataMarker=null;
+const fmtVal=v=>v==null?'—':Number(v).toFixed(1);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function whereSurface(z){return /^芝/.test(z.surfaceDistance||'')?'芝':/^ダ/.test(z.surfaceDistance||'')?'ダ':null}
+function getDist(z){const m=(z.surfaceDistance||'').match(/^[芝ダ](\d+)$/);return m?Number(m[1])*100:null}
+function sourceRun(r,h){let runs=eligible(r,h);if(!runs.length)return null;return runs[0]}
+function getValues(r,h){let runs=eligible(r,h),data={};for(const [k] of labs){let valid=runs.filter(z=>z.indices?.[k]?.value!=null&&Number.isFinite(z.indices[k].value));if(!valid.length){data[k]={v:null,run:null};continue;}
+if(state.span==='profile5'){let ww=valid.map(z=>({z,w:Math.max(1,6-Math.min(5,z.seq||5))}));let sum=ww.reduce((a,t)=>a+t.w*t.z.indices[k].value,0),den=ww.reduce((a,t)=>a+t.w,0);data[k]={v:sum/den,run:valid[0],count:valid.length};continue;}
+const chosen=state.span==='last'?valid[0]:valid.reduce((a,z)=>z.indices[k].value>a.indices[k].value?z:a);data[k]={v:chosen.indices[k].value,run:chosen};}return data}
+function groupDistance(d){if(d==null)return null;return d<=1300?'short':d<=1800?'mile':'long'}
+function measure(samps){const n=samps.length;if(n<4)return {n,mu:null,sd:null};let mu=samps.reduce((a,b)=>a+b,0)/n,variance=samps.reduce((a,b)=>a+(b-mu)**2,0)/n;return {n,mu,sd:Math.sqrt(variance)}}
+// Dedupe repeated race entries across newspaper appearances. Do not merge a horse's distinct races.
+function pool(){let out=[],keys=new Set();for(const r of state.races)for(const h of r.horses)for(const z of h.runs){const sf=whereSurface(z),dist=getDist(z);if(!sf||!dist)continue;let key=[h.name,z.date,z.where,z.surfaceDistance,z.going].join('|');if(keys.has(key))continue;keys.add(key);out.push({horse:h.name,z,sf,dist});}return out}
+function reference(r, horses, selected){let surf=(r.condition||'').charAt(0),dist=Number((r.condition||'').match(/\d+/)?.[0]);let poolData=pool();const byAxis={};const actualSurf=(surf==='芝'||surf==='ダ')?surf:'芝';
+for (const [k] of labs){let samples=[],basis='';if(baseMode==='race'){
+ samples=horses.map(h=>getValues(r,h)[k].v).filter(v=>v!=null);basis='同レースの出走馬';
+} else {
+ let same=poolData.filter(o=>o.sf===actualSurf&&o.dist===dist&&o.z.indices?.[k]?.value!=null);let nearby=poolData.filter(o=>o.sf===actualSurf&&groupDistance(o.dist)===groupDistance(dist)&&o.z.indices?.[k]?.value!=null);
+ let chosen=same.length>=35?same:nearby.length>=35?nearby:poolData.filter(o=>o.sf===actualSurf&&o.z.indices?.[k]?.value!=null);
+ samples=chosen.map(o=>o.z.indices[k].value).filter(Number.isFinite);
+ basis=chosen===same?'同距離':chosen===nearby?'同距離帯':'同じ芝ダ全距離';
+ }
+ byAxis[k]={...measure(samples),basis};
+}
+return byAxis;
+}
+function score(raw,stat){if(raw==null||stat.n<5||!stat.sd||stat.sd<0.001)return null;return Math.round((50+10*(raw-stat.mu)/stat.sd)*10)/10}
+function axisScore(st,k){return score(st.raw[k].v,st.base[k])}
+function desc(st){const n=axisScore(st,'nige'),s=axisScore(st,'sen'),a=axisScore(st,'ashi'),g=axisScore(st,'gear'),t=axisScore(st,'tsui');if(s==null||a==null)return {title:'判定保留',why:'比較できる過去走不足'};
+// Preserve demonstrable historical ceiling: a 5-race average can obscure a standout late-speed performance.
+const related=eligible(race(),st.h).filter(z=>z.seq<=5&&z.indices?.ashi?.value!=null).sort((x,y)=>x.seq-y.seq);
+const ceiling=Math.max(...related.map(z=>z.indices.ashi.value),-Infinity);
+const latest=related.filter(z=>z.seq<=2).map(z=>z.indices.ashi.value);
+if(ceiling>=90&&latest.length===2&&latest.every(x=>x<55))return {title:'末脚上限突出・近走不振',why:`過去5走に脚力${ceiling.toFixed(1)}の記録がある一方、近2走は脚力55未満。過去最高と近況を分けて評価`};
+if(t!=null&&t>=58&&a>=56&&v6CandidateRuns(race(),st.h).some(z=>Number.isFinite(z.indices?.tsui?.value)&&Number.isFinite(z.indices?.ashi?.value)&&z.indices.tsui.value>=70&&z.indices.ashi.value>=70))return {title:'高負荷末脚型',why:'同一走で追走負荷・脚力70以上の記録あり'};
+if(s>=58&&a>=58&&g!=null&&g>=57)return {title:'先行加速型',why:'先行・脚・ギアが揃う'};
+if(s>=57&&a>=57)return {title:'先行持続型',why:'先行と末脚がともに高い'};
+if(n!=null&&n>=58&&(s<53||n-s>=8))return {title:'初速先行型',why:'逃げが先行より強く出ている'};
+if(s>=59&&n!=null&&s-n>=8)return {title:'二の足型',why:'逃げより先行の偏差値が高い'};
+if(a>=59&&s<=52)return {title:'末脚特化型',why:'先行より脚力が高い'};
+if(s>=58&&a<48)return {title:'先行消耗型',why:'前半は高いが脚力は弱め'};
+if(t!=null&&t>=57&&a<48)return {title:'高負荷・末脚低め',why:'高負荷で終盤の脚が落ちやすい可能性'};
+if(g!=null&&g>=58&&a<48)return {title:'ギア突出型',why:'瞬発的ギアと末脚の持続は別'};
+if(a>=55)return {title:'末脚寄り',why:'終盤の脚を確認しやすい'};
+if(s>=55)return {title:'先行寄り',why:'先行指数の優位が出ている'};
+return {title:'標準・特徴探索',why:'この基準では突出軸が少ない'};
+}
+function styleScore(v, k){if(v==null)return '#a4b0b7';if(k==='tsui')return '#986b41';return v>=60?'#126f69':v>=50?'#286f9e':'#697b87'}
+function clipped(v){return v==null?0:Math.min(100,Math.max(0, (v-20)/60*100))}
+function makeRadar(entries, summary){const w=280,h=270,cx=140,cy=127,maxR=83;const angles=[-90,-18,54,126,198].map(a=>a*Math.PI/180);const coord=(i,score0)=>{let r=maxR*(Math.min(80,Math.max(20,score0))-20)/60;return [cx+Math.cos(angles[i])*r,cy+Math.sin(angles[i])*r]};const pt=x=>x.map(a=>a.join(',')).join(' ');
+let rings=[20,35,50,65,80].map(v=>`<polygon points="${pt(angles.map((a,i)=>coord(i,v)))}" fill="none" stroke="${v===50?'#b5cbc9':'#e2e9ed'}" stroke-width="${v===50?1.4:1}"/>`).join('');let axes=angles.map((a,i)=>{let t=coord(i,80),lab=[cx+Math.cos(a)*(maxR+19),cy+Math.sin(a)*(maxR+19)];return `<line x1="${cx}" y1="${cy}" x2="${t[0]}" y2="${t[1]}" stroke="#e7eced"/><text x="${lab[0]}" y="${lab[1]}" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="750" fill="#5d7580">${labs[i][1]}</text>`}).join('');let polys=entries.map((st,i)=>{let ps=labs.map(([k],j)=>coord(j,axisScore(st,k)??50));let col=['#087b77','#e78e42','#6c63b8'][i%3];return `<polygon points="${pt(ps)}" fill="${col}" fill-opacity="${entries.length===1?'.24':'.11'}" stroke="${col}" stroke-width="2.4" stroke-linejoin="round"/>${ps.map(z=>`<circle cx="${z[0]}" cy="${z[1]}" r="2.5" fill="${col}"/>`).join('')}`}).join('');return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="逃げ、先行、追走負荷、脚、ギアの偏差値レーダー。偏差値20〜80の表示範囲"><title>キャラ偏差値チャート</title>${rings}${axes}${polys}<text x="140" y="258" text-anchor="middle" fill="#758791" font-size="10">中央20 ・ 点線なしの中央基準50 ・ 外縁80</text></svg>`}
+function horseEntry(r,h,base){let raw=getValues(r,h);return {h,raw,base}}
+function entryScore(st,k){return axisScore(st,k)}
+function anyRefCaution(base){return labs.some(([k])=>base[k].n<30)}
+function charData(){const r=race();if(!r)return null;const entries=r.horses;const br=reference(r,entries);return {r,br,arr:entries.map(h=>horseEntry(r,h,br))}}
+function lastSource(st){const runs=eligible(race(),st.h);if(!runs.length)return '記録なし';if(state.span==='last')return `${runs[0].seq}走前 ${runs[0].where||''} ${runs[0].surfaceDistance||''} ${runs[0].going||''}`;return state.span==='profile5'?'過去5走の加重平均（同芝ダ・項目別の有効走）':state.span==='3'?'過去3走の各項目最高':'過去5走の各項目最高'}
+function statText(st,k){let s=axisScore(st,k),v=st.raw[k].v;return `<div class="charaMetric" title="原指数 ${fmtVal(v)} / 偏差値 ${s==null?'算出不可':s} / ${st.base[k].n}件"><div class="charaMetricLabel">${labs.find(z=>z[0]===k)?.[1]}</div><div class="charaMetricVal" style="color:${styleScore(s,k)}">${s==null?'—':s.toFixed(0)}</div><div class="charaMetricRaw">${v==null?'記録なし':'原 '+fmtVal(v)}</div><div class="charaMicrobar"><span style="width:${clipped(s)}%;background:${styleScore(s,k)}"></span></div></div>`}
+function relationship(st){let s=axisScore(st,'sen'),a=axisScore(st,'ashi'),t=axisScore(st,'tsui'),g=axisScore(st,'gear');let arr=[];
+if(s!=null&&a!=null)arr.push('先↔脚 '+((s-a)>=0?'+':'')+(s-a).toFixed(0));if(t!=null&&a!=null)arr.push('追負↔脚 '+((t-a)>=0?'+':'')+(t-a).toFixed(0));if(a!=null&&g!=null)arr.push('脚↔ギ '+((a-g)>=0?'+':'')+(a-g).toFixed(0));return arr.slice(0,2).join(' / ')||'指数不足';}
+function charCards(d){let arr=d.arr.filter(st=>st.h.name.includes(state.filter));const by=(x,k)=>axisScore(x,k)??-1000;
+if(order==='number')arr.sort((a,b)=>(Number(a.h.number)||999)-(Number(b.h.number)||999));else if(order==='balanced')arr.sort((a,b)=>(by(b,'sen')+by(b,'ashi'))-(by(a,'sen')+by(a,'ashi')));else arr.sort((a,b)=>by(b,order)-by(a,order));
+return arr.map(st=>{const ty=desc(st),sel=selectedHorse===st.h.name;return `<article class="charaCard ${sel?'selected':''}" tabindex="0" role="button" data-ch="${esc(st.h.name)}" aria-label="${esc(st.h.name)} のキャラ詳細を表示"><div class="charaCardHead"><span class="charaNumber">${esc(st.h.number)}</span><span class="charaCardTitle">${esc(st.h.name)}</span><span class="charaType">${esc(ty.title)}</span></div><div class="charaSub">${esc(lastSource(st))}</div><div class="charaMetrics">${labs.map(([k])=>statText(st,k)).join('')}</div><div class="charaMiniRel">${esc(relationship(st))}</div></article>`}).join('')||'<div class="charaCountWarn">表示できる馬がいません。</div>'}
+function compareRelation(st){let s=axisScore(st,'sen'),a=axisScore(st,'ashi'),g=axisScore(st,'gear'),t=axisScore(st,'tsui'),n=axisScore(st,'nige');let adv=[];
+if(n!=null&&s!=null)adv.push(`初速と二の足：逃 ${n.toFixed(0)}／先 ${s.toFixed(0)}（差 ${Math.abs(n-s).toFixed(0)}）`);
+if(s!=null&&a!=null)adv.push(`前半と終盤：先 ${s.toFixed(0)}／脚 ${a.toFixed(0)}（${s>a?'先行側が強い':a>s?'末脚側が強い':'近い'}）`);
+if(t!=null&&a!=null)adv.push(`追走負荷と末脚：追負 ${t.toFixed(0)}／脚 ${a.toFixed(0)}（高負荷でも脚を使えたかはレース内容を確認）`);
+if(a!=null&&g!=null)adv.push(`末脚とギア：脚 ${a.toFixed(0)}／ギ ${g.toFixed(0)}（一瞬の加速と持続力は別）`);
+return adv}
+function charFocus(d){if(!d.arr.length)return '';let st=d.arr.find(x=>x.h.name===selectedHorse);if(!st){st=d.arr[0];selectedHorse=st.h.name;}let typ=desc(st),h=st.h;
+const extra=compareRelation(st).map(s=>`<div class="charaExplain">${esc(s)}</div>`).join('');const bars=labs.map(([k,label])=>{let sc=axisScore(st,k),raw=st.raw[k].v,b=st.base[k];return `<div class="charaAxisRow"><b>${label}</b><b style="color:${styleScore(sc,k)}">${sc==null?'—':sc.toFixed(0)}</b><div class="track"><div class="fill" style="width:${clipped(sc)}%;background:${styleScore(sc,k)}"></div><div class="mid"></div></div><small>原 ${fmtVal(raw)}</small></div>`}).join('');
+const source=st.raw.sen.run;
+return `<div class="heading" style="margin-top:0"><div><div class="kicker">FOCUS CHARACTER</div><h2>${esc(h.number)} ${esc(h.name)} <span class="charaType">${esc(typ.title)}</span></h2></div><button type="button" class="smallbtn" id="charaSeeHistory">全過去走を見る</button></div><div class="charaFocusGrid"><div class="charaRadar">${makeRadar([st])}<div class="charaTip">今回の集団基準と比較した個性の輪郭。追＝追走負荷。</div></div><div class="charaFocusData">${bars}<div class="charaExplain"><strong>キャラ仮分類：</strong>${esc(typ.why)}。この分類は公式の指数分類ではありません。</div>${extra}</div></div><div class="charaTip" style="margin-top:8px">参照走：${esc(lastSource(st))} ｜ 5軸は<span style="font-weight:750">${state.span==='last'?'同一走から取得':state.span==='profile5'?'過去5走の加重平均（項目別の記録数は異なる）':'異なるレースの最高値が混在する可能性'}</span>。各指数の参照コースは元新聞の馬詳細でも確認できます。</div>`
+}
+
+// v6: class-level checks are observational. The 'tsui' value reflects load, not merit.
+let v6PoolCache=null,v6CacheRef=null;
+function v6Pool(){if(v6CacheRef!==state.races){v6PoolCache=pool();v6CacheRef=state.races;}return v6PoolCache;}
+function v6IsJumpRace(r){return /障|[JＪ][GＧ][123１-３]|ジャンプ/.test(String(r?.name||''))}
+function v6Class(t){t=String(t||'').replace(/ｸﾗｽ/g,'クラス');if(/障|[JＪ][GＧ][123１-３]|ジャンプ/.test(t))return null;
+ if(/(?:G1|Ｇ１|GI|GⅠ)/.test(t))return 'G1';if(/(?:G2|Ｇ２|GII|GⅡ)/.test(t))return 'G2';if(/(?:G3|Ｇ３|GIII|GⅢ)/.test(t))return 'G3';
+ if(/(?:OP|オープン|\(L\)|（L）|[ＳS]\(L\))/.test(t))return 'OP/L';
+ if(/3勝/.test(t))return '3勝';if(/2勝/.test(t))return '2勝';if(/1勝/.test(t))return '1勝';
+ if(/未勝利/.test(t))return '未勝利';if(/新馬/.test(t))return '新馬';return null;
+}
+function v6CandidateRuns(r,h){let target=(r.condition||'').charAt(0);return h.runs.filter(z=>target==='芝'||target==='ダ'?whereSurface(z)===target:false).filter(z=>z.seq<=5).sort((a,b)=>a.seq-b.seq);}
+function v6TargetClass(r){return v6Class(r.name)||null}
+function v6ClassCohort(r){if(v6IsJumpRace(r))return {className:null,valid:false,reason:'障害競走は平地指数のクラス比較対象外です'};let className=v6TargetClass(r),sf=(r.condition||'').charAt(0),dist=Number(((r.condition||'').match(/\d+/)||[])[0]);
+ if(!className||!['芝','ダ'].includes(sf)||!dist)return {className,valid:false,reason:'開催クラスが不明、または芝ダ・距離を特定できません'};
+ let data=v6Pool().filter(o=>o.sf===sf&&v6Class(o.z.summary?.split(' ')[0])===className),chosen,scope;
+ let exact=data.filter(o=>o.dist===dist);let near=data.filter(o=>groupDistance(o.dist)===groupDistance(dist));
+ if(exact.length>=20){chosen=exact;scope='同クラス・同芝ダ・同距離'}
+ else if(near.length>=30){chosen=near;scope='同クラス・同芝ダ・同距離帯'}
+ else if(data.length>=40){chosen=data;scope='同クラス・同芝ダ（距離混合）'}
+ else return {className,valid:false,reason:`収録済みの同クラス走 ${data.length}件。クラス基準の算定に必要な比較走が不足`};
+ let stats={};for(const [k]of labs){let values=chosen.map(o=>o.z.indices?.[k]?.value).filter(x=>x!=null&&Number.isFinite(x));stats[k]=measure(values)}
+ return {className,valid:true,stats,scope,records:chosen.length,horses:new Set(chosen.map(z=>z.horse)).size};
+}
+function v6S(v){return v==null?'—':Number(v).toFixed(0)}
+function v11ClassRaw(st,k){
+ const rr=race();const runs=v6CandidateRuns(rr,st.h).filter(z=>state.span!=='3'||z.seq<=3);
+ const valid=runs.filter(z=>Number.isFinite(z.indices?.[k]?.value));if(!valid.length)return null;
+ if(state.span==='profile5'){const rows=valid.map(z=>({v:z.indices[k].value,w:Math.max(1,6-Math.min(5,z.seq||5))}));return rows.reduce((a,x)=>a+x.v*x.w,0)/rows.reduce((a,x)=>a+x.w,0)}
+ if(state.span==='last')return valid[0].indices[k].value;
+ return valid.reduce((m,z)=>Math.max(m,z.indices[k].value),-Infinity);
+}
+function v6ClassScore(st,c,k){if(!c.valid)return null;return score(v11ClassRaw(st,k),c.stats[k])}
+function v6FiveRuns(r,h){return v6CandidateRuns(r,h).map(z=>({z,sen:z.indices.sen?.value,ashi:z.indices.ashi?.value,gear:z.indices.gear?.value,tsui:z.indices.tsui?.value}));}
+function v6Traits(r,h,globalBase){let runs=v6FiveRuns(r,h),positive=runs.filter(x=>x.sen!=null&&x.ashi!=null);
+ let tail=positive.filter(x=>score(x.ashi,globalBase.ashi)>=55&&score(x.sen,globalBase.sen)<=54).length;
+ let steady=positive.filter(x=>score(x.ashi,globalBase.ashi)>=55).length;
+ let highGear=positive.filter(x=>score(x.gear,globalBase.gear)>=56).length;
+ let msg=[];
+ if(positive.length<2)msg.push('能力の再現性：比較できる同芝ダの走歴が少なく、判定保留');
+ else {msg.push(`末脚が比較集団の偏差値55以上：${steady}/${positive.length}走${steady>=3?' → 複数走で再現':''}`);
+ if(steady>=3&&highGear<=1)msg.push('持続寄りの可能性：脚力が複数走で高く、ギアの突出が少ない。ただし持続時間は指数だけでは確定できません');
+ if(tail>=2)msg.push(`後方脚力型の手掛かり：先行値が控えめでも脚力を示した走歴 ${tail}走`);
+ }
+ // compare high- and low-tsui outings only if each group contains 2+ matched races.
+ let load=runs.filter(x=>x.tsui!=null&&x.ashi!=null);if(load.length>=4){let ranked=[...load].sort((a,b)=>a.tsui-b.tsui),lo=ranked.slice(0,2),hi=ranked.slice(-2),lowA=lo.reduce((s,x)=>s+x.ashi,0)/2,highA=hi.reduce((s,x)=>s+x.ashi,0)/2;
+ let dist=groupDistance(getDist(lo[0].z))===groupDistance(getDist(hi[0].z));let delta=highA-lowA;
+ if(dist){msg.push(`追走負荷の高低別の脚力差：高負荷側 − 低負荷側 ${delta>=0?'+':''}${delta.toFixed(1)}（各2走の参考比較）`);
+ if(delta<=-10)msg.push('高負荷で脚力低下の疑い。ただし相手・馬場・展開の影響を除けていません');}
+ }else msg.push(`追走負荷と末脚の関係：比較材料不足（追走・脚力の同時記録 ${load.length}走／最低4走必要）`);
+ return {msg,runs};
+}
+function v6FieldScatter(d){let rows=d.arr.map(st=>({st,x:axisScore(st,'sen'),y:axisScore(st,'ashi')})).filter(q=>q.x!=null&&q.y!=null),w=345,h=286,l=35,r=15,t=23,b=38;
+ let X=v=>l+(Math.max(25,Math.min(80,v))-25)/55*(w-l-r),Y=v=>h-b-(Math.max(25,Math.min(80,v))-25)/55*(h-t-b);
+ let lines=[35,50,65,80].map(q=>`<line x1="${X(q)}" y1="${t}" x2="${X(q)}" y2="${h-b}" stroke="#e7eded"/><line x1="${l}" y1="${Y(q)}" x2="${w-r}" y2="${Y(q)}" stroke="#e7eded"/><text x="${X(q)}" y="${h-b+15}" text-anchor="middle" class="v6lab">${q}</text><text x="${l-4}" y="${Y(q)+4}" text-anchor="end" class="v6lab">${q}</text>`).join('');
+ let dots=rows.map((q,i)=>{let active=q.st.h.name===selectedHorse, xx=X(q.x), yy=Y(q.y);return `<circle cx="${xx.toFixed(1)}" cy="${yy.toFixed(1)}" r="${active?8:5}" fill="${active?'#bd8246':'#16857f'}" opacity="${active?1:.67}" stroke="#fff" stroke-width="1.5"><title>${esc(q.st.h.name)} 先${v6S(q.x)}/脚${v6S(q.y)}</title></circle>${active?`<text x="${Math.min(w-85,xx+8)}" y="${Math.max(t+6,yy-9)}" class="v6lab" font-weight="bold">${esc(q.st.h.name)}</text>`:''}`}).join('');
+ return `<div class="v6chart"><svg viewBox="0 0 ${w} ${h}" role="img" aria-label="馬ごとの先行偏差値と脚力偏差値を比較する散布図">${lines}<line x1="${X(50)}" y1="${t}" x2="${X(50)}" y2="${h-b}" stroke="#94afa9" stroke-dasharray="4 3"/><line x1="${l}" y1="${Y(50)}" x2="${w-r}" y2="${Y(50)}" stroke="#94afa9" stroke-dasharray="4 3"/>${dots}<text x="${w/2}" y="${h-5}" class="v6lab" text-anchor="middle">先行偏差値 →</text><text x="${l+1}" y="12" class="v6lab">↑脚力偏差値</text></svg></div>`;
+}
+function v6ClassPanel(d,co){let st=d.arr.find(q=>q.h.name===selectedHorse)||d.arr[0];if(!st)return '';let traits=v6Traits(d.r,st.h,d.br);let intro=co.valid?`収録新聞のサンプルから推定：${co.scope}／${co.records}走・${co.horses}頭。※過去のレース実績からの参考水準であり、今回の能力順位や勝率ではありません。`:`クラス比較は保留：${esc(co.reason)}。`;
+ let axes=[['nige','逃（初速）'],['sen','先（二の足）'],['ashi','脚（末脚）'],['gear','ギ（加速）']];let tiles=axes.map(([k,label])=>{let sc=v6ClassScore(st,co,k),mean=co.valid?co.stats[k].mu:null,n=co.valid?co.stats[k].n:0;let labelS=sc==null?'データ不足':sc>=56?'明確に平均超え（56以上）':sc>50?'平均超え（50超）':sc<=44?'明確に平均以下（44以下）':'平均以下（50以下）';return `<div class="v6tile"><small>${label} · 直近5走加重平均</small><b>${sc==null?'—':`標本内偏差値 ${v6S(sc)}`}</b><span class="v6status">${labelS}</span><small>原指数 ${fmtVal(st.raw[k].v)}／比較平均 ${fmtVal(mean)}／標本 ${n}走</small></div>`}).join('');
+ let cS=v6ClassScore(st,co,'sen'),cA=v6ClassScore(st,co,'ashi');let compare=co.valid&&cS!=null&&cA!=null?`収録同級標本の平均から見たこの馬：先行 ${v6S(cS)} ／ 脚 ${v6S(cA)}。${cS>=56&&cA<50?'前半能力は水準以上でも終盤の脚に課題が残る可能性。':cS<50&&cA>=56?'末脚の水準は高い一方、先行力は相対的に低い。前を差せるかは隊列・位置差の確認が必要。':cS>=56&&cA>=56?'先行・末脚とも収録同級標本の平均より高い指数。ただし実戦の位置と馬場は別判断。':'先行・末脚とも同級の明確な優位は断定できません。'}`:'今回クラスの水準と比較した勝ち切り判断は保留です。';
+ let runRows=traits.runs.map(x=>`<tr><td>${x.z.seq}走前</td><td>${esc(x.z.where||'')} ${esc(x.z.surfaceDistance||'')} ${esc(x.z.going||'')}</td><td>${x.sen==null?'—':fmtVal(x.sen)}</td><td>${x.ashi==null?'—':fmtVal(x.ashi)}</td><td>${x.gear==null?'—':fmtVal(x.gear)}</td></tr>`).join('');
+ return `<div class="v6block"><h3>参考：収録走の同クラス分布との比較 · ${esc(st.h.name)}</h3><p class="v6sub">${intro}</p><div class="v6row">${tiles}</div><p class="v6warn">${esc(compare)}</p><h3 style="margin-top:13px">過去5走から見える走りの個性</h3>${traits.msg.map(t=>`<div class="v6pill">${esc(t)}</div>`).join('')}<div class="v6sub">追走指数は追走負荷であって能力の高さではありません。速いペースに弱いかどうかは複数走の比較が必要です。追走未掲載の場合は判定しません。</div><details><summary style="font-size:13px;color:#166d67">判断に使った過去走の内訳を確認</summary><div style="overflow-x:auto"><table class="v6table"><thead><tr><th>履歴</th><th>コース</th><th>先</th><th>脚</th><th>ギ</th></tr></thead><tbody>${runRows||'<tr><td colspan="5">該当走なし</td></tr>'}</tbody></table></div></details></div>`;
+}
+function v6GroupPanel(d,co){let entries=d.arr.filter(x=>axisScore(x,'sen')!=null&&axisScore(x,'ashi')!=null);let ahead=entries.filter(x=>Math.max(axisScore(x,'nige')||0,axisScore(x,'sen')||0)>=56),closers=entries.filter(x=>axisScore(x,'ashi')>=56&&axisScore(x,'sen')<56);
+ let names=a=>a.slice().sort((x,y)=>(axisScore(y,'sen')+axisScore(y,'ashi'))-(axisScore(x,'sen')+axisScore(x,'ashi'))).slice(0,5).map(z=>esc(z.h.name)).join('、')||'該当不足';
+ let groupBench=(items,k)=>{let sc=items.map(x=>v6ClassScore(x,co,k)).filter(x=>x!=null);if(!sc.length)return '同級比較不可';let above=sc.filter(x=>x>=56).length;return `${above}/${sc.length}頭が収録同級標本の偏差値56以上`};
+ let count=entries.length;
+ return `<div class="v6block"><h3>前半型 × 末脚型 · 能力分布マトリクス</h3><div class="v6sub">このメンバーの相対的な先・脚の位置関係。50の線は収録過去走（または画面で選んだ基準）の平均です。${count}頭を描画。前に出る馬の予測そのものではありません。</div>${v6FieldScatter(d)}<div class="v6row"><div class="v6tile"><b>前半型候補 ${ahead.length}頭</b><small>逃または先の偏差値56以上（能力特性上の仮分類）</small><small>${names(ahead)}</small><span class="v6status">先行面 ${groupBench(ahead,'sen')}</span></div><div class="v6tile"><b>末脚型候補 ${closers.length}頭</b><small>脚56以上かつ先行56未満の仮分類</small><small>${names(closers)}</small><span class="v6status">末脚面 ${groupBench(closers,'ashi')}</span></div></div><div class="v6warn">上の「候補」は馬キャラの指数配置であり、今回の実際の位置取りではありません。個別の指数水準は上の「指数原値の水準目安」と併せて確認してください。前を差し切るには両群の水準に加えて、実際の隊列・位置差・展開をsmarRcなどで確認してください。</div></div>`;
+}
+// v7: Reference bands transcribed from user-provided "指数の目安" image.
+// Values are raw CHARANIZE indices, NOT standardized deviation scores.
+// No class thresholds were supplied for SEN (二の足) or GEAR, so never invent them.
+function v7Band(k, v){
+ if(v==null||!Number.isFinite(v))return '記録なし';
+ if(k==='nige')return v>=90?'上位1％未満の目安':v>=80?'上位2〜3％程度の目安':v>=70?'上位10％程度の目安':v>=60?'上位20％程度の目安':v>=50?'上位40％程度の目安':'50未満（表の対象外）';
+ if(k==='tsui')return v>=80?'重賞クラスでも有数の追走負荷':v>=70?'3勝・OP級の追走負荷':v>=60?'1〜2勝上位級の追走負荷':v>=50?'1勝上位級の追走負荷':'50未満（表の対象外）';
+ if(k==='ashi')return v>=90?'世代最上位級の目安':v>=80?'世代上位級の目安':v>=70?'3勝・OP級の脚力水準':v>=60?'1〜2勝上位級の脚力水準':v>=50?'1勝上位級の脚力水準':'50未満（表の対象外）';
+ return '目安表に基準なし';
+}
+function v7RunLabel(z){return `${z.seq===1?'前走':z.seq+'走前'} ${z.where||''} ${z.surfaceDistance||''}${z.going||''} ／ ${z.finish??'—'}着`}
+function v7Guide(d){
+ let st=d.arr.find(x=>x.h.name===selectedHorse)||d.arr[0];if(!st)return '';
+ let runs=eligible(d.r,st.h).filter(z=>z.seq<=5).sort((a,b)=>a.seq-b.seq);
+ let tiles=[['nige','逃げ（初速）'],['tsui','追走（負荷）'],['ashi','脚力（末脚）']].map(([k,label])=>{
+  let valid=runs.filter(z=>Number.isFinite(z.indices?.[k]?.value));
+  if(!valid.length)return `<div class="v6tile"><b>${label}</b><small>過去5走に記録なし</small></div>`;
+  let mx=valid.reduce((a,z)=>z.indices[k].value>a.indices[k].value?z:a);
+  let latest=valid[0];let repeat=valid.filter(z=>z.indices[k].value>=70).length;
+  return `<div class="v6tile"><b>${label}</b><small>今回と同じ芝ダ・過去5走の最高</small><strong style="font-size:22px;color:#166b68">${fmtVal(mx.indices[k].value)}</strong><small>${esc(v7Band(k,mx.indices[k].value))}</small><small>最高を記録：${esc(v7RunLabel(mx))}</small><small>直近記録 ${fmtVal(latest.indices[k].value)}（${esc(v7Band(k,latest.indices[k].value))}）</small><small>70以上 ${repeat}/${valid.length}走 ／ 過去最高を常時再現できるとは限らない</small></div>`;
+ }).join('');
+ const legs=runs.filter(z=>Number.isFinite(z.indices?.ashi?.value));
+ const recent=legs.filter(z=>z.seq<=2),oldBest=legs.length?legs.reduce((a,z)=>z.indices.ashi.value>a.indices.ashi.value?z:a):null;
+ let contrast='過去5走の最高値は能力上限の参考。直近の指数と併せて確認。';
+ if(oldBest&&oldBest.indices.ashi.value>=90&&recent.length>=2&&recent.every(z=>z.indices.ashi.value<55))
+  contrast=`${esc(st.h.name)}は${esc(v7RunLabel(oldBest))}で脚力${fmtVal(oldBest.indices.ashi.value)}を記録。一方、近2走の脚力は${recent.map(z=>fmtVal(z.indices.ashi.value)).join('・')}。過去の末脚能力と近況を混同しない。`;
+ return `<div class="v6block" id="v7OffGuide"><h3>指数原値の水準目安 · ${esc(st.h.name)}</h3><div class="v6sub">送付された「指数の目安」表をそのまま数値帯として利用。<b>偏差値50を中心にした相対評価とは別</b>です。逃は出足の相対的な速さ、追は負荷、脚は末脚水準。<b>先行・ギアの公式数値帯は資料にないため推定しません。</b></div><div class="v6row" style="grid-template-columns:repeat(auto-fit,minmax(195px,1fr))">${tiles}</div><div class="v6warn">${contrast}</div><details><summary style="font-size:13px;color:#166d67">参照した目安表の数値帯を確認</summary><div class="v6sub">逃：50〜60 上位40%程度 ／ 60〜70 上位20%程度 ／ 70〜80 上位10%程度 ／ 80〜90 上位2〜3%程度 ／ 90以上 上位1%未満の目安。<br>追：50〜60 1勝上位級の負荷 ／ 60〜70 1〜2勝上位級 ／ 70〜80 3勝・OP級 ／ 80以上 重賞でも有数の負荷。<br>脚：50〜60 1勝上位級 ／ 60〜70 1〜2勝上位級 ／ 70〜80 3勝・OP級 ／ 80〜90 世代上位級 ／ 90以上 世代最上位級。<br>※表は一般的な指標水準の目安であり、このレースでの勝率や着順を保証しません。追走は高負荷の記録で、能力順位と同一ではありません。</div></details></div>`;
+}
+
+// v9: class benchmark counts for EVERY entrant in the selected race.
+// >50 / <=50 is the mean boundary; >=56 is separately reported as a clear margin.
+// Missing data never enter the 'below' group. Class distribution is independent
+// from the 'compare against this race' character-dashboard dropdown.
+
+// v10: Official published RAW-INDEX bands, separate from any computed standardized score.
+// Key interpretation: TSUI is exposure to racing load, not a measure of inherent ability.
+// Use only same-turf/dirt races from the supplied LAST FIVE runs; do not combine
+// the highest TSUI and ASHI from different runs to claim same-race capability.
+let v10LevelChoice='auto';
+function v10ClassLevel(className){
+ if(className==='1勝')return 50;
+ if(className==='2勝')return 60;
+ if(className==='3勝'||className==='OP/L')return 70;
+ if(['G1','G2','G3'].includes(className))return 80;
+ // 未勝利・新馬・クラス名未検出 → 50 is only a benchmark, NOT a class floor.
+ return 50;
+}
+function v10LevelCaption(level){
+ return ({50:'脚：1勝上位級 ／ 追：1勝上位の負荷',60:'脚：1〜2勝上位級 ／ 追：同級の負荷',70:'脚：3勝・OP級 ／ 追：3勝・OP級の負荷',80:'脚：世代上位級 ／ 追：重賞でも有数の負荷',90:'脚：世代最上位級 ／ 追：公式表では80以上が最上位区分。90以上は任意抽出'})[level]||'';
+}
+function v10CandidateStats(d,k,level){
+ return d.arr.map(st=>{
+  // Always RAW, with fixed last-five and matching turf/dirt regardless of span/view mode.
+  const allRuns=v6CandidateRuns(d.r,st.h);
+  const valid=allRuns.filter(z=>z.indices?.[k]?.value!=null&&Number.isFinite(z.indices[k].value));
+  const passed=valid.filter(z=>z.indices[k].value>=level);
+  const best=valid.length?valid.reduce((p,z)=>z.indices[k].value>p.indices[k].value?z:p):null;
+  return {st,valid,passed,best,status:!valid.length?'missing':passed.length?'hit':'no'};
+ });
+}
+function v10IndexBand(k,lv){
+ if(k==='nige')return lv===50?'上位40％程度':lv===60?'上位20％程度':lv===70?'上位10％程度':lv===80?'上位2〜3％程度':'上位1％未満の目安';
+ if(k==='tsui')return lv===50?'1勝上位級の負荷':lv===60?'1〜2勝上位級の負荷':lv===70?'3勝・OP級の負荷':lv===80?'重賞でも有数の負荷':'公式の最高区分（80以上）に含まれる90以上の任意抽出';
+ return lv===50?'1勝上位級の脚力':lv===60?'1〜2勝上位級の脚力':lv===70?'3勝・OP級の脚力':lv===80?'世代上位級の脚力':'世代最上位級の脚力';
+}
+function v10RawOverview(d){
+ const el=document.getElementById('v10OfficialOverview');if(!el)return;
+ if(v6IsJumpRace(d.r)){
+  el.innerHTML='<div class="v10Head"><div><div class="v10Eyebrow">SPECIAL RACE · NOT APPLICABLE</div><h2>① 公式「指数の目安」：障害競走は対象外</h2></div></div><p class="v10Desc">このレースは障害競走です。添付の公式指標表は平地競走の参考区分のため、原指数50〜90をクラス基準として適用しません。馬の過去走の記録は下部の詳細表で確認してください。</p>';
+  return;
+ }
+ const c=v6TargetClass(d.r);const level=v10LevelChoice==='auto'?v10ClassLevel(c):Number(v10LevelChoice);
+ const isAuto=v10LevelChoice==='auto';
+ const nige=v10CandidateStats(d,'nige',level),tsui=v10CandidateStats(d,'tsui',level),ashi=v10CandidateStats(d,'ashi',level);
+ const pair=d.arr.map(st=>{
+  const hits=v6CandidateRuns(d.r,st.h).filter(z=>Number.isFinite(z.indices?.tsui?.value)&&Number.isFinite(z.indices?.ashi?.value)&&z.indices.tsui.value>=level&&z.indices.ashi.value>=level);
+  return {st,hits};
+ });
+ const disp=(z)=>`${/^\d+$/.test(String(z.st.h.number||''))?esc(z.st.h.number)+' ':''}${esc(z.st.h.name)}`;
+ const names=(rows)=>rows.length?rows.map(disp).join('、'):'該当なし';
+ const tile=(label,indicator,caption,data,load=false)=>{
+  const seen=data.filter(x=>x.status==='hit'),not=data.filter(x=>x.status==='no'),missing=data.filter(x=>x.status==='missing');const recent=seen.filter(x=>x.passed.some(z=>z.seq<=2));const repeat=seen.filter(x=>x.passed.length>=2);
+  return `<div class="v10Axis${load?' v10Load':''}"><h3>${label}</h3><div class="v10Purpose">${caption}</div><span class="v10Num">${seen.length}頭</span><span class="v10Denom"> / ${seen.length+not.length}頭が判定可能</span><div class="v10AxisRows">${indicator} ${level}以上：${seen.length}頭<br>${load?'この負荷の記録なし':'基準未到達'}：${not.length}頭<br>指数記録なし：${missing.length}頭<br>直近2走で記録：${recent.length}頭 ／ 2走以上で記録：${repeat.length}頭</div><div class="v10Names">${load?'経験の記録がある馬':'水準到達馬'}：${names(seen)}</div></div>`;
+ };
+ const pairHits=pair.filter(x=>x.hits.length);
+ const validPair=d.arr.filter(st=>v6CandidateRuns(d.r,st.h).some(z=>Number.isFinite(z.indices?.tsui?.value)&&Number.isFinite(z.indices?.ashi?.value))).length;
+ const tiles=tile('逃げ・初速','逃',`出足の順位感：${v10IndexBand('nige',level)}`,nige)
+             +tile('追走・負荷経験','追',`${v10IndexBand('tsui',level)}を経験した記録`,tsui,true)
+             +tile('脚力・末脚','脚',`${v10IndexBand('ashi',level)}を記録`,ashi)
+             +`<div class="v10Axis v10Pair"><h3>追走負荷 × 脚力</h3><div class="v10Purpose">同じ過去走で追・脚とも${level}以上</div><span class="v10Num">${pairHits.length}頭</span><span class="v10Denom"> / 両指数あり${validPair}頭</span><div class="v10AxisRows">強い追走負荷の経験と、同走での脚力の両立。<b>複数走の最高値は混ぜません。</b></div><div class="v10Names">同時達成：${names(pairHits)}</div></div>`;
+ const nigeLookup=new Map(nige.map(x=>[x.st.h,x])),tsuiLookup=new Map(tsui.map(x=>[x.st.h,x])),ashiLookup=new Map(ashi.map(x=>[x.st.h,x]));
+ const renderCell=(data,isLoad)=>{
+  const cls=data.status==='hit'?'':data.status==='no'?'no':'missing';
+  const text=data.status==='missing'?'記録なし':data.status==='hit'?(isLoad?'経験済み':'到達'):(isLoad?'確認できず':'未到達');
+  const mx=data.best?data.best.indices?.[data.axis]?.value:null;
+  const run=data.best?v7RunLabel(data.best):'';const src=data.best?v6Class(data.best.summary?.split(' ')[0]):null;
+  return `<span class="v10Result ${cls}">${text}</span><span class="v10RunHint">${data.best?'最高 '+fmtVal(mx)+'／'+esc(run)+(src?'［'+esc(src)+'］':''):'過去5走に該当指数なし'}${data.passed.length?`<br>${level}以上 ${data.passed.length}/${data.valid.length}走`:''}</span>`;
+ };
+ const horseRows=[...d.arr].sort((a,b)=>(Number(a.h.number)||999)-(Number(b.h.number)||999)).map(st=>{
+  const n={...nigeLookup.get(st.h),axis:'nige'},t={...tsuiLookup.get(st.h),axis:'tsui'},a={...ashiLookup.get(st.h),axis:'ashi'};
+  const matched=pair.find(x=>x.st===st);
+  const matchText=matched.hits.length?`<span class="v10Result">同走 ${matched.hits.length}回</span><span class="v10RunHint">${matched.hits.map(z=>`${esc(v7RunLabel(z))} 追${fmtVal(z.indices.tsui.value)}・脚${fmtVal(z.indices.ashi.value)}`).join('<br>')}</span>`:'<span class="v10RunHint">—</span>';
+  return `<tr><td><button type="button" class="v10Horse" data-v10horse="${esc(st.h.name)}">${disp({st})}</button></td><td>${renderCell(n,false)}</td><td>${renderCell(t,true)}</td><td>${renderCell(a,false)}</td><td>${matchText}</td></tr>`;
+ }).join('');
+ const levels=[50,60,70,80,90];
+ const options=`<option value="auto"${isAuto?' selected':''}>レース区分から自動</option>`+levels.map(lv=>`<option value="${lv}"${Number(v10LevelChoice)===lv?' selected':''}>${lv}以上</option>`).join('');
+ const classNote=!c||c==='新馬'||c==='未勝利'?`今回の${esc(c||'クラス不明')}には公式表の一対一の基準がないため、自動では50以上を参考表示。<b>クラス合格判定ではありません。</b>`
+ :['G1','G2','G3'].includes(c)?`重賞の自動目安は80。<b>脚80＝重賞合格ではなく、世代上位級の脚力。追80＝重賞でも有数の負荷経験。</b>`
+ :`自動の${level}は公式資料の${esc(v10LevelCaption(level))}に対応する参考値で、当該クラスでの勝率・好走保証ではありません。`;
+ el.innerHTML=`<div class="v10Head"><div><div class="v10Eyebrow">OFFICIAL RAW INDEX · RACE OVERVIEW</div><h2>① 公式「指数の目安」：到達馬・追走負荷経験</h2></div><span class="v9Tag">全出走馬 ${d.arr.length}頭</span></div>
+ <p class="v10Desc">元資料の<b>原指数の数値帯</b>で、今回の出走馬が過去5走でどの水準を<b>一度でも記録したか</b>を集計。<b>偏差値50とは無関係</b>です。逃は出足の上位割合目安、脚は末脚の水準。<b>追走はどれだけの負荷を経験したか</b>で、単純な能力の高さではありません。</p>
+ <label class="v10BenchLabel" for="v10LevelSel">比較する原指数の目安 <select id="v10LevelSel" aria-label="公式原指数水準を切り替え">${options}</select></label>
+ <p class="v10AutoInfo">今回 ${esc(d.r.name||'レース')}（${esc(c||'クラス未判定')}）／現在の境界 <b>原指数${level}以上</b>。${isAuto?classNote:`任意設定：${esc(v10LevelCaption(level))}。この境界とレース格の一致を保証するものではありません。`}</p>
+ <div class="v10Grid">${tiles}</div>
+ <div class="v10Explain"><b>重要：</b>「追走の経験あり」は、その負荷にさらされた過去走の記録があるという意味です。<b>耐えた／好走した</b>とは別です。高負荷の同一走で脚力も記録した馬は右端に分けています。今回の競馬場・距離・馬場・位置取りによる再現性は別途確認してください。<b>同芝ダのみ</b>で、ダート実績を芝に混ぜません。</div>
+ <details class="v10TableDetails" open><summary>全馬の公式原指数到達・追走負荷経験一覧（開閉可）</summary>
+ <div class="v10TableScroll"><table class="v10Table"><thead><tr><th>馬番・馬名</th><th>逃（初速）</th><th>追（負荷経験）</th><th>脚（末脚）</th><th>同走：追＋脚</th></tr></thead><tbody>${horseRows}</tbody></table></div>
+ <p class="v10Meta">最高値と超過回数は<b>今回と同じ芝ダの過去5走</b>に限定。［1勝］などは指数を記録した過去走のクラス。<b>下級で記録した高指数は、今回のクラスで再現できる保証ではありません。</b> 50・60・70・80・90の境界を選べます。「確認できず」は<b>収録された過去5走では確認できない</b>という意味で、未経験の断定ではありません。追走指数が非掲載の条件は「記録なし」で除外。先行・ギアには提供された公式目安表の数値帯がないため、この集計では公式基準を創作していません。</p></details>`;
+}
+
+function v9ClassOverview(d,co){
+ const el=document.getElementById('classRaceOverview');
+ if(!el)return;
+ const axes=[['nige','逃（初速）'],['sen','先（二の足）'],['ashi','脚（末脚）'],['gear','ギ（加速）']];
+ const all=d.arr;const total=all.length;
+ const scored=(k)=>all.map(st=>({st,v:v6ClassScore(st,co,k)}));
+ if(!co.valid){
+  el.innerHTML=`<div class="v9head"><div><div class="v9kicker">CLASS BENCHMARK · RACE OVERVIEW</div><h2>② 収録同級標本平均との差（偏差値50）</h2></div><span class="v9Tag">${total}頭中・判定保留</span></div><p class="v9Scope">同クラス基準が不足しているため、基準超え・未達の人数を判定しません。理由：${esc(co.reason||'比較用データ不足')}</p>`;
+  return;
+ }
+ const names=(arr)=>arr.length?arr.map(st=>`${esc(st.h.number||'—')} ${esc(st.h.name)}`).join('、'):'該当なし';
+ let rowsByKey={};
+ const panels=axes.map(([k,label])=>{
+  let rows=scored(k);rowsByKey[k]=rows;
+  let valid=rows.filter(x=>x.v!=null);
+  let above=valid.filter(x=>x.v>50);
+  let below=valid.filter(x=>x.v<=50);
+  let strong=valid.filter(x=>x.v>=56);
+  let low=valid.filter(x=>x.v<=44);
+  let missing=total-valid.length;
+  return `<div class="v9Axis"><h3>${label}</h3>
+   <div class="v9Measure"><strong>${above.length}</strong><span>/ ${valid.length}頭が平均超え</span></div>
+   <div class="v9Row"><span>平均以下（50以下）</span><b>${below.length}頭</b></div>
+   <div class="v9Row v9Strong"><span>明確に上（56以上）</span><b>${strong.length}頭</b></div>
+   <div class="v9Row v9Low"><span>明確に下（44以下）</span><b>${low.length}頭</b></div>
+   ${missing?`<div class="v9Row"><span>算出不可</span><b>${missing}頭</b></div>`:''}
+   <div class="v9Names">明確に上：${names(strong.map(x=>x.st))}</div>
+  </div>`;
+ }).join('');
+ const classified=all.map(st=>({st,sen:v6ClassScore(st,co,'sen'),ashi:v6ClassScore(st,co,'ashi')}));
+ const bothValid=classified.filter(x=>x.sen!=null&&x.ashi!=null);
+ const bothUp=bothValid.filter(x=>x.sen>50&&x.ashi>50);
+ const bothStrong=bothValid.filter(x=>x.sen>=56&&x.ashi>=56);
+ const bothBelow=bothValid.filter(x=>x.sen<=50&&x.ashi<=50);
+ const inter=`<div class="v9Bridge" aria-label="先行と脚力の両立">
+  <div class="v9BridgeItem"><strong>${bothUp.length}頭</strong>先・脚とも平均超え<small>判定可能 ${bothValid.length}頭</small></div>
+  <div class="v9BridgeItem"><strong>${bothStrong.length}頭</strong>先・脚とも明確超え<small>${names(bothStrong.map(x=>x.st))}</small></div>
+  <div class="v9BridgeItem"><strong>${bothBelow.length}頭</strong>先・脚とも平均以下<small>各50以下</small></div>
+ </div>`;
+ const scoreCell=(v)=>{
+  if(v==null)return '<span class="v9Score unknown" title="算出不可">—</span>';
+  let klass=v>=56?'high':v>50?'up':v>44?'down':'low';
+  let label=v>=56?'同級平均を明確に超過':v>50?'同級平均より上':v>44?'同級平均以下':'同級平均を明確に下回る';
+  return `<span class="v9Score ${klass}" title="${label}">${v6S(v)}</span>`;
+ };
+ const horseRows=[...all].sort((a,b)=>(Number(a.h.number)||999)-(Number(b.h.number)||999)).map(st=>
+  `<tr><td><button type="button" class="v9HorseButton" data-classhorse="${esc(st.h.name)}" title="この馬の同級比較詳細へ移動">${esc(st.h.number||'—')} ${esc(st.h.name)}</button></td>${axes.map(([k])=>`<td>${scoreCell(v6ClassScore(st,co,k))}</td>`).join('')}</tr>`).join('');
+ const how=state.span==='profile5'?'過去5走の加重平均':state.span==='last'?'直近の該当走':state.span==='3'?'過去3走の指数最高値':'過去5走の指数最高値';
+ el.innerHTML=`<div class="v9head"><div><div class="v9kicker">CLASS BENCHMARK · RACE OVERVIEW</div><h2>② 収録同級標本平均との差（偏差値50）</h2></div><span class="v9Tag">このレース ${total}頭を比較</span></div>
+ <p class="v9Scope">${esc(co.className)}／${esc(co.scope)}・収録${co.records}走（${co.horses}頭）。各馬の${esc(how)}を同クラス標本と比較。<b>判定は画面上の馬名絞り込みとは独立して全出走馬で集計。</b></p>
+ <div class="v9Grid">${panels}</div>${inter}
+ <div class="v9StatusLegend"><b>判定の見方：</b>この段は公式水準ではありません。偏差値50＝収録同級標本の平均。50超は平均より上、50以下は平均以下。「明確に上」は56以上、「明確に下」は44以下の目安です。平均超えと明確超えは別集計であり、重複して数えられます。</div>
+ <details class="v9AllDetails"><summary>出走馬${total}頭の同クラス比較一覧を見る（馬名を押すと個別の説明へ）</summary>
+ <div class="v9TableWrap"><table class="v9Table"><thead><tr><th>馬番・馬名</th><th>逃</th><th>先</th><th>脚</th><th>ギ</th></tr></thead><tbody>${horseRows}</tbody></table></div>
+ <div class="v9Caution">数字は同級標本内の相対偏差値です。追走指数は負荷指標のため優劣判定に含めません。指数基準を超えた頭数は勝ち馬の頭数や勝率を意味しません。基準未達とデータ不足は分けています。</div></details>`;
+}
+
+function v6Render(d){const co=v6ClassCohort(d.r);v10RawOverview(d);v9ClassOverview(d,co);document.getElementById('charaOfficialGuide').innerHTML=v7Guide(d);document.getElementById('charaClassProfile').innerHTML=v6ClassPanel(d,co);document.getElementById('charaFieldMatrix').innerHTML=v6GroupPanel(d,co);}
+
+function charRender(){if(!document.getElementById('charaDashboard'))return;let d=charData();if(!d)return;let base=d.br;let sizes=labs.map(([k,label])=>label+':'+base[k].n);let mode=baseMode==='race'?'出走馬の相対比較':'収録過去走（重複を除いた同芝ダ・距離）';
+let warn=anyRefCaution(base)?'｜※一部の軸は母数30未満、参考値に注意':'';
+let scope=`比較基準：${mode} ｜ 標本 ${sizes.join(' / ')}${warn}`;
+if(state.surface==='all')scope+=' ｜ ⚠ 芝・ダ混在モードは比較不適切な場合があります';
+if(state.span==='profile5')scope+=' ｜ 直近5走に5〜1の重みで平均'; else if(state.span!=='last')scope+=' ｜ ⚠ 各軸の最高値が異なるレース由来の可能性';
+document.getElementById('charaCohort').textContent=scope;
+document.getElementById('charaCards').innerHTML=charCards(d);
+document.getElementById('charaFocus').innerHTML=charFocus(d);v6Render(d);
+}
+const originalRender=render;
+render=function(){originalRender();charRender()};
+document.getElementById('v10OfficialOverview').addEventListener('change',e=>{if(e.target.id!=='v10LevelSel')return;v10LevelChoice=e.target.value;charRender();});
+document.getElementById('v10OfficialOverview').addEventListener('click',e=>{const btn=e.target.closest('[data-v10horse]');if(!btn)return;selectedHorse=btn.getAttribute('data-v10horse');charRender();document.getElementById('charaOfficialGuide').scrollIntoView({block:'start',behavior:'smooth'});});
+document.getElementById('classRaceOverview').addEventListener('click',e=>{let target=e.target.closest('[data-classhorse]');if(!target)return;selectedHorse=target.getAttribute('data-classhorse');charRender();document.getElementById('charaClassProfile').scrollIntoView({block:'start',behavior:'smooth'});});
+document.getElementById('charaBase').addEventListener('change',e=>{baseMode=e.target.value;charRender()});
+document.getElementById('charaOrder').addEventListener('change',e=>{order=e.target.value;charRender()});
+document.getElementById('charaExtrasToggle').addEventListener('click',()=>{const open=document.body.classList.toggle('charExtrasShown');const btn=document.getElementById('charaExtrasToggle');btn.setAttribute('aria-expanded',open?'true':'false');btn.textContent=open?'詳細を閉じる ▴':'詳細を表示 ▾'});
+document.getElementById('charaCards').addEventListener('click',e=>{let el=e.target.closest('[data-ch]');if(!el)return;selectedHorse=el.dataset.ch;charRender();document.getElementById('charaFocus').scrollIntoView({block:'nearest',behavior:'smooth'})});
+document.getElementById('charaCards').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;let el=e.target.closest('[data-ch]');if(!el)return;e.preventDefault();selectedHorse=el.dataset.ch;charRender()});
+document.getElementById('charaFocus').addEventListener('click',e=>{if(e.target.id!=='charaSeeHistory')return;document.body.classList.add('charExtrasShown');document.getElementById('charaExtrasToggle').textContent='詳細を閉じる ▴';document.getElementById('charaExtrasToggle').setAttribute('aria-expanded','true');state.activeHorse=selectedHorse;renderDetails(race());document.getElementById('detailLayer').scrollIntoView({block:'start',behavior:'smooth'});});
+// Re-focus on first horse when race changes, avoiding a previously selected horse persisting across different races.
+document.getElementById('raceSel').addEventListener('change',()=>{selectedHorse=null;v10LevelChoice='auto';charRender()});
+const p=pool();console.info('CHARANIZE v5',state.races.length,'races',p.length,'deduplicated historical records');
+charRender();
+})();
+
+</script><script>if(location.protocol==='https:'&&'serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').catch(()=>{});});}</script></body></html>
