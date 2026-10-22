@@ -1,0 +1,18 @@
+{
+  "name": "CHARANIZE LAB 指数分析",
+  "short_name": "CHARANIZE LAB",
+  "description": "公式指数水準・同クラス比較・追走負荷経験を確認",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f6f8",
+  "theme_color": "#0c4547",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
