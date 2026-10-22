@@ -1,4 +1,4 @@
-const CACHE='charanize-lab-v11-20261023';
+const CACHE='charanize-lab-v12-20261023';
 const ASSETS=['./index.html','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)));self.skipWaiting()});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('charanize-lab-')&&key!==CACHE).map(key=>caches.delete(key)))));self.clients.claim()});
