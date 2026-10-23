@@ -344,9 +344,10 @@ function readValues(t){let ans={};for(let [k,j] of [['逃','nige'],['先','sen']
 function fromPageItems(items,height){const lines=[];for(const it of items){if(!it.str?.trim())continue;let x=it.transform?.[4]??0,y=height-(it.transform?.[5]??0);if(x>565)continue;let col=x<294?'L':'R';let found=lines.find(l=>l.col===col&&Math.abs(l.y-y)<2.0);if(!found){found={col,y,parts:[]};lines.push(found)}found.parts.push({x,text:it.str})}for(let l of lines)l.text=N(l.parts.sort((a,b)=>a.x-b.x).map(z=>z.text).join(' '));return lines.sort((a,b)=>a.y-b.y)}
 // Coordinate-tolerant CHARANIZE PDF row assembler and interpreter.
 // PDF.js getTextContent items use PDF points and a bottom-left origin.
-// PDF.js sometimes inserts ASCII control U+0001 between Japanese venue and date.
-// Strip nonprinting controls before matching headings, dates and performances.
-function charaCompact(s){return String(s||'').normalize('NFKC').replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200d\u2060\ufeff]/g,'').replace(/\s+/g,'')}
+function charaCompact(s){return String(s||'').normalize('NFKC').replace(/\s+/g,'')}
+// Android PDF.js may insert U+0001 between a venue name and its month/day.
+// Clean date headings only; leave all horse/index parsing exactly as verified in v15.
+function charaDateText(s){return charaCompact(s).replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200d\u2060\ufeff]/g,'')}
 function charaNormalize(s){return String(s||'').normalize('NFKC').replace(/[\u2007\u00a0]/g,' ').replace(/\s+/g,' ').trim()}
 function charaReadValues(t){
  const out={};
@@ -386,7 +387,7 @@ function charaParsePdfPages(pages,options={}){
   const p=pages[pg-1],rows=charaBuildRows(p.items,p.height),left=rows.filter(x=>x.col==='L'),right=rows.filter(x=>x.col==='R'&&/逃/.test(x.text)&&/脚/.test(x.text));
   // Recover race-day label even when PDF.js reports an invisible control
   // character or splits the venue and date into adjacent text rows.
-  const topHeader=charaCompact(left.slice(0,8).filter(x=>x.y<115).map(x=>x.text).join(''));
+  const topHeader=charaDateText(left.slice(0,8).filter(x=>x.y<115).map(x=>x.text).join(''));
   const headerDate=topHeader.match(/(新潟|東京|京都|阪神|中山|中京|小倉|札幌|函館|福島)(\d{1,2})\/(\d{1,2})/);
   if(headerDate){venue=headerDate[1];date=`2026-${headerDate[2].padStart(2,'0')}-${headerDate[3].padStart(2,'0')}`;}
 
@@ -399,7 +400,7 @@ function charaParsePdfPages(pages,options={}){
   const used=new Set();
   for(let i=0;i<left.length;i++){
    const l=left[i],t=l.text;
-   const compact=charaCompact(t);const dt=compact.match(/(新潟|東京|京都|阪神|中山|中京|小倉|札幌|函館|福島)(\d{1,2})\/(\d{1,2})/);
+   const compact=charaCompact(t);const dt=charaDateText(t).match(/(新潟|東京|京都|阪神|中山|中京|小倉|札幌|函館|福島)(\d{1,2})\/(\d{1,2})/);
    if(dt){venue=dt[1];date=`2026-${dt[2].padStart(2,'0')}-${dt[3].padStart(2,'0')}`}
    const rh=compact.match(/(新潟|東京|京都|阪神|中山|中京|小倉|札幌|函館|福島)(\d{1,2})R(.*)/i);
    if(rh){
