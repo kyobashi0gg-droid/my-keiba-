@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>CHARANIZE LAB v14｜分割文字対応・指数新聞PDF読込・追走負荷経験</title>
+<title>CHARANIZE LAB v15｜5指数の紐付け再構築・PDF読込修正版</title>
 <meta name="theme-color" content="#0c4547"/><meta name="description" content="CHARANIZE指数新聞の原指数と同級比較を可視化。逃げ・追走負荷経験・脚力・ギアの特徴を過去5走から照合"/>
 <link rel="manifest" href="./manifest.webmanifest"/>
 <style>
@@ -181,7 +181,7 @@
 @media(max-width:950px){.v10Grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:475px){.v10Official{padding:13px 10px}.v10Grid{gap:7px}.v10Axis{padding:9px}.v10Axis .v10Num{font-size:26px}.v10Axis h3{font-size:13px}}
 </style></head>
-<body><header><div class="wrap"><div class="brand"><div class="brandmark">▥</div><div><h1>CHARANIZE LAB <span style="font-size:12px;color:#90d4cb">v14</span></h1><div class="sub">MY KEIBA LABとは独立 ｜ 逃・先・追走負荷・脚・ギアの「キャラ」を見える化</div></div></div></div></header>
+<body><header><div class="wrap"><div class="brand"><div class="brandmark">▥</div><div><h1>CHARANIZE LAB <span style="font-size:12px;color:#90d4cb">v15</span></h1><div class="sub">MY KEIBA LABとは独立 ｜ 逃・先・追走負荷・脚・ギアの「キャラ」を見える化</div></div></div></div></header>
 <main class="wrap"><section class="panel" style="margin-top:12px;border-color:#8db8b1;background:#f2faf7"><b>CHARANIZE LAB（個人用・データ非公開）</b><p class="note">CHARANIZEの「指数新聞」PDF、または当サイトの解析済みJSONを読み込むと、公式指数水準と同クラス比較を表示します。読み込みデータはGitHub側には送信せず、お使いのブラウザ内に保存します。</p></section>
 <section class="panel filetools"><div class="tools"><div class="row"><label class="drop" title="PDFを選んで読み込み">📄 指数新聞PDF・解析JSONを取込む<input type="file" id="fileInput" accept=".pdf,.json,.txt,application/pdf,application/json"/></label><button class="btn" id="demoBtn">サンプルを初期化</button><button class="btn" id="csvBtn">表示中レースをCSV出力</button><button class="btn" id="jsonBtn">解析データを保存</button></div><span id="status">CHARANIZE指数新聞PDF／解析済みJSONを選んでください</span></div><p class="note" style="margin:9px 0 0">対応形式：<b>CHARANIZEの指数新聞PDF</b>／このビューアで出力した<b>解析JSON</b>。鈴木ショータPDF新聞（菊花賞G1.pdfなど）は別版型のため、CHARANIZEの逃・先・追・脚・ギア指数は取得できません。端末保存の容量制限に備えて、読込後はJSONを書き出してください。</p></section>
 <section class="panel"><div class="controls"><div class="control"><label for="raceSel">日付・開催・レース</label><select id="raceSel"></select></div><div class="control"><label for="surfaceSel">参照する過去走</label><select id="surfaceSel"><option value="course">今回と同じ芝・ダ</option><option value="all">芝・ダ両方（参考）</option></select></div><div class="control"><label for="spanSel">指数の集計方法</label><select id="spanSel"><option value="profile5" selected>過去5走の加重平均（基本）</option><option value="last">直近の該当走</option><option value="max">過去5走の各指数最高</option><option value="3">過去3走の最高</option></select></div><div class="control"><label for="horseSearch">馬名で絞る</label><input type="search" id="horseSearch" placeholder="馬名を入力"/></div></div><div class="row" style="margin-top:11px"><label class="switch"><input id="hideMissing" type="checkbox"/> 記録なしの馬を非表示</label><span class="note" id="raceMeta"></span></div></section>
@@ -382,6 +382,11 @@ function charaParsePdfPages(pages,options={}){
  const races=[];let cur=null,horse=null,date='',venue='',unmatched=0,headers=0,firstPageText='',textCount=0;
  for(let pg=1;pg<=pages.length;pg++){
   const p=pages[pg-1],rows=charaBuildRows(p.items,p.height),left=rows.filter(x=>x.col==='L'),right=rows.filter(x=>x.col==='R'&&/逃/.test(x.text)&&/脚/.test(x.text));
+  // PDF.js uses independent text item baselines for ranks/figures, and may put
+  // 逃・先・追・脚・ギ on separate lines. Read the raw right-half items in a window
+  // around each left-hand past-performance entry, sorting by *x*, not baseline.
+  const rawRight=(p.items||[]).map(it=>({x:Number(it.transform?.[4]),y:p.height-Number(it.transform?.[5]),str:String(it.str||'')}))
+   .filter(it=>it.str.trim()&&it.x>=294&&it.x<=570&&Number.isFinite(it.y));
   if(pg<=2){firstPageText+=' '+rows.map(x=>x.text).join(' ').slice(0,20000);textCount+=rows.reduce((n,r)=>n+r.text.length,0)}
   const used=new Set();
   for(let i=0;i<left.length;i++){
@@ -389,8 +394,19 @@ function charaParsePdfPages(pages,options={}){
    const compact=charaCompact(t);const dt=compact.match(/(新潟|東京|京都|阪神|中山|中京|小倉|札幌|函館|福島)(\d{1,2})\/(\d{1,2})/);
    if(dt){venue=dt[1];date=`2026-${dt[2].padStart(2,'0')}-${dt[3].padStart(2,'0')}`}
    const rh=compact.match(/(新潟|東京|京都|阪神|中山|中京|小倉|札幌|函館|福島)(\d{1,2})R(.*)/i);
-   if(rh){venue=rh[1];cur={id:`${date}|${venue}|${Number(rh[2])}`,date,venue,raceNo:Number(rh[2]),name:rh[3]||'',condition:'',horses:[],sourcePages:[]};races.push(cur);horse=null;headers++}
-   const course=compact.match(/^(芝|ダ|障)(\d{3,4})m/);
+   if(rh){
+    venue=rh[1];cur={id:`${date}|${venue}|${Number(rh[2])}`,date,venue,raceNo:Number(rh[2]),name:rh[3]||'',condition:'',horses:[],sourcePages:[]};races.push(cur);horse=null;headers++;
+    // Course may occupy separate PDF.js items or baselines: reconstruct it
+    // from all left-hand glyphs directly beneath the race title.
+    const nextRows=left.filter(n=>n.y>l.y+2&&n.y<l.y+56).slice(0,9);
+    const rawHeader=(p.items||[]).map(it=>({x:Number(it.transform?.[4]),y:p.height-Number(it.transform?.[5]),str:String(it.str||'')}))
+       .filter(it=>it.str.trim()&&it.x<205&&it.y>l.y+2&&it.y<l.y+51)
+       .sort((a,b)=>a.y-b.y||a.x-b.x).map(z=>z.str).join('');
+    const headerText=charaCompact(nextRows.map(z=>z.text).join(' ')+rawHeader);
+    const cm=headerText.match(/(芝|ダ|障)(\d{3,4})(?:m|M)?/);
+    if(cm)cur.condition=cm[1]+cm[2]+'m';
+   }
+   const course=compact.match(/^(芝|ダ|障)(\d{3,4})(?:m|M)?/);
    if(course&&cur)cur.condition=course[1]+course[2]+'m';
    // Short player-card headings may be split across 2 neighboring text baselines.
    const candidate=[t,...left.slice(i+1,i+3).filter(n=>n.y-l.y<10&&!/^(前走|[2-5]走前|未勝利|新馬|芝\d|ダ\d)/.test(n.text)).map(n=>n.text)].join(' ');
@@ -414,9 +430,24 @@ function charaParsePdfPages(pages,options={}){
     const seq=rm[1]==='前走'?1:Number(rm[1][0]);
     const dr=compact.match(/(\d{6})_([東新京阪中小札函名福]\d+R)_((?:芝|ダ|障)\d{2})([良稍重不])/);
     const fm=compact.match(/(\d+|止|除|中)着\(([-+\d.]+|----)\)\/(\d+)頭/);
-    const pair=right.map((r,j)=>({r,j,dist:Math.abs(r.y-l.y)})).filter(x=>x.dist<=15&&!used.has(x.j)).sort((a,b)=>a.dist-b.dist)[0];
-    if(pair)used.add(pair.j);
-    const ix=pair?charaReadValues(charaCompact(pair.r.text)):{};
+    // Build the five-index reading from raw PDF.js tokens in the right column.
+    // The index baseline is typically 5–8pt below the race text baseline.
+    // Avoid relying on all five labels having the same PDF.js baseline.
+    let candidates=[];
+    for(const shift of [7,5,0,10]){
+     const group=rawRight.filter(q=>Math.abs(q.y-(l.y+shift))<=10.5).sort((a,b)=>a.x-b.x);
+     const raw=charaCompact(group.map(q=>q.str).join(''));
+     const ixCandidate=charaReadValues(raw);
+     const recognized=['nige','sen','ashi','gear'].filter(k=>ixCandidate[k]&&ixCandidate[k].rank).length;
+     const numeric=Object.values(ixCandidate).filter(z=>Number.isFinite(z?.value)).length;
+     candidates.push({ix:ixCandidate,recognized,numeric,raw,shift});
+    }
+    candidates.sort((a,b)=>b.recognized-a.recognized||b.numeric-a.numeric);
+    let ix=candidates[0].recognized>=3?candidates[0].ix:{};
+    if(Object.keys(ix).length<3){
+      const pair=right.map((r,j)=>({r,j,dist:Math.abs(r.y-l.y)})).filter(x=>x.dist<=20&&!used.has(x.j)).sort((a,b)=>a.dist-b.dist)[0];
+      if(pair){used.add(pair.j);ix=charaReadValues(charaCompact(pair.r.text))}
+    }
     horse.runs.push({seq,raw:t,summary:'',date:dr?.[1]||null,where:dr?.[2]||null,surfaceDistance:dr?.[3]||null,going:dr?.[4]||null,finish:fm&&/^\d+$/.test(fm[1])?Number(fm[1]):null,margin:fm&&fm[2]!=='----'?Number(fm[2]):null,passing:'',final3f:null,indices:ix});
    }
    if(horse?.runs?.length&&!rm&&!hmatch&&!rh&&/通[\d-]+|上\d{1,2}\.\d/.test(t)&&t.length<150){
@@ -460,11 +491,24 @@ async function parsePDF(file){
  }
  const missingRaces=parsed.races.filter(r=>!r.horses.length||!r.date||!r.condition);
  if(missingRaces.length||parsed.duplicates.length||parsed.unmatched>Math.max(2,Math.floor(parsed.runs*0.01))||parsed.indexed<Math.floor(parsed.runs*0.75)){
-  throw Error(`部分的な解析になりました。誤集計を防ぐため反映を中止しました（${parsed.races.length}レース・${parsed.count}頭・${parsed.runs}走・指数${parsed.indexed}走／未対応過去走${parsed.unmatched}件／未完成レース${missingRaces.length}件）。`);
+  // Keep a compact, local-only diagnostic for reproducing real PDF.js
+  // coordinates. No full pages and no PDF contents leave the device.
+  const sample=[];
+  for(const pg of [0,1]){
+    const page=pages[pg];if(!page)continue;
+    sample.push({page:pg+1,height:page.height,items:page.items.slice(0,2500).map(t=>({s:t.str,x:Math.round(t.transform[4]*10)/10,y:Math.round(t.transform[5]*10)/10}))});
+  }
+  window.__charaImportDiagnostic={version:15,counts:{races:parsed.races.length,horses:parsed.count,runs:parsed.runs,indexed:parsed.indexed,unmatched:parsed.unmatched,missingRaces:missingRaces.length},raceExamples:parsed.races.slice(0,3).map(r=>({id:r.id,condition:r.condition,horses:r.horses.length,firstRunIndices:r.horses[0]?.runs[0]?.indices})),sample};
+  throw Error(`部分的な解析になりました。誤集計を防ぐため反映を中止しました（${parsed.races.length}レース・${parsed.count}頭・${parsed.runs}走・指数${parsed.indexed}走／未対応過去走${parsed.unmatched}件／未完成レース${missingRaces.length}件）。画面下部の「診断データ保存」で原因を確認できます。`);
  }
  return parsed;
 }
-$('#fileInput').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{if(/\.(json|txt)$/i.test(file.name)){let obj=JSON.parse(await file.text());let races=Array.isArray(obj)?obj:obj.races;if(!Array.isArray(races)||!races.length||!races.every(r=>r&&Array.isArray(r.horses)&&r.horses.every(h=>h&&Array.isArray(h.runs))))throw Error('JSONの形式が違います。CHARANIZE LABの「解析データを保存」で出力したJSONを選択してください。');state.races=races;setStatus('JSONを読み込みました：'+file.name)}else{let parsed=await parsePDF(file);state.races=parsed.races;setStatus(`PDF読込成功：${parsed.races.length}レース・${parsed.count}頭・${parsed.runs}走・指数${parsed.indexed}走（10/18の仮・未馬番対応）`)}state.selected.clear();state.activeHorse=null;setupRaces();render();if(!saveImportedRaces())setStatus('読込成功。ただし端末保存容量の制限で永続保存できませんでした。JSONを保存してください。')}catch(err){setStatus('読取エラー：'+err.message);alert('読み込みできませんでした。\n\n'+err.message+'\n\n対応する「指数新聞」PDFが使えない場合は、以前の解析JSONをご利用ください。')}finally{e.target.value=''}};
+
+// Diagnostic file: only used when a locally selected PDF is parsed incompletely.
+function charaDownloadDiagnostic(){const data=window.__charaImportDiagnostic;if(!data){alert('今回の解析診断データはありません。');return}const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='CHARANIZE_PDF_読込診断_v15.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1200)}
+const diagnosticButton=document.createElement('button');diagnosticButton.type='button';diagnosticButton.textContent='PDF読込の診断データを保存';diagnosticButton.style.cssText='display:none;margin:12px 0;padding:10px 14px;border:2px solid #b55;border-radius:9px;background:#fff;color:#7b3030;font-weight:bold;cursor:pointer';diagnosticButton.onclick=charaDownloadDiagnostic;document.querySelector('#fileInput')?.closest('.panel,section,div')?.append(diagnosticButton);
+
+$('#fileInput').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;window.__charaImportDiagnostic=null;diagnosticButton.style.display='none';try{if(/\.(json|txt)$/i.test(file.name)){let obj=JSON.parse(await file.text());let races=Array.isArray(obj)?obj:obj.races;if(!Array.isArray(races)||!races.length||!races.every(r=>r&&Array.isArray(r.horses)&&r.horses.every(h=>h&&Array.isArray(h.runs))))throw Error('JSONの形式が違います。CHARANIZE LABの「解析データを保存」で出力したJSONを選択してください。');state.races=races;setStatus('JSONを読み込みました：'+file.name)}else{let parsed=await parsePDF(file);state.races=parsed.races;setStatus(`PDF読込成功：${parsed.races.length}レース・${parsed.count}頭・${parsed.runs}走・指数${parsed.indexed}走（10/18の仮・未馬番対応）`)}state.selected.clear();state.activeHorse=null;setupRaces();render();if(!saveImportedRaces())setStatus('読込成功。ただし端末保存容量の制限で永続保存できませんでした。JSONを保存してください。')}catch(err){setStatus('読取エラー：'+err.message);diagnosticButton.style.display=window.__charaImportDiagnostic?'inline-block':'none';alert('読み込みできませんでした。\n\n'+err.message+'\n\n対応する「指数新聞」PDFが使えない場合は、以前の解析JSONをご利用ください。')}finally{e.target.value=''}};
 
 $('#typeBorder').onchange=e=>{state.typeBorder=Number(e.target.value);render()};
 $('#scatterX').onchange=e=>{state.scatterX=e.target.value;renderScatter(race())};
