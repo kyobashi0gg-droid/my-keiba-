@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>CHARANIZE LAB v13｜指数新聞PDF読込修正・公式水準・追走負荷経験</title>
+<title>CHARANIZE LAB v14｜分割文字対応・指数新聞PDF読込・追走負荷経験</title>
 <meta name="theme-color" content="#0c4547"/><meta name="description" content="CHARANIZE指数新聞の原指数と同級比較を可視化。逃げ・追走負荷経験・脚力・ギアの特徴を過去5走から照合"/>
 <link rel="manifest" href="./manifest.webmanifest"/>
 <style>
@@ -181,7 +181,7 @@
 @media(max-width:950px){.v10Grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:475px){.v10Official{padding:13px 10px}.v10Grid{gap:7px}.v10Axis{padding:9px}.v10Axis .v10Num{font-size:26px}.v10Axis h3{font-size:13px}}
 </style></head>
-<body><header><div class="wrap"><div class="brand"><div class="brandmark">▥</div><div><h1>CHARANIZE LAB <span style="font-size:12px;color:#90d4cb">v13</span></h1><div class="sub">MY KEIBA LABとは独立 ｜ 逃・先・追走負荷・脚・ギアの「キャラ」を見える化</div></div></div></div></header>
+<body><header><div class="wrap"><div class="brand"><div class="brandmark">▥</div><div><h1>CHARANIZE LAB <span style="font-size:12px;color:#90d4cb">v14</span></h1><div class="sub">MY KEIBA LABとは独立 ｜ 逃・先・追走負荷・脚・ギアの「キャラ」を見える化</div></div></div></div></header>
 <main class="wrap"><section class="panel" style="margin-top:12px;border-color:#8db8b1;background:#f2faf7"><b>CHARANIZE LAB（個人用・データ非公開）</b><p class="note">CHARANIZEの「指数新聞」PDF、または当サイトの解析済みJSONを読み込むと、公式指数水準と同クラス比較を表示します。読み込みデータはGitHub側には送信せず、お使いのブラウザ内に保存します。</p></section>
 <section class="panel filetools"><div class="tools"><div class="row"><label class="drop" title="PDFを選んで読み込み">📄 指数新聞PDF・解析JSONを取込む<input type="file" id="fileInput" accept=".pdf,.json,.txt,application/pdf,application/json"/></label><button class="btn" id="demoBtn">サンプルを初期化</button><button class="btn" id="csvBtn">表示中レースをCSV出力</button><button class="btn" id="jsonBtn">解析データを保存</button></div><span id="status">CHARANIZE指数新聞PDF／解析済みJSONを選んでください</span></div><p class="note" style="margin:9px 0 0">対応形式：<b>CHARANIZEの指数新聞PDF</b>／このビューアで出力した<b>解析JSON</b>。鈴木ショータPDF新聞（菊花賞G1.pdfなど）は別版型のため、CHARANIZEの逃・先・追・脚・ギア指数は取得できません。端末保存の容量制限に備えて、読込後はJSONを書き出してください。</p></section>
 <section class="panel"><div class="controls"><div class="control"><label for="raceSel">日付・開催・レース</label><select id="raceSel"></select></div><div class="control"><label for="surfaceSel">参照する過去走</label><select id="surfaceSel"><option value="course">今回と同じ芝・ダ</option><option value="all">芝・ダ両方（参考）</option></select></div><div class="control"><label for="spanSel">指数の集計方法</label><select id="spanSel"><option value="profile5" selected>過去5走の加重平均（基本）</option><option value="last">直近の該当走</option><option value="max">過去5走の各指数最高</option><option value="3">過去3走の最高</option></select></div><div class="control"><label for="horseSearch">馬名で絞る</label><input type="search" id="horseSearch" placeholder="馬名を入力"/></div></div><div class="row" style="margin-top:11px"><label class="switch"><input id="hideMissing" type="checkbox"/> 記録なしの馬を非表示</label><span class="note" id="raceMeta"></span></div></section>
@@ -344,6 +344,7 @@ function readValues(t){let ans={};for(let [k,j] of [['逃','nige'],['先','sen']
 function fromPageItems(items,height){const lines=[];for(const it of items){if(!it.str?.trim())continue;let x=it.transform?.[4]??0,y=height-(it.transform?.[5]??0);if(x>565)continue;let col=x<294?'L':'R';let found=lines.find(l=>l.col===col&&Math.abs(l.y-y)<2.0);if(!found){found={col,y,parts:[]};lines.push(found)}found.parts.push({x,text:it.str})}for(let l of lines)l.text=N(l.parts.sort((a,b)=>a.x-b.x).map(z=>z.text).join(' '));return lines.sort((a,b)=>a.y-b.y)}
 // Coordinate-tolerant CHARANIZE PDF row assembler and interpreter.
 // PDF.js getTextContent items use PDF points and a bottom-left origin.
+function charaCompact(s){return String(s||'').normalize('NFKC').replace(/\s+/g,'')}
 function charaNormalize(s){return String(s||'').normalize('NFKC').replace(/[\u2007\u00a0]/g,' ').replace(/\s+/g,' ').trim()}
 function charaReadValues(t){
  const out={};
@@ -374,7 +375,7 @@ function charaBuildRows(items,height){
   if(!g){g={col:t.col,y:t.y,parts:[]};groups.push(g)}
   const n=g.parts.length;g.y=(g.y*n+t.y)/(n+1);g.parts.push(t);
  }
- for(const g of groups){g.parts.sort((a,b)=>a.x-b.x);g.text=charaNormalize(g.parts.map(t=>t.text).join(' '));g.x=g.parts[0]?.x??0}
+ for(const g of groups){g.parts.sort((a,b)=>a.x-b.x);g.text=charaNormalize(g.parts.map(t=>t.text).join(''));g.x=g.parts[0]?.x??0}
  return groups.sort((a,b)=>a.y-b.y||a.x-b.x);
 }
 function charaParsePdfPages(pages,options={}){
@@ -385,39 +386,41 @@ function charaParsePdfPages(pages,options={}){
   const used=new Set();
   for(let i=0;i<left.length;i++){
    const l=left[i],t=l.text;
-   const dt=t.match(/(新潟|東京|京都|阪神|中山|中京|小倉|札幌|函館|福島)\s*(\d{1,2})\/(\d{1,2})/);
+   const compact=charaCompact(t);const dt=compact.match(/(新潟|東京|京都|阪神|中山|中京|小倉|札幌|函館|福島)(\d{1,2})\/(\d{1,2})/);
    if(dt){venue=dt[1];date=`2026-${dt[2].padStart(2,'0')}-${dt[3].padStart(2,'0')}`}
-   const rh=t.match(/(新潟|東京|京都|阪神|中山|中京|小倉|札幌|函館|福島)\s*(\d{1,2})\s*R\s*(.*)/i);
+   const rh=compact.match(/(新潟|東京|京都|阪神|中山|中京|小倉|札幌|函館|福島)(\d{1,2})R(.*)/i);
    if(rh){venue=rh[1];cur={id:`${date}|${venue}|${Number(rh[2])}`,date,venue,raceNo:Number(rh[2]),name:rh[3]||'',condition:'',horses:[],sourcePages:[]};races.push(cur);horse=null;headers++}
-   const course=t.match(/^(芝|ダ|障)\s*(\d{3,4})\s*m/);
+   const course=compact.match(/^(芝|ダ|障)(\d{3,4})m/);
    if(course&&cur)cur.condition=course[1]+course[2]+'m';
    // Short player-card headings may be split across 2 neighboring text baselines.
    const candidate=[t,...left.slice(i+1,i+3).filter(n=>n.y-l.y<10&&!/^(前走|[2-5]走前|未勝利|新馬|芝\d|ダ\d)/.test(n.text)).map(n=>n.text)].join(' ');
-   const hmatch=candidate.match(/(\d{1,2})\s*\(([牡牝セ])\)/);
+   const cc=charaCompact(candidate);const hmatch=cc.match(/(\d{1,2})\(([牡牝セ])\)/);
    if(hmatch&&cur&&!/^(前走|[2-5]走前)/.test(t)){
-    const pre=candidate.slice(0,hmatch.index).trim();
-    const numbered=pre.match(/^\s*(?:(\d{1,2})\s+)?(\d{1,2})\s+(?:B\s+)?(.+?)\s*$/);
-    const noNumber=pre.match(/^\s*(?:仮\s+)?未\s+(?:B\s+)?(.+?)\s*$/);
+    const pre=cc.slice(0,hmatch.index).trim();
+    // Frame digit (1..8), then horse number (1..18); PDF.js may return every character separately.
+    // The header's two number cells remain unambiguous even after whitespace is removed.
+    const numbered=pre.match(/^([1-8])(1[0-8]|[1-9])(?:B)?(.+)$/);
+    const noNumber=pre.match(/^(?:仮)?未(?:B)?(.+)$/);
     const number=numbered?String(Number(numbered[2])):noNumber?'未':null;
     const name=numbered?.[3]?.trim()||noNumber?.[1]?.trim();
     if(name&&name.length<=35&&!/^(▶|逃げ|先行|過去|展開|新潟|東京|京都|阪神|中山|中京|小倉|札幌|函館|福島)/.test(name)){
      const already=cur.horses.some(z=>z.page===pg&&z.name===name);
-     if(!already){const rider=candidate.slice(hmatch.index+hmatch[0].length).trim();horse={number,name,age:Number(hmatch[1]),sex:hmatch[2],rider,flags:['延長','短縮','乗替','斤量増','斤量減'].filter(x=>candidate.includes(x)),runs:[],page:pg};cur.horses.push(horse)}
+     if(!already){const rider=cc.slice(hmatch.index+hmatch[0].length).trim();horse={number,name,age:Number(hmatch[1]),sex:hmatch[2],rider,flags:['延長','短縮','乗替','斤量増','斤量減'].filter(x=>candidate.includes(x)),runs:[],page:pg};cur.horses.push(horse)}
     }
    }
-   const rm=t.match(/^(前走|[2-5]走前)\s*(\d{6})_([^ ]+)/);
+   const rm=compact.match(/^(前走|[2-5]走前)(\d{6})_([^\s]+)/);
    if(rm&&cur){
     if(!horse){unmatched++;continue}
     const seq=rm[1]==='前走'?1:Number(rm[1][0]);
-    const dr=t.match(/(\d{6})_([東新京阪中小札函名福]\d+R)_((?:芝|ダ|障)\d{2})([良稍重不])/);
-    const fm=t.match(/(\d+|止|除|中)着\s*\(([-+\d.]+|----)\)\/(\d+)頭/);
+    const dr=compact.match(/(\d{6})_([東新京阪中小札函名福]\d+R)_((?:芝|ダ|障)\d{2})([良稍重不])/);
+    const fm=compact.match(/(\d+|止|除|中)着\(([-+\d.]+|----)\)\/(\d+)頭/);
     const pair=right.map((r,j)=>({r,j,dist:Math.abs(r.y-l.y)})).filter(x=>x.dist<=15&&!used.has(x.j)).sort((a,b)=>a.dist-b.dist)[0];
     if(pair)used.add(pair.j);
-    const ix=pair?charaReadValues(pair.r.text):{};
+    const ix=pair?charaReadValues(charaCompact(pair.r.text)):{};
     horse.runs.push({seq,raw:t,summary:'',date:dr?.[1]||null,where:dr?.[2]||null,surfaceDistance:dr?.[3]||null,going:dr?.[4]||null,finish:fm&&/^\d+$/.test(fm[1])?Number(fm[1]):null,margin:fm&&fm[2]!=='----'?Number(fm[2]):null,passing:'',final3f:null,indices:ix});
    }
    if(horse?.runs?.length&&!rm&&!hmatch&&!rh&&/通[\d-]+|上\d{1,2}\.\d/.test(t)&&t.length<150){
-    const run=horse.runs[horse.runs.length-1];if(!run.summary){run.summary=t;run.passing=t.match(/通([\d-]+)/)?.[1]||'';run.final3f=Number(t.match(/上(\d{1,2}\.\d)/)?.[1])||null}
+    const run=horse.runs[horse.runs.length-1];if(!run.summary){run.summary=t;run.passing=compact.match(/通([\d-]+)/)?.[1]||'';run.final3f=Number(compact.match(/上(\d{1,2}\.\d)/)?.[1])||null}
    }
    if(cur&&!cur.sourcePages.includes(pg))cur.sourcePages.push(pg);
   }
