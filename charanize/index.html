@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>CHARANIZE LAB v16｜5指数の紐付け再構築・PDF読込修正版</title>
+<title>CHARANIZE LAB v17｜日付・開催場・レース選択ボタン</title>
 <meta name="theme-color" content="#0c4547"/><meta name="description" content="CHARANIZE指数新聞の原指数と同級比較を可視化。逃げ・追走負荷経験・脚力・ギアの特徴を過去5走から照合"/>
 <link rel="manifest" href="./manifest.webmanifest"/>
 <style>
@@ -180,11 +180,40 @@
 .v10Meta{font-size:11px;color:#667780;line-height:1.7;margin:7px 0}
 @media(max-width:950px){.v10Grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:475px){.v10Official{padding:13px 10px}.v10Grid{gap:7px}.v10Axis{padding:9px}.v10Axis .v10Num{font-size:26px}.v10Axis h3{font-size:13px}}
+
+/* v17: separated date → venue → race button navigation, linked to legacy race state. */
+.raceSelectPanel{padding:16px}
+.raceNavigator{background:#f8fbfb;border:1px solid #d9e9e8;border-radius:15px;padding:14px 15px;margin-bottom:14px}
+.raceNavigatorTop{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid #e0eaea}
+.raceNavigatorTop strong{font-size:17px;color:#183f47}
+#pickedRace{color:#426772;font-size:12px;font-weight:700}
+.raceStep{padding-top:13px}
+.raceStepTitle{display:flex;align-items:center;gap:7px;margin-bottom:8px;color:#2b454e;font-size:13px}
+.raceStepNumber{border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;background:#166d69;color:#fff;font-size:12px;font-weight:800}
+.racePills{display:flex;flex-wrap:wrap;gap:8px}
+.racePickButton{font:inherit;font-size:13px;font-weight:750;background:#fff;color:#1b5453;border:1px solid #c9dcdb;border-radius:10px;padding:10px 14px;cursor:pointer;min-height:42px;line-height:1.35;white-space:normal}
+.racePickButton[aria-pressed="true"]{background:#146a66;border-color:#146a66;color:white;box-shadow:0 2px 7px rgba(12,89,82,.14)}
+.racePickButton:focus-visible{outline:3px solid #7bbec1;outline-offset:2px}
+.raceGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.raceGrid .racePickButton{text-align:left;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;min-width:0;min-height:63px;padding:9px 10px}
+.raceGrid .racePickButton b{font-size:15px;line-height:1.4}
+.raceGrid .racePickButton small{display:block;font-size:11px;line-height:1.45;font-weight:550;max-width:100%;overflow-wrap:anywhere;word-break:break-word}
+.raceGrid .racePickButton[aria-pressed="true"] small{color:#e2f3f0}
+.raceSelectPanel .controls{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:650px){.raceNavigator{padding:12px 10px}.racePills{gap:7px}.racePickButton{padding:9px 12px}.raceGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.raceSelectPanel .controls{grid-template-columns:1fr 1fr}.raceSelectPanel .controls .control:last-child{grid-column:1 / -1}}
 </style></head>
-<body><header><div class="wrap"><div class="brand"><div class="brandmark">▥</div><div><h1>CHARANIZE LAB <span style="font-size:12px;color:#90d4cb">v16</span></h1><div class="sub">MY KEIBA LABとは独立 ｜ 逃・先・追走負荷・脚・ギアの「キャラ」を見える化</div></div></div></div></header>
+<body><header><div class="wrap"><div class="brand"><div class="brandmark">▥</div><div><h1>CHARANIZE LAB <span style="font-size:12px;color:#90d4cb">v17</span></h1><div class="sub">MY KEIBA LABとは独立 ｜ 逃・先・追走負荷・脚・ギアの「キャラ」を見える化</div></div></div></div></header>
 <main class="wrap"><section class="panel" style="margin-top:12px;border-color:#8db8b1;background:#f2faf7"><b>CHARANIZE LAB（個人用・データ非公開）</b><p class="note">CHARANIZEの「指数新聞」PDF、または当サイトの解析済みJSONを読み込むと、公式指数水準と同クラス比較を表示します。読み込みデータはGitHub側には送信せず、お使いのブラウザ内に保存します。</p></section>
 <section class="panel filetools"><div class="tools"><div class="row"><label class="drop" title="PDFを選んで読み込み">📄 指数新聞PDF・解析JSONを取込む<input type="file" id="fileInput" accept=".pdf,.json,.txt,application/pdf,application/json"/></label><button class="btn" id="demoBtn">サンプルを初期化</button><button class="btn" id="csvBtn">表示中レースをCSV出力</button><button class="btn" id="jsonBtn">解析データを保存</button></div><span id="status">CHARANIZE指数新聞PDF／解析済みJSONを選んでください</span></div><p class="note" style="margin:9px 0 0">対応形式：<b>CHARANIZEの指数新聞PDF</b>／このビューアで出力した<b>解析JSON</b>。鈴木ショータPDF新聞（菊花賞G1.pdfなど）は別版型のため、CHARANIZEの逃・先・追・脚・ギア指数は取得できません。端末保存の容量制限に備えて、読込後はJSONを書き出してください。</p></section>
-<section class="panel"><div class="controls"><div class="control"><label for="raceSel">日付・開催・レース</label><select id="raceSel"></select></div><div class="control"><label for="surfaceSel">参照する過去走</label><select id="surfaceSel"><option value="course">今回と同じ芝・ダ</option><option value="all">芝・ダ両方（参考）</option></select></div><div class="control"><label for="spanSel">指数の集計方法</label><select id="spanSel"><option value="profile5" selected>過去5走の加重平均（基本）</option><option value="last">直近の該当走</option><option value="max">過去5走の各指数最高</option><option value="3">過去3走の最高</option></select></div><div class="control"><label for="horseSearch">馬名で絞る</label><input type="search" id="horseSearch" placeholder="馬名を入力"/></div></div><div class="row" style="margin-top:11px"><label class="switch"><input id="hideMissing" type="checkbox"/> 記録なしの馬を非表示</label><span class="note" id="raceMeta"></span></div></section>
+<section class="panel raceSelectPanel" id="raceSelectPanel">
+<div class="raceNavigator" id="raceNavigator" aria-label="レースを選択">
+  <div class="raceNavigatorTop"><strong>レース選択</strong><span id="pickedRace" aria-live="polite"></span></div>
+  <div class="raceStep"><div class="raceStepTitle"><span class="raceStepNumber">1</span><strong>日付</strong></div><div class="racePills" id="dayButtons" role="group" aria-label="開催日"></div></div>
+  <div class="raceStep"><div class="raceStepTitle"><span class="raceStepNumber">2</span><strong>開催場</strong></div><div class="racePills" id="venueButtons" role="group" aria-label="開催場"></div></div>
+  <div class="raceStep"><div class="raceStepTitle"><span class="raceStepNumber">3</span><strong>レース</strong></div><div class="raceGrid" id="raceButtons" role="group" aria-label="レース番号"></div></div>
+</div>
+<select id="raceSel" hidden aria-hidden="true" tabindex="-1"></select>
+<div class="controls"><div class="control"><label for="surfaceSel">参照する過去走</label><select id="surfaceSel"><option value="course">今回と同じ芝・ダ</option><option value="all">芝・ダ両方（参考）</option></select></div><div class="control"><label for="spanSel">指数の集計方法</label><select id="spanSel"><option value="profile5" selected>過去5走の加重平均（基本）</option><option value="last">直近の該当走</option><option value="max">過去5走の各指数最高</option><option value="3">過去3走の最高</option></select></div><div class="control"><label for="horseSearch">馬名で絞る</label><input type="search" id="horseSearch" placeholder="馬名を入力"/></div></div><div class="row" style="margin-top:11px"><label class="switch"><input id="hideMissing" type="checkbox"/> 記録なしの馬を非表示</label><span class="note" id="raceMeta"></span></div></section>
 <section><div class="stats" id="stats"></div></section>
 <section id="rankOverview" class="rankOverview" aria-label="各指数TOP5"><div class="heading"><div><div class="kicker">RACE INDEX</div><h2>各指数の上位馬</h2></div><div class="note">指数ごとに上位順。過去5走の別々のレースの場合があります。</div></div><div id="ranks" class="rankgrid"></div></section>
 
@@ -323,8 +352,27 @@ function loadBench(){try{let v=JSON.parse(localStorage.getItem('charanize-bench-
 function race(){return state.races.find(r=>r.id===state.raceId)||state.races[0]}
 function setStatus(s){$('#status').textContent=s}
 function raceTitle(r){return `${r.date?.slice(5)||'--'} ${r.venue}${r.raceNo}R ${r.name} ${r.condition}`}
-function setupRaces(){state.races.sort((a,b)=>a.date.localeCompare(b.date)||(['新潟','東京','京都'].indexOf(a.venue)-['新潟','東京','京都'].indexOf(b.venue))||a.raceNo-b.raceNo);$('#raceSel').innerHTML=state.races.map(r=>`<option value="${escapeHtml(r.id)}">${escapeHtml(raceTitle(r))} (${r.horses.length}頭)</option>`).join('');let desired=state.races.find(r=>r.date==='2026-10-18'&&r.venue==='新潟'&&r.raceNo===8)||state.races[0];state.raceId=desired?.id;$('#raceSel').value=state.raceId}
-function render(){let r=race();if(!r){$('#tbody').innerHTML='<tr><td colspan="10">データなし</td></tr>';return;}state.raceId=r.id;$('#raceSel').value=r.id;let horses=r.horses.filter(h=>h.name.includes(state.filter));let scored=horses.map(h=>({h,ix:ranks(r,h)}));if(state.hideMissing)scored=scored.filter(x=>KEYS.some(([k])=>x.ix[k]));
+function charaDateLabel(date){const m=String(date||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return date||'日付なし';const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]));return `${Number(m[2])}/${Number(m[3])}(${['日','月','火','水','木','金','土'][d.getDay()]})`}
+const charaVenueOrder=['東京','中山','京都','阪神','中京','新潟','小倉','福島','札幌','函館'];
+function charaOrderedVenues(races){return [...new Set(races.map(r=>r.venue).filter(Boolean))].sort((a,b)=>{let i=charaVenueOrder.indexOf(a),j=charaVenueOrder.indexOf(b);return (i<0?99:i)-(j<0?99:j)||a.localeCompare(b,'ja')})}
+function updateRacePicker(){
+ const current=race(),days=[...new Set(state.races.map(r=>r.date).filter(Boolean))].sort().reverse();
+ const d=current?.date,v=current?.venue;
+ $('#dayButtons').innerHTML=days.length?days.map(x=>`<button type="button" class="racePickButton" data-pick-date="${escapeHtml(x)}" aria-pressed="${x===d}">${escapeHtml(charaDateLabel(x))}</button>`).join(''):'<span class="note">新聞PDFを読み込んでください</span>';
+ const venues=charaOrderedVenues(state.races.filter(r=>r.date===d));
+ $('#venueButtons').innerHTML=venues.map(x=>`<button type="button" class="racePickButton" data-pick-venue="${escapeHtml(x)}" aria-pressed="${x===v}">${escapeHtml(x)}</button>`).join('');
+ const races=state.races.filter(r=>r.date===d&&r.venue===v).sort((a,b)=>Number(a.raceNo)-Number(b.raceNo));
+ $('#raceButtons').innerHTML=races.map(x=>`<button type="button" class="racePickButton" data-pick-race="${escapeHtml(x.id)}" aria-pressed="${x.id===current?.id}" aria-label="${escapeHtml(x.raceNo+'R '+(x.name||'')+' '+(x.condition||''))}"><b>${escapeHtml(x.raceNo)}R</b><small>${escapeHtml(x.name||x.condition||'')}</small></button>`).join('');
+ $('#pickedRace').textContent=current?`${charaDateLabel(current.date)} ${current.venue}${current.raceNo}R｜${current.name||current.condition||''}`:'レース未選択';
+}
+function setupRaces(){
+ state.races.sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||(charaVenueOrder.indexOf(a.venue)-charaVenueOrder.indexOf(b.venue))||Number(a.raceNo)-Number(b.raceNo));
+ $('#raceSel').innerHTML=state.races.map(r=>`<option value="${escapeHtml(r.id)}">${escapeHtml(raceTitle(r))} (${r.horses.length}頭)</option>`).join('');
+ const keep=state.races.find(r=>r.id===state.raceId),latest=state.races.length?state.races[state.races.length-1].date:'';
+ const desired=keep||state.races.find(r=>r.date===latest)||state.races[0];state.raceId=desired?.id||null;
+ $('#raceSel').value=state.raceId||'';updateRacePicker();
+}
+function render(){let r=race();if(!r){$('#tbody').innerHTML='<tr><td colspan="10">データなし</td></tr>';return;}state.raceId=r.id;$('#raceSel').value=r.id;updateRacePicker();let horses=r.horses.filter(h=>h.name.includes(state.filter));let scored=horses.map(h=>({h,ix:ranks(r,h)}));if(state.hideMissing)scored=scored.filter(x=>KEYS.some(([k])=>x.ix[k]));
  let sorted=[...scored].sort((a,b)=>state.sort==='number'?(Number(a.h.number)||100)-(Number(b.h.number)||100):((b.ix[state.sort]?.index.value??-9999)-(a.ix[state.sort]?.index.value??-9999))|| (Number(a.h.number)||100)-(Number(b.h.number)||100));
  const isMix=state.surface==='all';$('#raceMeta').textContent=`${r.horses.length}頭 / 過去走${r.horses.reduce((n,h)=>n+eligible(r,h).length,0)}件 / ${r.date} / PDF掲載時点`+(isMix?' ・注意：芝ダ混在':'');
  $('#stats').innerHTML=[['出走馬',`${r.horses.length}頭`,'指数のある馬と未出走馬を含む'],['過去走記録',r.horses.reduce((n,h)=>n+eligible(r,h).length,0),'現在の芝ダ・表示条件で絞った数'],['逃指数 ≥80',scored.filter(x=>(x.ix.nige?.index.value??-999)>=80).length,'過去に80以上を記録'],['脚指数 ≥80',scored.filter(x=>(x.ix.ashi?.index.value??-999)>=80).length,'過去に80以上を記録']].map(x=>`<div class="stat"><small>${x[0]}</small><strong>${x[1]}</strong><small>${x[2]}</small></div>`).join('');
@@ -337,7 +385,18 @@ function renderDetails(r){const h=getHorse(r,state.activeHorse);if(!h){$('#detai
 function renderCompare(r){let horses=[...state.selected].map(name=>getHorse(r,name)).filter(Boolean);$('#compareArea').style.display=horses.length?'block':'none';if(!horses.length)return;$('#compareContent').innerHTML=`<div class="warn">異なる馬の最高指数が、同じ競馬場・距離・馬場で記録されたとは限りません。上限の目安として比較してください。</div><div style="overflow:auto"><table><thead><tr><th>馬名・キャラ</th>${KEYS.map(([k,v])=>`<th>${v}</th>`).join('')}</tr></thead><tbody>${horses.map(h=>{let z=ranks(r,h);return `<tr><td><b>${escapeHtml(h.name)}</b><div class="cmpmeta">${escapeHtml(horseType(r,h).short)}</div></td>${KEYS.map(([k])=>{let item=z[k],v=item?.index.value;return `<td>${ind(item?.index)}<div class="bar"><span style="width:${v==null?0:Math.max(0,Math.min(100,v))}%"></span></div><div class="tiny">${item?escapeHtml((item.run.surfaceDistance||'')+' '+(item.run.where||'')+' '+(item.run.going||'')+' '+item.run.seq+'走前'):'記録なし'}</div></td>`}).join('')}</tr>`}).join('')}</tbody></table></div>`}
 function download(filename,type,data){let a=document.createElement('a'),blob=new Blob([data],{type});a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2500)}
 function asCSV(){let r=race(),cols=['馬番','馬名','年齢','性','騎手','過去走数',...KEYS.flatMap(([k,v])=>[v+'指数',v+'ランク',v+'根拠走'])];let csv=[cols,...r.horses.map(h=>{let z=ranks(r,h);return [h.number,h.name,h.age,h.sex,h.rider,h.runs.length,...KEYS.flatMap(([k])=>[z[k]?.index.value??'',z[k]?.index.rank??'',z[k]?.run.raw??''])]})].map(a=>a.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');download('CHARANIZE_'+r.date+'_'+r.venue+r.raceNo+'R.csv','text/csv;charset=utf-8','\uFEFF'+csv)}
-$('#raceSel').onchange=e=>{state.raceId=e.target.value;state.selected.clear();state.activeHorse=null;render()};$('#surfaceSel').onchange=e=>{state.surface=e.target.value;render()};$('#spanSel').onchange=e=>{state.span=e.target.value;render()};$('#horseSearch').oninput=e=>{state.filter=e.target.value.trim();render()};$('#hideMissing').onchange=e=>{state.hideMissing=e.target.checked;render()};$('#tabs').onclick=e=>{let x=e.target.closest('button[data-sort]');if(x){state.sort=x.dataset.sort;render()}};$('#tbody').onclick=e=>{let el=e.target.closest('[data-open]');if(el){state.activeHorse=el.dataset.open;renderDetails(race());$('#detailLayer').scrollIntoView({behavior:'smooth',block:'start'})}};$('#tbody').onchange=e=>{let el=e.target.closest('input.cmp');if(el){if(el.checked)state.selected.add(el.dataset.horse);else state.selected.delete(el.dataset.horse);renderCompare(race())}};$('#clearCmp').onclick=()=>{state.selected.clear();render()};$('#csvBtn').onclick=asCSV;$('#jsonBtn').onclick=()=>download('CHARANIZE_解析データ.json','application/json;charset=utf-8',JSON.stringify({format:'charanize-viewer-v1',races:state.races},null,1));$('#demoBtn').onclick=()=>{state.races=JSON.parse($('#initialData').textContent);try{localStorage.removeItem('charanize-lab-races-v11')}catch(e){}state.selected.clear();state.activeHorse=null;setupRaces();render();setStatus('サンプルを初期化データを表示')};
+$('#raceSel').onchange=e=>{state.raceId=e.target.value;state.selected.clear();state.activeHorse=null;render()};
+$('#raceNavigator').onclick=e=>{
+ const btn=e.target.closest('button.racePickButton');if(!btn)return;
+ const current=race();if(!current)return;
+ let target;
+ if(btn.dataset.pickDate!==undefined){let candidates=state.races.filter(r=>r.date===btn.dataset.pickDate),venue=candidates.some(r=>r.venue===current.venue)?current.venue:charaOrderedVenues(candidates)[0];let same=candidates.filter(r=>r.venue===venue);target=same.find(r=>r.raceNo===current.raceNo)||same[0]}
+ else if(btn.dataset.pickVenue!==undefined){let same=state.races.filter(r=>r.date===current.date&&r.venue===btn.dataset.pickVenue);target=same.find(r=>r.raceNo===current.raceNo)||same[0]}
+ else if(btn.dataset.pickRace!==undefined){target=state.races.find(r=>r.id===btn.dataset.pickRace)}
+ if(!target||target.id===current.id)return;
+ $('#raceSel').value=target.id;
+ $('#raceSel').dispatchEvent(new Event('change',{bubbles:true}));
+};$('#surfaceSel').onchange=e=>{state.surface=e.target.value;render()};$('#spanSel').onchange=e=>{state.span=e.target.value;render()};$('#horseSearch').oninput=e=>{state.filter=e.target.value.trim();render()};$('#hideMissing').onchange=e=>{state.hideMissing=e.target.checked;render()};$('#tabs').onclick=e=>{let x=e.target.closest('button[data-sort]');if(x){state.sort=x.dataset.sort;render()}};$('#tbody').onclick=e=>{let el=e.target.closest('[data-open]');if(el){state.activeHorse=el.dataset.open;renderDetails(race());$('#detailLayer').scrollIntoView({behavior:'smooth',block:'start'})}};$('#tbody').onchange=e=>{let el=e.target.closest('input.cmp');if(el){if(el.checked)state.selected.add(el.dataset.horse);else state.selected.delete(el.dataset.horse);renderCompare(race())}};$('#clearCmp').onclick=()=>{state.selected.clear();render()};$('#csvBtn').onclick=asCSV;$('#jsonBtn').onclick=()=>download('CHARANIZE_解析データ.json','application/json;charset=utf-8',JSON.stringify({format:'charanize-viewer-v1',races:state.races},null,1));$('#demoBtn').onclick=()=>{state.races=JSON.parse($('#initialData').textContent);try{localStorage.removeItem('charanize-lab-races-v11')}catch(e){}state.selected.clear();state.activeHorse=null;setupRaces();render();setStatus('サンプルを初期化データを表示')};
 // PDF file import: on-device only, pdfjs-dist loaded from CDN at first use.
 function N(s){return (s||'').normalize('NFKC').replace(/[\u2007\u00a0]/g,' ').replace(/\s+/g,' ').trim()}
 function readValues(t){let ans={};for(let [k,j] of [['逃','nige'],['先','sen'],['追','tsui'],['脚','ashi'],['ギ','gear']]){let m=t.match(new RegExp(k+'\\s*([SABCDEFGZ/])\\s*(-?[0-9]+(?:\\.[0-9]+)?|/)?'));if(m)ans[j]={rank:m[1],value:m[2]&&m[2]!=='/'?Number(m[2]):null}}return ans}
