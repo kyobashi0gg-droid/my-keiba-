@@ -242,68 +242,119 @@
     body.innerHTML=`<p class="v61-help">CHARANIZEの新聞スクショはこのチャットに送ってください。サイトには指数を登録せず、ラップ君がDB・展開・調教と合わせて分析し、その結果だけをここへ保存します。</p>
     ${summaryHTML(result)}
     <div class="v61-step"><strong>① ラップ君に相談する</strong><p>従来の全馬・DB33・調教・テン順などをまとめた依頼文を作ります。CHARANIZEの画像は別途チャットへ送ります。</p>
-      <button type="button" class="v61-copy">分析用データをコピー</button>
+      <div class="v65-send-actions"><button type="button" class="v65-share">スマホで共有</button><button type="button" class="v61-copy">コピー</button></div>
       <p class="v61-readiness" role="status" aria-live="polite">準備状況：待機中。ボタンを押すと全馬データの生成・照合・コピーまで自動で行います。</p>
       <details class="v61-preview" hidden><summary>生成した相談文の全文を確認する</summary>
         <textarea readonly rows="9" aria-label="生成した相談文" class="v61-preview-text"></textarea>
       </details>
-      <p class="v61-help">コピー完了の表示を確認してから、このChatGPTに貼り付けてください。未登録のテン順などは未取得のまま出力されます。</p></div>
+      <p class="v61-help">「スマホで共有」はAndroidの共有メニューを開きます。ChatGPTが共有先に出ない場合は「コピー」して、このチャットに貼り付けてください。CHARANIZE画像は従来どおり別送です。</p></div>
     <div class="v61-step"><strong>② ラップ君の結果をサイトへ戻す</strong><p>返信中の「MYKEIBA_PAIRRESULT_V1」から「【結果ブロック終わり】」までを貼り付けます。</p>
-      <textarea class="v61-input" rows="5" placeholder="MYKEIBA_PAIRRESULT_V1&#10;RACE|東京|11|富士S&#10;SCENARIO|MAIN|+0.3|+0.9|..."></textarea>
-      <button type="button" class="v61-import">結果を反映する</button></div>
+      <div class="v65-receive-actions"><button type="button" class="v65-paste">クリップボードから保存</button><button type="button" class="v65-manual" aria-expanded="false">手動で貼り付け</button></div>
+      <div class="v65-manual-wrap" hidden><textarea class="v61-input" rows="5" placeholder="MYKEIBA_PAIRRESULT_V1&#10;RACE|東京|11|富士S&#10;SCENARIO|MAIN|+0.3|+0.9|..."></textarea>
+      <button type="button" class="v61-import">貼り付けた結果を確認・保存</button></div></div>
     <div class="v61-status" role="status" aria-live="polite"></div>
-    <p class="v61-help">※結果の反映は現在コピー・貼り付け式です。ChatGPTとの自動同期は行いません。</p>`;
+    <p class="v61-help">※スマホ共有・クリップボード読み込みは端末操作の補助です。ChatGPTへの自動送信・自動取得ではありません。レース名と馬番を照合し、保存前に確認します。</p>`;
     const status=body.querySelector('.v61-status');
-    body.querySelector('.v61-copy')?.addEventListener('click',async()=>{
-      const b=body.querySelector('.v61-copy');
-      const readiness=body.querySelector('.v61-readiness');
-      const preview=body.querySelector('.v61-preview');
-      const textarea=body.querySelector('.v61-preview-text');
-      if(b.disabled)return;
-      b.disabled=true;b.textContent='準備中…';
+    const copyButton=body.querySelector('.v61-copy');
+    const shareButton=body.querySelector('.v65-share');
+    const readiness=body.querySelector('.v61-readiness');
+    const preview=body.querySelector('.v61-preview');
+    const previewText=body.querySelector('.v61-preview-text');
+    const input=body.querySelector('.v61-input');
+    const setWorking=busy=>{
+      copyButton.disabled=busy;shareButton.disabled=busy;
+      copyButton.textContent=busy?'準備中…':'コピー';
+      shareButton.textContent=busy?'準備中…':'スマホで共有';
+    };
+    async function prepareRequest(){
       readiness.textContent='準備中：DB33と展開シミュレーションのモジュールを確認しています。';
+      await Promise.all([
+        ensureModule('db-result-bridge-v44.js','MyKeibaDbResultBridgeV44'),
+        ensureModule('pace-sim-v42.js','MyKeibaPaceSimV42')
+      ]);
+      if(!window.MyKeibaLapkunV6?.buildConsultText){
+        throw Error('従来の全馬データ生成機能が未読み込みです。ページを再読み込みしてください。');
+      }
+      const data=dataText(r),start=data.indexOf('■全馬データ'),end=data.indexOf('■データ上の事実メモ',start);
+      const horses=r.horses||[];
+      const allHorses=start>=0&&end>start&&horses.length>0
+        &&horses.every(h=>data.slice(start,end).includes('|'+h.name+'|'));
+      if(!allHorses||!data.includes('【サイトへ戻す分析結果】')){
+        throw Error('全馬データの照合が完了していません。コピー・共有を停止しました。');
+      }
+      preview.hidden=false;previewText.value=data;
+      const saved=window.MyKeibaDbResultBridgeV44?.savedFor?.(r);
+      const dbNote=saved?'DB33保存結果あり':'DB33評価はサイト内未保存';
+      const missingTen=horses.filter(h=>!h.tenRank).length;
+      readiness.textContent='生成完了：'+horses.length+'頭分・'+dbNote+'・テン順未登録'+missingTen+'頭。';
+      return {data,horses,dbNote};
+    }
+    async function sendRequest(mode){
+      if(copyButton.disabled||shareButton.disabled)return;
+      setWorking(true);
       try{
-        await Promise.all([
-          ensureModule('db-result-bridge-v44.js','MyKeibaDbResultBridgeV44'),
-          ensureModule('pace-sim-v42.js','MyKeibaPaceSimV42')
-        ]);
-        if(!window.MyKeibaLapkunV6?.buildConsultText){
-          throw Error('従来の全馬データ生成機能が未読み込みです。ページを再読み込みしてください。');
+        const {data,horses,dbNote}=await prepareRequest();
+        if(mode==='share'&&typeof navigator.share==='function'){
+          try{
+            await navigator.share({title:'MY KEIBA LAB '+r.track+r.raceNo+'R '+r.raceName,text:data});
+            readiness.textContent='共有メニューの操作が完了しました。ChatGPTで相談文が送信されたか確認してください。';
+            return;
+          }catch(e){
+            if(e?.name==='AbortError'){
+              readiness.textContent='共有をキャンセルしました。データは送信していません。';return;
+            }
+            // Unsupported or too-long native shares fall back to copy.
+          }
         }
-        const data=dataText(r),start=data.indexOf('■全馬データ'),end=data.indexOf('■データ上の事実メモ',start);
-        const horses=r.horses||[];
-        const allHorses=start>=0&&end>start&&horses.length>0
-          &&horses.every(h=>data.slice(start,end).includes('|'+h.name+'|'));
-        if(!allHorses||!data.includes('【サイトへ戻す分析結果】')){
-          throw Error('全馬データの照合が完了していません。コピーせずに停止しました。');
-        }
-        preview.hidden=false;
-        textarea.value=data;
-        const saved=window.MyKeibaDbResultBridgeV44?.savedFor?.(r);
-        const missingTen=horses.filter(h=>!h.tenRank).length;
-        const dbNote=saved?'DB33保存結果あり':'DB33評価はサイト内未保存';
-        readiness.textContent='生成完了：'+horses.length+'頭分・'+dbNote+'・テン順未登録'+missingTen+'頭。コピーしています…';
         const ok=await copy(data);
         if(ok){
-          readiness.textContent='コピー完了：'+horses.length+'頭分の相談文（'+data.length.toLocaleString('ja-JP')+'文字）を作成・照合しました。'+dbNote+'。チャットに貼り付けてください。';
+          readiness.textContent='コピー完了：'+horses.length+'頭分（'+data.length.toLocaleString('ja-JP')+'文字）・'+dbNote+'。ChatGPTのこのチャットに貼り付けてください。';
         }else{
-          readiness.textContent='全馬データ生成完了。ただし自動コピーに失敗しました。下の「全文を確認する」を開き、文章を長押ししてコピーしてください。';
+          readiness.textContent='相談文は生成できましたが自動コピーできませんでした。「全文を確認する」を開いて長押しでコピーしてください。';
           preview.open=true;
         }
       }catch(e){
-        console.warn('Lapkun export is not ready',e);
-        readiness.textContent='未完了：'+String(e?.message||'必要なデータを読み込めませんでした。').replace(/。+$/,'')+'。不完全なデータはコピーしていません。再度お試しください。';
-        status.textContent='相談文の準備または全馬照合が未完了のため、コピーを中止しました。再度お試しください。';
-      }finally{
-        b.disabled=false;b.textContent='分析用データをコピー';
+        console.warn('Lapkun request could not be prepared',e);
+        readiness.textContent='未完了：'+String(e?.message||'必要なデータを読み込めませんでした。')+' 不完全な相談文は送っていません。';
+        status.textContent='全馬照合が未完了のため中止しました。';
+      }finally{setWorking(false);}
+    }
+    shareButton.addEventListener('click',()=>sendRequest('share'));
+    copyButton.addEventListener('click',()=>sendRequest('copy'));
+    const manual=body.querySelector('.v65-manual');
+    const manualWrap=body.querySelector('.v65-manual-wrap');
+    manual.addEventListener('click',()=>{
+      manualWrap.hidden=!manualWrap.hidden;
+      manual.setAttribute('aria-expanded',String(!manualWrap.hidden));
+      if(!manualWrap.hidden)input.focus();
+    });
+    function confirmAndSave(text,source){
+      const value=parse(text,r);
+      const main=value.scenarios.find(x=>x.kind==='MAIN');
+      const message='次の内容を現在のレースへ保存します。'+
+        '\n'+r.track+' '+r.raceNo+'R '+r.raceName+
+        '\n本線33：'+fmt(main.lo)+'〜'+fmt(main.hi)+
+        '\n馬別評価：'+value.horses.length+'頭／2頭セット：'+value.pairs.length+'組'+
+        (load(r)?'\n既存のラップ君保存結果は上書きされます。':'')+
+        '\n保存してよいですか？';
+      if(!window.confirm(message)){status.textContent='保存をキャンセルしました。既存データは変更していません。';return;}
+      store(r,value);
+      draw(panel,r);
+      panel.querySelector('.v61-status').textContent='保存完了：'+source+'から本線33・馬別評価'+value.horses.length+'頭・2頭セット'+value.pairs.length+'組を反映しました。';
+    }
+    body.querySelector('.v65-paste').addEventListener('click',async()=>{
+      try{
+        if(!navigator.clipboard?.readText)throw Error('この端末ではクリップボードの自動読み取りが利用できません。');
+        const text=await navigator.clipboard.readText();
+        if(!text.trim())throw Error('クリップボードが空です。');
+        confirmAndSave(text,'クリップボード');
+      }catch(e){
+        status.textContent='取り込めません：'+String(e?.message||e)+'「手動で貼り付け」からも読み込めます。';
       }
     });
-    body.querySelector('.v61-import')?.addEventListener('click',()=>{
-      try{
-        const v=parse(body.querySelector('.v61-input').value,r);
-        store(r,v);draw(panel,r);
-        panel.querySelector('.v61-status').textContent=`反映しました。本線33と2頭セット${v.pairs.length}組を保存しました。`;
-      }catch(e){status.textContent=`取込できません：${e.message}`;}
+    body.querySelector('.v61-import').addEventListener('click',()=>{
+      try{confirmAndSave(input.value,'貼り付け');}
+      catch(e){status.textContent='取り込めません：'+e.message;}
     });
 
   }
@@ -379,6 +430,10 @@
   .v61-step p{font-size:11px;color:#6a8073;line-height:1.6;margin:6px 0}
   .v61-readiness{font-size:11px;line-height:1.7;color:#276547;font-weight:800;padding:8px 10px;margin:8px 0;border:1px solid #dceadf;border-radius:10px;background:#f5faf6}
   .v61-panel button:disabled{opacity:.5;cursor:wait}
+  .v65-send-actions,.v65-receive-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:9px 0}
+  .v65-send-actions button,.v65-receive-actions button{min-height:44px;min-width:0;white-space:normal;line-height:1.35}
+  .v65-send-actions .v65-share,.v65-receive-actions .v65-paste{background:#198754;color:#fff;border-color:#198754}
+  .v65-manual-wrap[hidden]{display:none}
   .v61-preview{margin:9px 0;border:1px solid #dce7e0;border-radius:10px;padding:9px}
   .v61-preview summary{font-size:11px;font-weight:900;color:#286044;cursor:pointer}
   .v61-preview-text{width:100%;box-sizing:border-box;margin-top:9px;border:1px solid #dde8df;border-radius:9px;resize:vertical;font-size:10px;line-height:1.5;padding:8px}
