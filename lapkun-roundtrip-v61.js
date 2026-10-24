@@ -332,11 +332,11 @@
       const value=parse(text,r);
       const main=value.scenarios.find(x=>x.kind==='MAIN');
       const message='次の内容を現在のレースへ保存します。'+
-        '\\n'+r.track+' '+r.raceNo+'R '+r.raceName+
-        '\\n本線33：'+fmt(main.lo)+'〜'+fmt(main.hi)+
-        '\\n馬別評価：'+value.horses.length+'頭／2頭セット：'+value.pairs.length+'組'+
-        (load(r)?'\\n既存のラップ君保存結果は上書きされます。':'')+
-        '\\n保存してよいですか？';
+        '\n'+r.track+' '+r.raceNo+'R '+r.raceName+
+        '\n本線33：'+fmt(main.lo)+'〜'+fmt(main.hi)+
+        '\n馬別評価：'+value.horses.length+'頭／2頭セット：'+value.pairs.length+'組'+
+        (load(r)?'\n既存のラップ君保存結果は上書きされます。':'')+
+        '\n保存してよいですか？';
       if(!window.confirm(message)){status.textContent='保存をキャンセルしました。既存データは変更していません。';return;}
       store(r,value);
       draw(panel,r);
