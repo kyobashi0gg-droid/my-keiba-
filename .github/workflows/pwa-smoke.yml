@@ -3,6 +3,7 @@ name: Android PWA smoke test
 on:
   pull_request:
     paths:
+      - "lapkun-roundtrip-v61.js"
       - "index.html"
       - "manifest.webmanifest"
       - "sw.js"
@@ -24,6 +25,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Validate Lapkun JavaScript syntax
+        run: node --check lapkun-roundtrip-v61.js
       - name: Check manifest, assets, and isolated cache rules
         run: node --test tests/pwa-static.test.mjs
       - name: Install browser test dependency
