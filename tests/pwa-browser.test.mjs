@@ -46,7 +46,7 @@ after(async () => {
   await new Promise(resolve => server?.close(resolve));
 });
 
-test('Site opens, installs service worker, saves a race, and exports backup', {timeout:90000}, async () => {
+test('Site opens, installs service worker, restores a race backup, and exports backup', {timeout:90000}, async () => {
   await page.goto(url,{waitUntil:'domcontentloaded'});
   assert.match(await page.title(), /MY KEIBA LAB/);
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, {timeout:20000});
@@ -56,10 +56,17 @@ test('Site opens, installs service worker, saves a race, and exports backup', {t
   });
   assert.equal(registration.scope,url);
   assert.equal(registration.active,'activated');
-  await page.locator('#newRaceBtn').click();
-  await page.locator('#track').fill('東京');
-  await page.locator('#raceName').fill('PWA動作確認');
-  await page.locator('#raceForm button[type="submit"]').click();
+  // The legacy add-race form is hidden by integrated-v4. Test the supported
+  // JSON restore flow, then verify the visible integrated-v4 Save action.
+  page.on('dialog', dialog => dialog.accept());
+  const sample = { races:[{
+    id:'pwa-smoke-1', track:'東京', raceNo:'11', raceName:'PWA動作確認',
+    weather:'晴', going:'良', paceMemo:'', horses:[]
+  }] };
+  await page.locator('#importInput').setInputFiles({
+    name:'pwa-smoke.json', mimeType:'application/json',
+    buffer:Buffer.from(JSON.stringify(sample),'utf8')
+  });
   await page.waitForFunction(() => {
     const raw = localStorage.getItem('my-keiba-lab-v2');
     return raw && JSON.parse(raw).races.some(r => r.raceName==='PWA動作確認');
@@ -69,7 +76,7 @@ test('Site opens, installs service worker, saves a race, and exports backup', {t
   assert.ok(state.races.some(r => r.raceName === 'PWA動作確認'));
 
   const downloadPromise = page.waitForEvent('download');
-  await page.locator('#exportBtn').click();
+  await page.locator('#v4SaveBtn').click();
   const download = await downloadPromise;
   assert.match(download.suggestedFilename(), /my-keiba-backup-.*\.json$/);
   const stream = await download.createReadStream();
