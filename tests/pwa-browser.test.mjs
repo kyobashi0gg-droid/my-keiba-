@@ -181,3 +181,66 @@ test('Compact phone header keeps three actions visible without overlap or text w
     await mobile.close();
   }
 });
+
+
+test('Lapkun roundtrip: share full race request and import a validated result from clipboard', {timeout:90000}, async () => {
+  const mobile = await browser.newContext({
+    viewport:{width:393,height:852}, deviceScaleFactor:2,
+    isMobile:true, hasTouch:true, serviceWorkers:'allow'
+  });
+  try {
+    const tab=await mobile.newPage();
+    tab.on('dialog',dialog=>dialog.accept());
+    await tab.goto(url,{waitUntil:'domcontentloaded'});
+    await tab.evaluate(()=>{
+      const race={id:'roundtrip-test',track:'東京',raceNo:'11',raceName:'PWAラップ君往復',
+        v3DateLabel:'10/24(土)',v3Course:'芝1600',v3Avg33:'+0.7',
+        weather:'晴',going:'良',horses:[{id:'h2',number:'2',name:'マリアンデール',mark:'○',trainingScore:'62',diff:'+7',lap:'A',tenRank:'2',agariRank:'4'}]};
+      localStorage.setItem('my-keiba-lab-v2',JSON.stringify({races:[race]}));
+      Object.defineProperty(navigator,'share',{configurable:true,value:async v=>{window.__pwaShared=v;}});
+      Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
+        readText:async()=>window.__mockPaste
+      }});
+    });
+    await tab.reload({waitUntil:'domcontentloaded'});
+    await tab.locator('.v4-nav[data-tab="races"]').click();
+    await tab.locator('[data-v4-race="roundtrip-test"]').first().click();
+    await tab.locator('#v61RoundtripPanel .v61-root').waitFor({state:'visible'});
+    await tab.locator('#v61RoundtripPanel .v61-root > summary').click();
+    await tab.locator('.v65-share').waitFor({state:'visible'});
+    await tab.locator('.v65-share').click();
+    await tab.waitForFunction(()=>!!window.__pwaShared,{timeout:25000});
+    const shared=await tab.evaluate(()=>window.__pwaShared.text);
+    assert.match(shared,/PWAラップ君往復/);
+    assert.match(shared,/■全馬データ/);
+    assert.match(shared,/\|マリアンデール\|/);
+    assert.match(shared,/【サイトへ戻す分析結果】/);
+
+    const result=['MYKEIBA_PAIRRESULT_V1',
+      'RACE|東京|11|PWAラップ君往復',
+      'SCENARIO|MAIN|+0.7|+1.7|中弛みからの再加速',
+      'HORSE|2|マリアンデール|A|軸|能力と位置取りが一致',
+      'NOTE|CHARANIZE画像は未確認',
+      '【結果ブロック終わり】'].join('\n');
+    await tab.evaluate(text=>{window.__mockPaste=text;},result);
+    await tab.locator('.v65-paste').click();
+    await tab.waitForFunction(()=>{
+      const o=JSON.parse(localStorage.getItem('my-keiba-lab-v2'));
+      return o.races[0].v61Roundtrip?.scenarios?.[0]?.lo===0.7;
+    });
+    const before=await tab.evaluate(()=>JSON.parse(localStorage.getItem('my-keiba-lab-v2')).races[0].v61Roundtrip);
+    assert.equal(before.horses[0].name,'マリアンデール');
+    assert.equal(before.scenarios[0].hi,1.7);
+
+    await tab.evaluate(()=>{window.__mockPaste='MYKEIBA_PAIRRESULT_V1\nRACE|京都|11|違うレース\nSCENARIO|MAIN|0|1|誤ったレース\n【結果ブロック終わり】';});
+    await tab.locator('.v65-paste').click();
+    const after=await tab.evaluate(()=>JSON.parse(localStorage.getItem('my-keiba-lab-v2')).races[0].v61Roundtrip);
+    assert.deepEqual(after,before,'other race must never overwrite saved roundtrip');
+    assert.match(await tab.locator('.v61-status').textContent(),/一致しません/);
+    assert.equal(await tab.locator('.v65-manual-wrap').isVisible(),false);
+    await tab.locator('.v65-manual').click();
+    assert.equal(await tab.locator('.v65-manual-wrap').isVisible(),true);
+  } finally {
+    await mobile.close();
+  }
+});
