@@ -210,7 +210,7 @@ test('Lapkun roundtrip: share full race request and import a validated result fr
       }});
     });
     await tab.locator('.v4-nav[data-tab="races"]').click();
-    await tab.locator('[data-v4-race="roundtrip-test"]').first().click();
+    await tab.locator('.v4-view[data-view="races"] [data-v4-race="roundtrip-test"]').click();
     await tab.locator('#v61RoundtripPanel .v61-root').waitFor({state:'visible'});
     await tab.locator('#v61RoundtripPanel .v61-root > summary').click();
     await tab.locator('.v65-share').waitFor({state:'visible'});
