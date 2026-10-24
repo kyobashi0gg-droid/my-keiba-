@@ -1,0 +1,38 @@
+name: Android PWA smoke test
+
+on:
+  pull_request:
+    paths:
+      - "index.html"
+      - "manifest.webmanifest"
+      - "sw.js"
+      - "icons/**"
+      - "tests/**"
+      - ".github/workflows/pwa-smoke.yml"
+  push:
+    branches: [pwa-android-install-20261024]
+
+permissions:
+  contents: read
+
+jobs:
+  pwa-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check manifest, assets, and isolated cache rules
+        run: node --test tests/pwa-static.test.mjs
+      - name: Install browser test dependency
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Run headless Chrome PWA smoke test
+        run: |
+          if command -v google-chrome >/dev/null 2>&1; then
+            export CHROME_BIN="$(command -v google-chrome)"
+          else
+            npx playwright install chromium --with-deps
+          fi
+          node --test tests/pwa-browser.test.mjs
