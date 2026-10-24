@@ -135,3 +135,49 @@ test('Android-size touch viewport shows integrated app navigation', {timeout:450
     await mobile.close();
   }
 });
+
+
+test('Compact phone header keeps three actions visible without overlap or text wrapping', {timeout:60000}, async () => {
+  const mobile = await browser.newContext({
+    viewport:{width:393,height:852}, deviceScaleFactor:2,
+    isMobile:true, hasTouch:true, serviceWorkers:'allow'
+  });
+  try {
+    const tab = await mobile.newPage();
+    await tab.goto(url,{waitUntil:'domcontentloaded'});
+    await tab.locator('#v5HeaderImport').waitFor({state:'visible'});
+    for (const width of [320, 360, 393, 560]) {
+      await tab.setViewportSize({width,height:852});
+      const layout = await tab.evaluate(() => {
+        const header = document.querySelector('.v4-header');
+        const brand = header.querySelector('.v4-brand');
+        const buttons = [...header.querySelectorAll('.v4-actions .v4-icon-btn')];
+        const shape = element => {
+          const r = element.getBoundingClientRect();
+          return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height};
+        };
+        return {
+          header:shape(header),brand:shape(brand),buttons:buttons.map(shape),
+          captions:buttons.map(x=>x.textContent.trim()),
+          overflow:buttons.map(x=>x.scrollWidth-x.clientWidth),
+          whitespace:buttons.map(x=>getComputedStyle(x).whiteSpace)
+        };
+      });
+      assert.deepEqual(layout.captions,['ラップ君','新聞PDF','保存']);
+      assert.equal(layout.buttons.length,3);
+      for (let i=0;i<layout.buttons.length;i++) {
+        const button=layout.buttons[i];
+        assert.ok(button.top>=layout.brand.bottom-1, 'actions below brand at '+width);
+        assert.ok(button.height>=42, 'touch target at '+width);
+        assert.ok(button.width>55, 'action not squashed at '+width);
+        assert.ok(button.left>=layout.header.left-1 && button.right<=layout.header.right+1,
+          'action inside header at '+width);
+        assert.ok(layout.overflow[i]<=1,'label must not overflow at '+width);
+        assert.equal(layout.whitespace[i],'nowrap');
+        if(i) assert.ok(layout.buttons[i-1].right<button.left,'distinct action targets at '+width);
+      }
+    }
+  } finally {
+    await mobile.close();
+  }
+});
