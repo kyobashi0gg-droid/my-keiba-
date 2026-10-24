@@ -112,3 +112,26 @@ test('Application shell opens offline after a successful online visit', {timeout
     await context.setOffline(false);
   }
 });
+
+test('Android-size touch viewport shows integrated app navigation', {timeout:45000}, async () => {
+  const mobile = await browser.newContext({
+    viewport:{width:393,height:852}, deviceScaleFactor:2,
+    isMobile:true, hasTouch:true, serviceWorkers:'allow'
+  });
+  try {
+    const tab = await mobile.newPage();
+    await tab.goto(url,{waitUntil:'domcontentloaded'});
+    await tab.locator('#v4App').waitFor({state:'visible'});
+    assert.equal(await tab.locator('#v4PdfBtn').isVisible(),true);
+    assert.equal(await tab.locator('#v4SaveBtn').isVisible(),true);
+    assert.equal(await tab.locator('.v4-bottom').isVisible(),true);
+    await tab.locator('.v4-nav[data-tab="races"]').click();
+    assert.equal(await tab.locator('.v4-view[data-view="races"]').isVisible(),true);
+    assert.equal(await tab.locator('.v4-view[data-view="home"]').isVisible(),false);
+    const manifest = await tab.evaluate(async () =>
+      await (await fetch('./manifest.webmanifest')).json());
+    assert.equal(manifest.display,'standalone');
+  } finally {
+    await mobile.close();
+  }
+});
