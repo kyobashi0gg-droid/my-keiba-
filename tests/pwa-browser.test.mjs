@@ -206,7 +206,8 @@ test('Lapkun roundtrip: share full race request and import a validated result fr
     await tab.evaluate(()=>{
       Object.defineProperty(navigator,'share',{configurable:true,value:async v=>{window.__pwaShared=v;}});
       Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
-        readText:async()=>window.__mockPaste
+        readText:async()=>window.__mockPaste,
+        writeText:async text=>{window.__pwaCopied=text;}
       }});
     });
     await tab.locator('.v4-nav[data-tab="races"]').click();
@@ -214,6 +215,14 @@ test('Lapkun roundtrip: share full race request and import a validated result fr
     await tab.locator('#v61RoundtripPanel .v61-root').waitFor({state:'visible'});
     await tab.locator('#v61RoundtripPanel .v61-root > summary').click();
     await tab.locator('.v65-share').waitFor({state:'visible'});
+    assert.equal(await tab.locator('.v61-copy').textContent(),'今のChatで続ける（コピー）');
+    assert.equal(await tab.locator('.v65-share').textContent(),'新しいChatに共有');
+    await tab.locator('.v61-copy').click();
+    await tab.waitForFunction(()=>!!window.__pwaCopied,{timeout:25000});
+    const copied=await tab.evaluate(()=>window.__pwaCopied);
+    assert.match(copied,/■全馬データ/);
+    assert.match(copied,/PWAラップ君往復/);
+    assert.match(await tab.locator('.v61-readiness').textContent(),/これまでの会話を開いて貼り付け/);
     await tab.locator('.v65-share').click();
     await tab.waitForFunction(()=>!!window.__pwaShared,{timeout:25000});
     const shared=await tab.evaluate(()=>window.__pwaShared.text);
