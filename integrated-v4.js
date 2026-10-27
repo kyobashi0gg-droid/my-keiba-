@@ -230,13 +230,77 @@
     return samples.map(s => `<span>${Number(s.value) >= 0 ? '+' : ''}${esc(s.value)} / ${s.finish ? `${esc(s.finish)}着` : '着順—'}</span>`).join('');
   }
 
-  function renderDetail(id) {
+  
+  // Quick race switching inside the detail sheet, without returning to the race list.
+  function addQuickRaceNav(title, race) {
+    const all = Array.isArray(state.races) ? state.races : [];
+    if (all.length < 2 || !title) return;
+    if (!document.getElementById('v67-quick-race-css')) {
+      const style=document.createElement('style');
+      style.id='v67-quick-race-css';
+      style.textContent='.v67-race-nav{margin-top:11px;padding:12px;border:1px solid #cfe6dc;border-radius:14px;background:#f5fbf7;color:#143c30}.v67-race-nav .v67-quick-title{font-size:12px;font-weight:800;margin-bottom:7px}.v67-race-fields{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:6px}.v67-race-fields label{font-size:10px;color:#597e6b;font-weight:750}.v67-race-fields select{display:block;width:100%;max-width:100%;border:1px solid #bddccc;border-radius:8px;background:white;color:#194633;padding:7px 3px;font-size:12px}.v67-race-arrows{display:flex;gap:8px;margin-top:8px}.v67-race-arrows button{flex:1;background:#e4f2e8;border:1px solid #b2d6c2;color:#0d6e4e;border-radius:9px;font-weight:750;padding:8px 6px}.v67-race-arrows button:disabled{opacity:.4}.v67-race-info{font-size:10px;color:#6b8675;margin-top:5px}@media(max-width:480px){.v67-race-fields{grid-template-columns:1.1fr 1fr .8fr}.v67-race-fields select{font-size:11px}}';
+      document.head.appendChild(style);
+    }
+    const unique=(items)=>Array.from(new Set(items));
+    const d=dateOf(race), v=venueName(race), number=Number(race.raceNo);
+    const dates=unique(all.map(dateOf)).sort().reverse();
+    const sameDay=all.filter(r=>dateOf(r)===d);
+    const venues=unique(sameDay.map(venueName));
+    const inVenue=sameDay.filter(r=>venueName(r)===v).sort((a,b)=>Number(a.raceNo)-Number(b.raceNo));
+    const nav=document.createElement('div');nav.className='v67-race-nav';
+    const caption=document.createElement('div');caption.className='v67-quick-title';caption.textContent='レースを切り替える（一覧に戻らず移動）';nav.appendChild(caption);
+    const fields=document.createElement('div');fields.className='v67-race-fields';
+    function field(label,options,selected,labeler) {
+      const wrap=document.createElement('label');wrap.textContent=label;
+      const select=document.createElement('select');select.setAttribute('aria-label',label);
+      options.forEach(value=>{
+        const opt=document.createElement('option');opt.value=String(value);
+        opt.textContent=String(labeler?labeler(value):value);
+        if(String(value)===String(selected))opt.selected=true;
+        select.appendChild(opt);
+      });
+      wrap.appendChild(select);fields.appendChild(wrap);return select;
+    }
+    const dayField=field('開催日',dates,d,x=>x||'日付未設定');
+    const venueField=field('競馬場',venues,v);
+    const raceField=field('レース',inVenue.map(r=>r.id),race.id,id=>{
+      const r=inVenue.find(r=>String(r.id)===String(id));
+      return r ? String(r.raceNo)+'R '+String(r.raceName||'') : 'レース';
+    });
+    nav.appendChild(fields);
+    function changeTo(date,venue,no,id) {
+      let pool=all.filter(r=>dateOf(r)===date);
+      if(!pool.length)return;
+      const sameVenue=pool.filter(r=>venueName(r)===venue);
+      if(sameVenue.length)pool=sameVenue;
+      let target=id?pool.find(r=>String(r.id)===String(id)):null;
+      if(!target && no)target=pool.find(r=>Number(r.raceNo)===Number(no));
+      if(!target)target=pool.slice().sort((a,b)=>Number(a.raceNo)-Number(b.raceNo))[0];
+      if(target)renderDetail(target.id);
+    }
+    dayField.onchange=()=>changeTo(dayField.value,v,number,null);
+    venueField.onchange=()=>changeTo(d,venueField.value,number,null);
+    raceField.onchange=()=>changeTo(d,v,null,raceField.value);
+    const arrows=document.createElement('div');arrows.className='v67-race-arrows';
+    const pos=inVenue.findIndex(r=>String(r.id)===String(race.id));
+    function arrow(text,offset){
+      const button=document.createElement('button');button.type='button';button.textContent=text;
+      const target=inVenue[pos+offset];button.disabled=!target;
+      button.onclick=()=>{if(target)renderDetail(target.id)};
+      arrows.appendChild(button);
+    }
+    arrow('‹ 前のレース',-1);arrow('次のレース ›',1);nav.appendChild(arrows);
+    title.appendChild(nav);
+  }
+
+function renderDetail(id) {
     const race = state.races.find(r => r.id === id);
     if (!race) return closeDetail();
     detailRaceId = id;
     const title = document.querySelector('#v4DetailTitle');
     const body = document.querySelector('#v4DetailBody');
     title.innerHTML = `<p class="v4-eyebrow">RACE DETAIL</p><h2>${esc(race.track)} ${esc(race.raceNo)}R ${esc(race.raceName)}</h2><p>${esc(race.v3Course || '')} ・ 平均33 ${raceAvg33(race)} ・ ${esc(race.v3RaceLevel || 'レベル未取得')}</p>`;
+    addQuickRaceNav(title, race);
 
     body.innerHTML = `
       <div class="v4-summary-line"><span class="v4-chip">${(race.horses || []).length}頭</span><span class="v4-chip lap">平均33 ${raceAvg33(race)}</span>${raceKtmCount(race) ? `<span class="v4-chip ktm">KTM ${raceKtmCount(race)}</span>` : ''}${raceValueCount(race) ? `<span class="v4-chip value">穴注目 ${raceValueCount(race)}</span>` : ''}</div>
