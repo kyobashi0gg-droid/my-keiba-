@@ -10,6 +10,7 @@ const CORE_ASSETS = [
 ];
 const APP_PATH = new URL(self.registration.scope).pathname;
 const DB_LAB_PATH = new URL('./db-lab/', self.registration.scope).pathname;
+const CHARANIZE_DB_PATH = new URL('./charanize-db/', self.registration.scope).pathname;
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(async cache => {
@@ -50,8 +51,10 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
-  // Leave DB Lab as an ordinary website, and do not cache external PDF/CDN requests.
+  // Keep both DB Lab sites independent of the MY KEIBA LAB PWA cache.
+  // Do not intercept external PDF/CDN requests.
   if (url.origin !== self.location.origin || !url.pathname.startsWith(APP_PATH)
-      || url.pathname.startsWith(DB_LAB_PATH)) return;
+      || url.pathname.startsWith(DB_LAB_PATH)
+      || url.pathname.startsWith(CHARANIZE_DB_PATH)) return;
   event.respondWith(networkFirst(request));
 });
