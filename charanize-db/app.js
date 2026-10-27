@@ -39,7 +39,9 @@ function getSignals(rows){let signal=[];const put=(type,label,desc,refs)=>signal
  let front=rows.filter(r=>parsePass(r).length&&parsePass(r)[0]<=2&&r[6]>=7&&num(r[9][3])&&r[9][3]<45);if(front.length)put('neg','先行時に終い低下',`前方通過後に7着以下・脚力45未満が${front.length}走。先行負荷が原因かは未確定`,front.slice(0,3));
  let pursuitStrong=rows.filter(r=>num(r[9][2])&&r[9][2]>=75&&num(r[9][3])&&r[9][3]>=70&&num(r[9][4])&&r[9][4]>=60);if(pursuitStrong.length)put('pos','高追走負荷でも脚・ギア発揮',`追走指数75以上の負荷を経験した走りで脚力70以上・ギア60以上が${pursuitStrong.length}走。能力上限と再現性は別評価`,pursuitStrong.slice(0,3));
  let pursuit=rows.filter(r=>num(r[9][2])&&r[9][2]>=75&&num(r[9][3])&&r[9][3]<45&&num(r[9][4])&&r[9][4]<25);if(pursuit.length)put('neg','高追走負荷下で終い低調',`追走指数75以上の負荷を経験した走りで脚力45未満・ギア25未満が${pursuit.length}走。負荷が原因かはこの組み合わせだけでは断定できない`,pursuit.slice(0,3));
- let flip=rows.filter(r=>num(r[9][4])&&r[9][4]>=70);if(flip.length)put('neutral','ギアを使えた実績',`ギア70以上を${flip.length}走で記録。今回の再現確度はコースや位置取り次第`,flip.slice(0,3));
+ const loadRelief=loadReliefPair(rows);
+  if(loadRelief)put('neutral','追走負荷軽減側で脚力上昇',`同じ芝ダ・距離帯・馬場状態で追走−${fmt(loadRelief.loadDrop)}、脚力＋${fmt(loadRelief.legGain)}。過去2走の比較。原因は未確定`,[loadRelief.high,loadRelief.low]);
+  let flip=rows.filter(r=>num(r[9][4])&&r[9][4]>=70);if(flip.length)put('neutral','ギアを使えた実績',`ギア70以上を${flip.length}走で記録。今回の再現確度はコースや位置取り次第`,flip.slice(0,3));
  if(turf.length&&dirt.length)put('neutral','芝・ダート両方の履歴あり','芝指数をダート能力に直接加算しない。高速ダートへの転用は別途検証',[...turf.slice(0,1),...dirt.slice(0,1)]);
  return signal;
 }
@@ -129,6 +131,31 @@ function candidateRows(h){
   return dist==='all'||dist==='s'&&r[4]<=1400||dist==='m'&&r[4]===1600||dist==='i'&&r[4]>=1800&&r[4]<=2200||dist==='l'&&r[4]>=2400;
  });
 }
+// 同じ馬の芝ダ・距離帯・馬場状態をそろえた過去走を比較。因果は未判定。
+function loadReliefPair(rows,minP=15,minL=20,minUsableLeg=60){
+ const groups=new Map();
+ const band=n=>n<=1400?'1400m以下':n<=1600?'1500〜1600m':n<=2200?'1800〜2200m':'2400m以上';
+ const ground=g=>g==='稍重'?'稍':g==='不良'?'不':g;
+ for(const r of rows){
+  if(!['芝','ダ'].includes(r[3])||!num(r[9]?.[2])||!num(r[9]?.[3])||!Number.isFinite(Number(r[4]))||!r[4])continue;
+  const key=[r[3],band(Number(r[4])),ground(r[5])].join('/');
+  if(!groups.has(key))groups.set(key,[]);
+  groups.get(key).push(r);
+ }
+ const pairs=[];
+ for(const [key,part] of groups){
+  for(let i=0;i<part.length;i++)for(let j=i+1;j<part.length;j++){
+   const a=part[i],b=part[j];
+   if(a[0]===b[0]&&a[1]===b[1]&&a[2]===b[2])continue;
+   const low=a[9][2]<b[9][2]?a:b,high=low===a?b:a;
+   const loadDrop=high[9][2]-low[9][2],legGain=low[9][3]-high[9][3];
+   if(loadDrop<minP||legGain<minL||low[9][3]<minUsableLeg)continue;
+   pairs.push({key,high,low,loadDrop,legGain,sameVenue:high[1]===low[1],newerLow:String(low[0])>String(high[0])});
+  }
+ }
+ pairs.sort((a,b)=>b.legGain-a.legGain||b.loadDrop-a.loadDrop);
+ return pairs.length?{...pairs[0],matches:pairs.length}:null;
+}
 function candidateKind(name,h,cohort){
  const rows=candidateRows(h),p=getPeak(rows,3),recent=avg(rows,3,3),ago=rows.slice(3,8).map(r=>r[9][3]).filter(num),olderMean=ago.length>=2?ago.reduce((a,b)=>a+b,0)/ago.length:null;
  const wet=rows.filter(r=>selectedWet(r[5])&&r[6]&&r[6]<=3&&num(r[9][3])&&r[9][3]>=70);
@@ -142,6 +169,15 @@ function candidateKind(name,h,cohort){
  if(kind==='dirtwet'){const d=wet.filter(r=>r[3]==='ダ');match=d.length>0;evidence=d[0];reason=`ダート道悪好走実績${d.length}走・脚${fmt(d[0]?.[9][3])}（上昇幅未比較）`;}
  if(kind==='frontweak'){match=weak.length>=1;evidence=weak[0];reason=`先行後の7着以下・脚力45未満が${weak.length}走`;}
  if(kind==='pursuitweak'){match=pursuit.length>=1;evidence=pursuit[0];reason=`追走高値＋終い低下${pursuit.length}走`;}
+ if(kind==='loadrelief'){
+  const best=loadReliefPair(rows,Number($('load-pursuit-gap').value),Number($('load-leg-gain').value),Number($('load-min-leg').value));
+  if(best){
+   match=true;evidence=best.low;sortValue=best.legGain;
+   const sign=n=>(n>=0?'+':'')+fmt(n);
+   const describe=r=>`${date(r[0])} ${r[1]}${r[2]||''}R 追走${fmt(r[9][2])}・脚力${fmt(r[9][3])}`;
+   reason=`【${best.key}】高負荷側 ${describe(best.high)} → 低負荷側 ${describe(best.low)}。追走${sign(-best.loadDrop)}・脚力${sign(best.legGain)}。${best.sameVenue?'同じ競馬場での比較。':'競馬場が異なるため再現性に注意。'}${best.newerLow?'後の走りで追走負荷が低い。':'時間順の負荷低下ではなく、過去走間の条件差。'}${best.high[12]||best.low[12]?'指数に出典差あり。':''}2走比較の仮説であり、クラス・相手関係・33・ペースを未調整。`;
+  }
+ }
  if(kind==='dual'){match=dual.length>0;evidence=dual[0];reason=`同一走の脚${fmt(dual[0]?.[9][3])} ギ${fmt(dual[0]?.[9][4])}`;}
  if(['turfstable','turfweak','dirtgain','dirtweak'].includes(kind)){
   const surface=kind.startsWith('turf')?'芝':'ダ';
@@ -173,6 +209,7 @@ function candidateKind(name,h,cohort){
  return match?{name,n:rows.length,evidence,reason,peak:sortValue}:null;
 }
 function renderDiscover(){
+ $('load-relief-controls').classList.toggle('hidden',app.preset!=='loadrelief');
  const scoped=scopedRunners(),all=app.db;
  const nameList=scoped.scope==='all'?Object.keys(all):[...scoped.entries.keys()];
  const cohort=app.preset.startsWith('turf')?goingCohort('芝'):['dirtgain','dirtweak'].includes(app.preset)?goingCohort('ダ'):{};
@@ -194,7 +231,8 @@ function init(){let meta=app.meta||{};$('stats-h').textContent=(meta.horses||Obj
  for(let id of ['surface','venue','dist','going'])$(id).onchange=()=>{renderHorse();if(app.tab==='discover')renderDiscover()};
  document.querySelectorAll('[data-avg]').forEach(b=>b.onclick=()=>{app.avgN=Number(b.dataset.avg);document.querySelectorAll('[data-avg]').forEach(x=>x.classList.toggle('on',x===b));renderHorse()});
  $('bar-index').onchange=e=>{app.chartIndex=Number(e.target.value);renderHorse()};$('preset').onchange=e=>{app.preset=e.target.value;app.discoveryLimit=32;if(app.preset.startsWith('turf'))$('discover-surface').value='芝';else if(app.preset.startsWith('dirt'))$('discover-surface').value='ダ';renderDiscover()};
- for(const id of ['discover-scope','discover-surface','discover-wetlevel'])$(id).onchange=()=>{app.discoveryLimit=32;renderDiscover()};$('more-candidates').onclick=()=>{app.discoveryLimit+=40;renderDiscover()};
+ for(const id of ['load-pursuit-gap','load-leg-gain','load-min-leg'])$(id).onchange=()=>{app.discoveryLimit=32;renderDiscover()};
+  for(const id of ['discover-scope','discover-surface','discover-wetlevel'])$(id).onchange=()=>{app.discoveryLimit=32;renderDiscover()};$('more-candidates').onclick=()=>{app.discoveryLimit+=40;renderDiscover()};
  $('file-input').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;$('upload-status').textContent='読み込み中…';try{let parsed=JSON.parse(await f.text());if(parsed.horses&&parsed.meta&&Object.values(parsed.horses)[0]?.runs){let compact={};for(let [name,h] of Object.entries(parsed.horses))compact[name]=[h.sex,h.age_as_of_latest_paper,h.runs.map(r=>[r.date,r.venue,r.race_no,r.surface,r.distance,r.going,r.finish,r.passing,r.last3f,keys.map(k=>r.indices?.[k]??null),(r.race_name||'').split('　')[0].slice(0,25),r.sources?.length||1,r.conflicts||null])];parsed={meta:parsed.meta,horses:compact};}if(!parsed.horses||Object.keys(parsed.horses).length<1||!Array.isArray(Object.values(parsed.horses)[0]?.[2]))throw Error('対応するCHARANIZE DB形式ではありません');app.db=parsed.horses;app.meta=parsed.meta;initFilters();init();selectHorse(app.db[app.current]?app.current:Object.keys(app.db)[0]);$('upload-status').textContent=`${f.name} を読み込みました。更新は現在の画面内に反映されています。保持するには更新済みHTMLの再生成が必要です。`;}catch(err){$('upload-status').textContent='読み込めませんでした：'+err.message}};
  $('evidence-dialog').querySelector('[data-close]').onclick=()=>$('evidence-dialog').close();
  let start=decodeURIComponent(location.hash.replace(/^#/,'')),def=app.db[start]?start:app.db['アージュドール']?'アージュドール':names[0];selectHorse(def,true);
