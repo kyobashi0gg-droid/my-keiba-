@@ -293,6 +293,46 @@
     title.appendChild(nav);
   }
 
+
+  // Keep the race detail open while browsing its runners.
+  function addQuickHorseNav(body, race) {
+    const runners=Array.isArray(race.horses)?race.horses:[];
+    if(runners.length<2)return;
+    if(!document.getElementById('v67-quick-horse-css')){
+      const style=document.createElement('style');
+      style.id='v67-quick-horse-css';
+      style.textContent='.v67-horse-nav{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:10px;background:#edf8f1;border:1px solid #c4e2cf;border-radius:12px;margin:8px 0 13px}.v67-horse-nav strong{font-size:12px;color:#175e47;margin-right:auto}.v67-horse-nav button{border:1px solid #b7dbca;border-radius:8px;background:white;color:#117050;padding:7px 9px;font-size:12px;font-weight:800}.v67-horse-nav select{min-width:160px;max-width:100%;flex:1;border:1px solid #b7dbca;border-radius:8px;padding:7px;background:white;color:#174935}.v67-horse-nav small{color:#577965;font-size:10px}@media(max-width:480px){.v67-horse-nav strong{flex-basis:100%}.v67-horse-nav select{min-width:120px}}';
+      document.head.appendChild(style);
+    }
+    const bar=document.createElement('div');bar.className='v67-horse-nav';
+    const label=document.createElement('strong');label.textContent='出走馬の詳細を切り替える';bar.appendChild(label);
+    const prev=document.createElement('button');prev.type='button';prev.textContent='‹ 前の馬';bar.appendChild(prev);
+    const select=document.createElement('select');select.setAttribute('aria-label','出走馬を選択');
+    runners.forEach((h,i)=>{
+      const opt=document.createElement('option');opt.value=String(i);
+      opt.textContent=String(h.number||i+1)+'　'+String(h.name||'馬名未登録');select.appendChild(opt);
+    });
+    bar.appendChild(select);
+    const next=document.createElement('button');next.type='button';next.textContent='次の馬 ›';bar.appendChild(next);
+    const pos=document.createElement('small');pos.textContent='未選択';bar.appendChild(pos);
+    const summary=body.querySelector('.v4-summary-line');
+    if(summary)summary.insertAdjacentElement('afterend',bar);
+    else body.insertBefore(bar,body.firstChild);
+    let index=-1;
+    const openHorse=i=>{
+      if(!runners.length)return;
+      index=(i+runners.length)%runners.length;
+      select.value=String(index);pos.textContent=String(index+1)+' / '+runners.length+'頭';
+      body.querySelectorAll('.v4-horse-detail-row').forEach(row=>row.hidden=true);
+      const h=runners[index];
+      const row=body.querySelector('[data-v4-detail-row="'+CSS.escape(String(h.id))+'"]');
+      if(row){row.hidden=false;row.scrollIntoView({block:'center',behavior:'smooth'});}
+    };
+    prev.onclick=()=>openHorse(index<0?runners.length-1:index-1);
+    next.onclick=()=>openHorse(index<0?0:index+1);
+    select.onchange=()=>openHorse(Number(select.value));
+  }
+
 function renderDetail(id) {
     const race = state.races.find(r => r.id === id);
     if (!race) return closeDetail();
@@ -312,6 +352,8 @@ function renderDetail(id) {
         <tr class="v4-horse-detail-row" data-v4-detail-row="${esc(horse.id)}" hidden><td colspan="11"><div class="v4-horse-detail"><div class="v4-detail-box"><strong>新聞33評価（補助）</strong><p>${esc(horse.lapReason || '評価理由は未取得')}</p><div class="v4-history">${historyHtml(horse)}</div></div><div class="v4-detail-box"><strong>調教・変身材料</strong><p>調教印 ${esc(horse.mark || '—')} / 採点 ${esc(horse.trainingScore || '—')} / 前走比 ${horse.diff !== '' && horse.diff != null ? `${Number(horse.diff) >= 0 ? '+' : ''}${esc(horse.diff)}` : '—'}${horse.v3Blinker ? ' / B着用' : ''}</p></div><div class="v4-detail-box"><strong>壁打ち枠</strong><p>33: ${esc(horse.lap || '—')}<br>ラップ君: 未連携<br>テン: 未連携<br>上がり: 未連携</p></div></div></td></tr>`;
       }).join('')}</tbody></table></div>
       <div class="v4-edit-bar"><button class="v4-secondary" id="v4EditRace">編集する</button><button class="v4-primary" id="v4CloseBottom">一覧へ戻る</button></div>`;
+
+    addQuickHorseNav(body, race);
 
     body.querySelectorAll('[data-v4-expand]').forEach(btn => btn.onclick = () => {
       const row = body.querySelector(`[data-v4-detail-row="${CSS.escape(btn.dataset.v4Expand)}"]`);
