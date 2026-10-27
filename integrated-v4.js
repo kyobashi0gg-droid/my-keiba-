@@ -279,20 +279,6 @@
     document.body.style.overflow = '';
   }
 
-
-  // Safe public adapter for v67 navigation. No edits to data or persistence.
-  window.MyKeibaV4DetailNav = {
-    races: () => state.races,
-    currentRaceId: () => detailRaceId,
-    switchRace: id => {
-      const target=state.races.find(r => String(r.id)===String(id));
-      if(!target) return;
-      v61Venue=venueName(target);
-      v61Day=dateOf(target);
-      renderDetail(target.id);
-    }
-  };
-
   installShell();
 
   if (typeof render === 'function') {
