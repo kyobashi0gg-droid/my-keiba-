@@ -1,0 +1,17 @@
+/* MY KEIBA LAB v67: controls only; preserve existing race and editorial screens. */
+.v67-racepicker{background:#ecf6f0;border:1px solid #c9e4d5;border-radius:15px;padding:12px;margin:2px 0 16px;color:#164f3b}
+.v67-title{font-size:13px;font-weight:850;margin-bottom:8px}
+.v67-fields{display:grid;grid-template-columns:1.1fr .85fr 1.25fr;gap:7px}
+.v67-field{font-size:10px;font-weight:750;color:#547464;min-width:0}
+.v67-field span{display:block;margin-bottom:4px}
+.v67-field select{width:100%;min-width:0;border:1px solid #b6d8c5;background:#fff;color:#153e30;border-radius:9px;padding:9px 4px;font-size:12px;font-weight:700}
+.v67-neighbors{display:flex;gap:8px;margin-top:9px}
+.v67-neighbors button{flex:1;border:1px solid #bbdac8;border-radius:9px;padding:9px;background:#fff;color:#156d4b;font-size:12px;font-weight:800}
+.v67-neighbors button:disabled{opacity:.35}
+#v4Detail .v4-sheet{padding-bottom:82px}
+#v4Detail .v67-horsebar{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:min(900px,100%);z-index:9;display:flex;align-items:center;gap:7px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#f6fbf7;box-shadow:0 -5px 18px rgba(10,38,24,.14);border-top:1px solid #c9e4d5}
+.v67-horsebar button{border:1px solid #b9d9c7;border-radius:10px;padding:10px 8px;color:#166747;background:#e4f3ea;font-weight:850;font-size:12px;white-space:nowrap}
+.v67-horsebar select{flex:1;min-width:0;max-width:100%;border:1px solid #b9d9c7;border-radius:10px;padding:10px 5px;background:white;color:#184733;font-size:12px;font-weight:750}
+.v67-horsebar span{font-size:10px;color:#618170;white-space:nowrap}
+#v4Detail .v4-horse-detail-row{scroll-margin-top:135px;scroll-margin-bottom:85px}
+@media(max-width:420px){.v67-fields{grid-template-columns:1fr .76fr 1.08fr;gap:5px}.v67-field select{font-size:11px;padding:8px 2px}.v67-horsebar{gap:4px!important;padding-left:7px!important;padding-right:7px!important}.v67-horsebar button{font-size:11px;padding:9px 5px}.v67-horsebar span{display:none}}
