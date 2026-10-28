@@ -53,10 +53,50 @@ function selectHorse(name,reset=true){if(!app.db[name])return;app.current=name;$
 function lookup(){let q=$('query').value.trim(),names=Object.keys(app.db);if(!q)return;let name=app.db[q]?q:names.find(x=>x.includes(q))||names.find(x=>x.toLowerCase().includes(q.toLowerCase()));if(name)selectHorse(name,true);else $('horse-title').textContent='該当する馬がありません';}
 function svgChart(rows){let n=rows.length,series=app.chartSeries,w=680,h=250,pad=36;let rev=rows.slice().reverse();const x=i=>pad+(w-2*pad)*(n===1?.5:i/(n-1));let ys=rev.flatMap(r=>series.map(i=>r[9][i])).filter(num);let min=Math.min(-10,...ys),max=Math.max(110,...ys);min=Math.floor(min/20)*20;max=Math.ceil(max/20)*20;const y=v=>h-pad-(v-min)/(max-min)*(h-2*pad);const lineVals=[];for(let z=min;z<=max;z+=20){lineVals.push(`<line x1="${pad}" x2="${w-pad}" y1="${y(z)}" y2="${y(z)}" stroke="#dfe9e2"/><text x="${pad-7}" y="${y(z)+4}" text-anchor="end" font-size="12" fill="#7a8f83">${z}</text>`)}let paths=[];series.forEach(i=>{let part='',prev=false;rev.forEach((r,j)=>{let val=r[9][i];if(num(val)){part+=(prev?' L':' M')+x(j).toFixed(1)+','+y(val).toFixed(1);prev=true;paths.push(`<circle cx="${x(j)}" cy="${y(val)}" r="3.6" fill="${colors[i]}"><title>${safe(date(r[0]))} ${labels[i]} ${fmt(val)}</title></circle>`)}else prev=false});paths.push(`<path d="${part}" fill="none" stroke="${colors[i]}" stroke-width="2.8" stroke-linejoin="round"/>`)});let dates=rev.length>1?`<text x="${pad}" y="${h-8}" font-size="11" fill="#788b7e">${date(rev[0][0])}</text><text x="${w-pad}" text-anchor="end" y="${h-8}" font-size="11" fill="#788b7e">${date(rev[rev.length-1][0])}</text>`:'';return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="直近10走の指数推移">${lineVals.join('')}${paths.join('')}${dates}</svg>`;}
 function bars(rows,idx){let groups=[['場別',r=>r[1]],['距離別',r=>r[4]?r[4]+'m':'不明'],['馬場別',r=>r[5]]];return groups.map(([title,key])=>{let map={};for(let r of rows){let v=r[9][idx];if(!num(v))continue;let k=key(r);(map[k]||(map[k]=[])).push(v);}let arr=Object.entries(map).map(([k,vs])=>({k,n:vs.length,mean:vs.reduce((a,b)=>a+b,0)/vs.length})).sort((a,b)=>b.n-a.n||b.mean-a.mean).slice(0,5);return `<div class="chartcard"><div class="section-title" style="font-size:13px;margin:0 0 10px">${title} ${labels[idx]}指数</div><div class="factorlist">${arr.map(x=>`<div class="factor"><span>${safe(x.k)}<small>${x.n}走</small></span><div class="bartrack"><i style="width:${Math.max(2,Math.min(100,x.mean))}%"></i></div><b style="text-align:right">${x.n>=2?fmt(x.mean):'<small>1走</small>'}</b></div>`).join('')||'<span class="muted">対象なし</span>'}</div></div>`}).join('')}
-function sourceDetails(r){let c=r[12];if(!c)return '';return `<details class="single-source-warning"><summary>原本数値の差異・詳細を見る</summary><div class="notice">同じ過去走について複数号の指数新聞で数値が異なっています。左の数値は試作DBの採用値、以下は異なる版で確認できた値です。現時点ではどちらが確定値か未判定です。<ul>${Object.entries(c).map(([key,arr])=>`<li>${safe(labels[keys.indexOf(key)]||key)}：${arr.map(a=>safe(a.f)+'＝'+fmt(a.v)).join('、')}</li>`).join('')}</ul></div></details>`;}
+// The same run may be printed in different weekly issues. Compare the adopted
+// value and all recorded variants; a difference is not an ability penalty.
+function largeSourceDifference(r){
+ const conflicts=r?.[12],base=r?.[9];
+ let largest=0, affected=[];
+ if(!conflicts||!base)return {large:false,max:0,affected:[]};
+ for(const [key,versions] of Object.entries(conflicts)){
+  const idx=keys.indexOf(key);
+  if(idx<0||!Array.isArray(versions))continue;
+  const values=[base[idx],...versions.map(v=>v?.v)].filter(num);
+  if(values.length<2)continue;
+  const gap=Math.max(...values)-Math.min(...values);
+  if(gap>=10){
+   largest=Math.max(largest,gap);
+   affected.push({key,label:labels[idx],gap});
+  }
+ }
+ return {large:affected.length>0,max:largest,affected};
+}
+function pastSourceDifferences(rows){
+ return (rows||[]).filter(r=>(!app.cutoff||!r[0]||r[0]<app.cutoff)&&largeSourceDifference(r).large);
+}
+function sourceDetails(r){
+ const c=r[12];if(!c||!Object.keys(c).length)return '';
+ const conflict=largeSourceDifference(r);
+ const heading=conflict.large
+  ?`⚠ 指数差10以上・要原本確認（最大${fmt(conflict.max)}）`
+  :'原本数値の差異・詳細を見る';
+ const description=conflict.large
+  ?'この過去走は同じ馬・同じレースで指数差10以上。算定基準更新だけでは説明できない可能性があるため、発行元確認まで採用値を自動変更しません。現在の平均・条件検索は採用値に基づく暫定計算です。馬の能力に対する減点ではありません。'
+  :'同一過去走の別版に数値差があります。基準タイムや馬場差の更新による変動の可能性があり、直ちに誤記とは判断しません。';
+ const details=Object.entries(c).map(([key,arr])=>{
+  const i=keys.indexOf(key);
+  const adopted=i>=0?r[9]?.[i]:null;
+  const variants=Array.isArray(arr)?arr:[];
+  const gap=conflict.affected.find(x=>x.key===key);
+  return `<li>${safe(i<0?key:labels[i])}：現行採用値 ${fmt(adopted)} ／ 別版 ${variants.map(v=>safe(v.f)+'＝'+fmt(v.v)).join('、')}${gap?` ／ <strong>最大差 ${fmt(gap.gap)}</strong>`:''}</li>`;
+ }).join('');
+ return `<details class="single-source-warning"><summary${conflict.large?' style="color:#a35900;font-weight:800"':''}>${heading}</summary><div class="notice">${description}<ul>${details}</ul></div></details>`;
+}
 function renderRows(rows){return rows.map((r,i)=>{let notes=rowTags(r);return `<tr id="run-${i}"><td>${safe(date(r[0]))}</td><td>${safe(r[1])}${r[2]||''}R<br><small>${safe(r[10]||'')}</small></td><td>${safe(r[3])}${r[4]}m</td><td>${safe(r[5])}</td><td>${r[6]??'—'}</td><td>${safe(r[7]||'—')}</td><td>${safe(r[8]||'—')}</td>${r[9].map(v=>`<td class="num ${!num(v)?'':v>=90?'hi':v<0?'low':''}">${fmt(v)}</td>`).join('')}<td class="notes-cell">${notes.filter(x=>x.type!=='warn').length?notes.filter(x=>x.type!=='warn').map(x=>`<span class="mini ${x.type==='neg'?'neg':''}">${safe(x.label)}</span>`).join(''):(r[12]?'':'<span class="muted">明確な特徴なし</span>')}${sourceDetails(r)}</td></tr>`}).join('')}
 function renderHorse(){let horse=getHorse(app.current);if(!horse)return;let all=horse[2],rows=all.filter(filt);let different=surfaces(rows).length>1;
- $('horse-title').textContent=app.current;$('horse-meta').textContent=`${safe(horse[0]||'性別未記録')}・${horse[1]||'?'}歳（新聞時点）　収録${all.length}走・表示${rows.length}走`;$('horse-condition').textContent=rows.length?`${rows.length}走が条件一致`:'該当する走なし';
+ $('horse-title').textContent=app.current;const majorSourceRows=pastSourceDifferences(all);
+  $('horse-meta').textContent=`${safe(horse[0]||'性別未記録')}・${horse[1]||'?'}歳（新聞時点）　収録${all.length}走・表示${rows.length}走`+(majorSourceRows.length?`　⚠指数差10以上 ${majorSourceRows.length}走・要確認`:'');$('horse-condition').textContent=rows.length?`${rows.length}走が条件一致`:'該当する走なし';
  $('average-caption').textContent=`条件一致の新しい${app.avgN}走で平均を計算。最低3走・各指数の欠損値は除外。過去10走の最高値とは分離。`;
  $('metrics').innerHTML=labels.map((name,i)=>{let a=avg(rows,i,app.avgN),peak=getPeak(rows,i);return `<div class="metric"><span>${name}</span><b>${different?'—':fmt(a.v)}</b><small>${different?'芝ダ混在':a.v===null?'標本不足':`n=${a.n}`}</small><small>最高 ${peak?fmt(peak[9][i]):'—'}</small></div>`}).join('');
  let positive=[],negative=[],neutral=[];if(!different){let signals=getSignals(rows);positive=signals.filter(x=>x.type==='pos');negative=signals.filter(x=>x.type==='neg');neutral=signals.filter(x=>x.type==='neutral');}
@@ -68,7 +108,11 @@ function renderHorse(){let horse=getHorse(app.current);if(!horse)return;let all=
  $('bar-index').value=String(app.chartIndex);$('condition-bars').innerHTML=rows.length?bars(rows,app.chartIndex):'<p class="hint">一致する履歴なし</p>';
  $('run-count').textContent=`${rows.length} / ${all.length}走`;
  $('rows').innerHTML=renderRows(rows);
- $('data-warning').textContent=rows.some(r=>r[12])?'注意：表示中の過去走に原本間の指数差があります。備考欄の「原本数値の差異・詳細を見る」で確認できます。':'過去走の指数は出典新聞に基づく暫定値です。';
+ $('data-warning').textContent=majorSourceRows.length
+    ?`⚠ 要確認：この馬には同一レースの指数が10以上異なる過去走が${majorSourceRows.length}走あります。備考欄に具体的な差と出典を記載。採用値・平均・適性検索は暫定で、能力評価の減点ではありません。`
+    :rows.some(r=>r[12])
+     ?'表示中の過去走に新聞間の指数差があります。備考欄で採用値と別版の値を確認できます。小差は基準値更新の可能性があります。'
+     :'過去走の指数は出典新聞に基づく暫定値です。';
 }
 function discoverSurface(){const v=$('discover-surface').value;return v==='race'?(activeRace()?.[1]||'all'):v;}
 function selectedWet(g){return $('discover-wetlevel').value==='heavy'?['重','不','不良'].includes(g):isWet(g);}
@@ -214,7 +258,7 @@ function renderDiscover(){
  const nameList=scoped.scope==='all'?Object.keys(all):[...scoped.entries.keys()];
  const cohort=app.preset.startsWith('turf')?goingCohort('芝'):['dirtgain','dirtweak'].includes(app.preset)?goingCohort('ダ'):{};
  let candidates=[];
- for(const name of nameList){const h=all[name];if(!h)continue;const c=candidateKind(name,h,cohort);if(c){c.entry=scoped.entries.get(name);candidates.push(c)}}
+ for(const name of nameList){const h=all[name];if(!h)continue;const c=candidateKind(name,h,cohort);if(c){c.entry=scoped.entries.get(name);c.largeSourceDiffCount=pastSourceDifferences(h[2]).length;candidates.push(c)}}
  candidates.sort((a,b)=>(b.peak??-999)-(a.peak??-999));
  $('found-count').textContent=`${candidates.length.toLocaleString()}頭`;
  const targetLabel={week:'開催週',race:'選択レース',day:'選択日',all:'全登録馬'}[scoped.scope];
@@ -222,7 +266,7 @@ function renderDiscover(){
  const sourceLine=scoped.scope==='all'?`DB登録 ${known.toLocaleString()}頭`:`${app.raceDate||'日付未設定'} ${targetLabel}の出走馬 ${nameList.length.toLocaleString()}頭（指数DBに履歴あり ${known.toLocaleString()}頭）`;
  $('discover-target-summary').textContent=`${sourceLine}　／　指数：${surfaced==='all'?'芝・ダ両方':surfaced||'不明'}　／　該当 ${candidates.length}頭`;
  let arr=candidates.slice(0,app.discoveryLimit);
- $('candidates').innerHTML=arr.map(c=>`<button class="candidate" data-horse="${safe(c.name)}"><strong>${safe(c.name)}</strong><span class="micro">対象${c.n}走</span><p class="reason">${safe(c.reason)}</p><div class="micro">${c.entry?safe(c.entry.day+' '+c.entry.venue+' '+c.entry.no+'R '+(c.entry.race||''))+' ／ ':''}根拠：${c.evidence?safe(runSummary(c.evidence)):'—'}</div></button>`).join('')||'<p class="hint">該当馬がいません。検索対象の開催週・芝ダ・道悪条件を調整してください。</p>';
+ $('candidates').innerHTML=arr.map(c=>`<button class="candidate" data-horse="${safe(c.name)}"><strong>${safe(c.name)}</strong><span class="micro">対象${c.n}走</span><p class="reason">${safe(c.reason)}</p>${c.largeSourceDiffCount?`<p class="micro" style="color:#a35900;font-weight:800">⚠ 同一過去走の指数差10以上：${c.largeSourceDiffCount}走（要確認・判定暫定）</p>`:''}<div class="micro">${c.entry?safe(c.entry.day+' '+c.entry.venue+' '+c.entry.no+'R '+(c.entry.race||''))+' ／ ':''}根拠：${c.evidence?safe(runSummary(c.evidence)):'—'}</div></button>`).join('')||'<p class="hint">該当馬がいません。検索対象の開催週・芝ダ・道悪条件を調整してください。</p>';
  document.querySelectorAll('[data-horse]').forEach(b=>b.onclick=()=>{nav('horse');selectHorse(b.dataset.horse,true)});
  $('more-candidates').classList.toggle('hidden',candidates.length<=app.discoveryLimit);
 }
@@ -289,7 +333,7 @@ function selectRaceHorse(name,scrollToDetails=true){
 }
 function renderRaceHorses(){
  const c=activeRace();if(!c)return;const runners=c[3];let idx=runners.findIndex(x=>x[1]===app.current);
- $('race-horses').innerHTML=runners.map(([no,name])=>{let found=app.db[name];let prior=found?.[2]?.filter(r=>r[0]&&r[0]<app.raceDate)||[];let label=prior.length?`${prior.length}走の指数履歴`:'過去指数未収録';let picked=app.compareList.includes(name);return `<div class="horse-choice"><button type="button" data-horse="${safe(name)}" class="${name===app.current?'active':''}"><span class="hn"><span class="horse-n">${no??'—'}</span>${safe(name)}</span><span class="horse-hint">${label}</span></button><button type="button" data-pick="${safe(name)}" aria-pressed="${picked}" class="add-compare ${picked?'selected':''}" ${!picked&&app.compareList.length>=3?'disabled':''}>${picked?'✓ 比較中・解除':'＋ 比較'}</button></div>`}).join('');
+ $('race-horses').innerHTML=runners.map(([no,name])=>{let found=app.db[name];let prior=found?.[2]?.filter(r=>r[0]&&r[0]<app.raceDate)||[];let major=prior.filter(r=>largeSourceDifference(r).large).length;let label=(prior.length?`${prior.length}走の指数履歴`:'過去指数未収録')+(major?`　⚠指数差10以上${major}走・要確認`:'');let picked=app.compareList.includes(name);return `<div class="horse-choice"><button type="button" data-horse="${safe(name)}" class="${name===app.current?'active':''}"><span class="hn"><span class="horse-n">${no??'—'}</span>${safe(name)}</span><span class="horse-hint">${label}</span></button><button type="button" data-pick="${safe(name)}" aria-pressed="${picked}" class="add-compare ${picked?'selected':''}" ${!picked&&app.compareList.length>=3?'disabled':''}>${picked?'✓ 比較中・解除':'＋ 比較'}</button></div>`}).join('');
  $('race-horses').querySelectorAll('button[data-horse]').forEach(b=>b.onclick=()=>selectRaceHorse(b.dataset.horse));
  $('race-horses').querySelectorAll('button[data-pick]').forEach(b=>b.onclick=()=>toggleCompare(b.dataset.pick));
  renderPickedCompare();
