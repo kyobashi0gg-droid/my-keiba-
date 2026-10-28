@@ -75,7 +75,7 @@
     window.__CH_PRIVATE = pack;
     gate.hidden = true;
     const script = document.createElement('script');
-    script.src = './app.js?v=20261028-loadrelief';
+    script.src = './app.js?v=20261028-source-gap10';
     script.onerror = () => {
       gate.hidden = false;
       status.textContent = 'アプリ本体の読み込みに失敗しました。通信状態をご確認ください。';
