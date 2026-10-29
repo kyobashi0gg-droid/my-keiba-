@@ -24,6 +24,14 @@
     <div id="horseExportStatus" class="status" role="status" aria-live="polite"></div>
   </section>
 
+  <section class="card db-import" aria-label="一括取り込み">
+    <div class="db-import-head"><div><small>BATCH IMPORT</small><strong>用意済みの馬DBを一括取り込み</strong></div></div>
+    <p id="batchPreview" class="note">追加データを確認中…</p>
+    <button id="batchImport" class="primary" type="button" disabled>追加データを一括取り込み</button>
+    <div id="batchStatus" class="status" role="status" aria-live="polite"></div>
+    <p class="note">馬名・過去走をまとめて登録します。登録済みの馬は照合して更新し、同じデータを再度取り込んでも増えません。手動修正した馬名と、追加データにない過去走は保持します。</p>
+  </section>
+
   <section class="card" id="horseManageCard">
     <div class="db-manage-head"><div><small style="color:#2d8a5b;font-weight:900;letter-spacing:.1em">HORSE LIST</small><h2>登録馬・新規順</h2></div><span id="horseManageCount" class="pill p-mid">—頭</span></div>
     <p class="note" style="margin:8px 0 0">新規登録は一番上に表示。新規馬は「名前OK」で確認済みにでき、重複候補や過去走の追加状況もここで確認できます。</p>
@@ -76,13 +84,7 @@
     <div id="saveStatus" class="status"></div>
   </section>
 </div>
-<script src="./horse-import.js"></script>
-<script src="./horse-import-audit.js"></script>
-<script src="./horse-manage.js"></script>
-<script src="./db-export.js?v=20261013-1"></script>
-<script src="./pdf-import.js?v=20261003-0108"></script>
-<script src="./app.js?v=20261003-0935"></script>
-<script src="./persistent-results-v44.js"></script>
+<script src="./db-start.js?v=20261029-1"></script>
 <script>
 (() => {
   const input = document.getElementById('avg33');
