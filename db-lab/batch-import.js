@@ -2,7 +2,14 @@
  const $=id=>document.getElementById(id),button=$('batchImport'),status=$('batchStatus');let feed;
  const reqP=r=>new Promise((resolve,reject)=>{r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});
  async function load(){const res=await fetch('./horse-batch-v1.json',{cache:'no-store'});if(!res.ok)throw Error('追加データを取得できません');return KeibaBatchCore.validate(await res.json());}
- function preview(data){$('batchPreview').textContent=`${data.label}：${data.horses.map(h=>`${h.name}（${h.runs.length}走）`).join('、')}`;}
+ function preview(data){
+ const n=data.horses.reduce((sum,h)=>sum+h.runs.length,0);
+ $('batchPreview').textContent=`${data.label}：取り込み可能 ${data.horses.length}頭・${n}走`+(data.unavailable?.length?` / 原本未取得 ${data.unavailable.length}頭`:'')+(data.note?`。${data.note}`:'');
+ let details=$('batchDetails');if(!details){details=document.createElement('details');details.id='batchDetails';details.className='note';$('batchPreview').after(details);}
+ details.replaceChildren();const title=document.createElement('summary');title.textContent='対象馬・未取得の内訳';details.append(title);
+ const list=document.createElement('div');list.style.whiteSpace='pre-wrap';
+ list.textContent=[...(data.races||[]).map(r=>`${r.track}${r.raceNo}R：${r.horses.length}頭`),'',...data.horses.map(h=>`${h.name}：${h.runs.length}走`),...(data.unavailable||[]).map(h=>`${(h.races||[]).join('/')} ${h.name}：${h.reason}`)].join('\n');details.append(list);
+ }
  button.onclick=async()=>{
   button.disabled=true;status.textContent='データを確認しています…';let db;
   try{
@@ -24,7 +31,7 @@
    await done;
    try{const old=JSON.parse(localStorage.getItem('my-keiba-db-import-audit-v1')||'[]');localStorage.setItem('my-keiba-db-import-audit-v1',JSON.stringify([...plan.summary,...old.filter(h=>!plan.summary.some(n=>n.key===h.key))].slice(0,80)));}catch{}
    $('horseImportStatus').textContent=`MY KEIBA LABと共通DB：${total}頭登録済み`;
-   const s=plan.summary;status.textContent=`登録完了：新規 ${s.filter(h=>h.kind==='new').length}頭 / 更新 ${s.filter(h=>h.kind==='update').length}頭 / 変更なし ${s.filter(h=>h.kind==='same').length}頭。${s.map(h=>`${h.name} ${h.afterRuns}走（追加${h.addedRuns}走）`).join('、')}`;
+   const s=plan.summary;status.textContent=`登録完了：新規 ${s.filter(h=>h.kind==='new').length}頭 / 更新 ${s.filter(h=>h.kind==='update').length}頭 / 変更なし ${s.filter(h=>h.kind==='same').length}頭。${s.length===1?s.map(h=>`${h.name} ${h.afterRuns}走（追加${h.addedRuns}走）`).join('、'):`過去走追加 ${s.reduce((n,h)=>n+h.addedRuns,0)}走・既存走更新 ${s.reduce((n,h)=>n+h.existingUpdatedRuns,0)}走`}`;
    window.dispatchEvent(new CustomEvent('mykeiba:horse-db-updated'));
    $('loadDb').click();
   }catch(e){status.textContent='取り込みできませんでした：'+e.message;}

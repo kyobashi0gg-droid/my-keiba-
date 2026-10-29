@@ -1,4 +1,4 @@
-const assert=require('node:assert/strict');const {plan}=require('../db-lab/batch-core');const feed=require('../db-lab/horse-batch-v1.json');
+const assert=require('node:assert/strict');const {plan}=require('../db-lab/batch-core');const feed=require('./fixtures/aim-in.json');
 const first=plan(feed,[],[],'now');assert.equal(first.horseWrites.length,1);assert.equal(first.writes.length,7);
 const repeat=plan(feed,first.horseWrites,first.writes,'later');assert.equal(repeat.writes.length,0);assert.equal(repeat.horseWrites.length,0);
 const horses=structuredClone(first.horseWrites),runs=structuredClone(first.writes);horses[0].name='手動名';horses[0].nameCorrectedAt='then';horses[0].nameKey='手動名';runs[0].margin='0.1';runs[0].review='old';const update=plan(feed,horses,runs,'later');assert.equal(update.horseWrites[0].name,'手動名');assert.equal(update.writes[0].margin,'0.1');assert.equal(update.summary[0].addedRuns,0);
