@@ -1,5 +1,5 @@
 // Keep PWA caches separate from DB Lab and other apps on the same origin.
-const CACHE = 'my-keiba-lab-v60-pwa';
+const CACHE = 'my-keiba-lab-v68-smartrc';
 const CACHE_PREFIX = 'my-keiba-lab-';
 const CORE_ASSETS = [
   './', './index.html', './styles.css', './integrated-v4.css',
@@ -56,5 +56,8 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin || !url.pathname.startsWith(APP_PATH)
       || url.pathname.startsWith(DB_LAB_PATH)
       || url.pathname.startsWith(CHARANIZE_DB_PATH)) return;
+  // Rank feed must never silently fall back to an older cached revision.
+  if (url.pathname.endsWith('/smartrc-ranks-v1.json')) { event.respondWith(fetch(request)); return; }
   event.respondWith(networkFirst(request));
 });
+
