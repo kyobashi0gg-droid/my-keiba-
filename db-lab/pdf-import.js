@@ -123,9 +123,11 @@
     }catch(err){console.error(err);status.textContent='PDF解析に失敗しました。もう一度読み込んでください。'}
   }
 
-  document.addEventListener('DOMContentLoaded',()=>{
+  function initPdfImport(){
     $('pdfInput')?.addEventListener('change',e=>{const f=e.target.files?.[0];if(f)importPdf(f)});
     $('applyPdfRace')?.addEventListener('click',()=>applyRace(races[Number($('pdfRaceSelect').value)||0]));
     $('pdfRaceSelect')?.addEventListener('change',()=>applyRace(races[Number($('pdfRaceSelect').value)||0]));
-  });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initPdfImport,{once:true});
+  else initPdfImport();
 })();
