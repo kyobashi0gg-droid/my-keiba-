@@ -127,7 +127,9 @@
     const sameBand=ctx.band?sameSurface.filter(r=>runCondition(r).band===ctx.band):[];
     const sameGoingBand=ctx.going?sameBand.filter(r=>runCondition(r).going===ctx.going):[];
     const sameGoingSurface=ctx.going?sameSurface.filter(r=>runCondition(r).going===ctx.going):[];
-    let selected=usable,basis='全体';
+    // 対象馬場の根拠が少なくても芝・ダート混合の全走歴へ戻さない。
+    // 少数の同馬場実績は参考とし、0走なら評価不能として扱う。
+    let selected=sameSurface,basis=ctx.surface?(sameSurface.length?`${ctx.surface}（参考少数）`:`${ctx.surface}（対象走なし）`):'馬場未設定';
     if(ctx.going&&enough(sameGoingBand,true)){selected=sameGoingBand;basis=`${ctx.surface}・${ctx.band}・${ctx.going}`}
     else if(enough(sameBand,true)){selected=sameBand;basis=`${ctx.surface}・${ctx.band}`}
     else if(ctx.going&&enough(sameGoingSurface,true)){selected=sameGoingSurface;basis=`${ctx.surface}・${ctx.going}`}
@@ -437,7 +439,10 @@
         const targetLevel=target.level;
         const sel=selectRuns(classScope.runs,ctx),analysis=coreAnalysis(sel.selected,targetLevel);
         let judge;
-        try{judge=primaryJudge(avg,analysis,targetLevel)}
+        if(!sel.selected.length){
+          judge={code:'unknown',mark:'—',label:'判定不可',gap:null,cls:'mid',detail:`評価対象の${ctx.surface||'馬場'}の過去走なし。別馬場の実績は適合根拠に使用しない`};
+        }
+        else try{judge=primaryJudge(avg,analysis,targetLevel)}
         catch(err){
           console.warn('primaryJudge fallback',h.name,err);
           judge=fallbackJudge(avg,analysis?.core||null);
