@@ -121,6 +121,64 @@
     finally { el.value = ''; }
   }, true);
 
+
+  // PDF import is opt-in and preview-only until the user explicitly confirms.
+  let pdfPending = null;
+  const pdfInput = document.getElementById('pdf-file-input');
+  const pdfStatus = document.getElementById('pdf-upload-status');
+  const pdfPreview = document.getElementById('pdf-import-preview');
+  const pdfConfirm = document.getElementById('pdf-import-confirm');
+  if (pdfInput) pdfInput.addEventListener('change', async () => {
+    const file = pdfInput.files?.[0];
+    if (!file) return;
+    pdfPending = null;
+    pdfPreview.style.display = 'none';
+    pdfConfirm.hidden = true;
+    pdfStatus.textContent = 'PDFを開く準備をしています…';
+    try {
+      if (!activePack) throw Error('初回の指数DB JSONを先に読み込んでください。');
+      const reader = await import('./pdf-import.js?v=20261107-pdf1');
+      pdfPending = await reader.preparePdfImport(file,activePack,s=>{pdfStatus.textContent=s;});
+      const r=pdfPending.summary;
+      const report=[
+        '対象：'+r.file,
+        'PDF掲載レース：'+r.pages+'レース、'+r.horses+'頭',
+        '過去走：'+r.pastRuns+'件、指数読取：'+r.indexedRuns+'件',
+        '新規馬：'+r.newHorses+'頭／新規過去走：'+r.addedRuns+'件',
+        '既存走への不足値補完：'+r.filledValues+'項目',
+        '出走表の新規レース：'+r.newRaces+'件',
+        '既存指数との競合：'+r.conflicts+'件（既存値は保持）',
+        '解析できなかった走：'+r.skipped+'件',
+        r.conflictSamples.length?'競合の例：'+r.conflictSamples.join('、'):'',
+        '※事前の指数新聞は過去走の指数です。当日レースの結果指数ではありません。',
+        '※PDFの文字・配置形式が変更された場合、読取エラーになります。'
+      ].filter(Boolean).join('\n');
+      pdfPreview.textContent=report;
+      pdfPreview.style.display='block';
+      pdfStatus.textContent='読取完了。件数と競合をご確認ください。まだ保存されていません。';
+      pdfConfirm.hidden=!(r.addedRuns || r.filledValues || r.newRaces);
+    } catch (e) {
+      pdfStatus.textContent='PDF取り込み中止：'+(e.message||String(e));
+      pdfPreview.textContent='保存していません。PDFの形式やネット接続をご確認ください。';
+      pdfPreview.style.display='block';
+    } finally {
+      pdfInput.value='';
+    }
+  });
+  if (pdfConfirm) pdfConfirm.addEventListener('click', async () => {
+    if (!pdfPending) return;
+    pdfConfirm.disabled=true;
+    pdfStatus.textContent='確認済みのデータを端末へ保存中…';
+    try {
+      await savePack(pdfPending.pack);
+      pdfStatus.textContent='保存できました。画面を再読み込みします。';
+      location.reload();
+    } catch(e) {
+      pdfStatus.textContent='保存失敗：'+(e.message||String(e));
+      pdfConfirm.disabled=false;
+    }
+  });
+
   dbPromise.then(readSaved).then(saved => {
     if (saved && saved.horses && Object.keys(saved.horses).length && saved.races && Object.keys(saved.races).length) launch(saved);
     else gate.hidden = false;
