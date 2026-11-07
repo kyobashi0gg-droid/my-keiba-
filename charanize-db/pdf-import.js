@@ -148,7 +148,7 @@ async function parsePDF(file){
   if(pg%8===0)await new Promise(resolve=>setTimeout(resolve,0));
  }
  setStatus('馬名・過去走・5指数を照合中…');
- const matchedYear=String(file.name||'').match(/(?:^|[^0-9])(?:20)?(\\d{2})[01]\\d[0-3]\\d(?=$|[^0-9])/);
+ const matchedYear=String(file.name||'').match(/(?:^|[^0-9])(?:20)?([0-9]{2})[01][0-9][0-3][0-9](?=$|[^0-9])/);
  const year=matchedYear ? 2000+Number(matchedYear[1]) : new Date().getFullYear();
  const parsed=charaParsePdfPages(pages,{year});
  if(!/CHARANIZE|脚力ポイント|逃げ・先行指数/.test(parsed.preview)){
