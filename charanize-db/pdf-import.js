@@ -46,7 +46,7 @@ function charaParsePdfPages(pages,options={}){
   // character or splits the venue and date into adjacent text rows.
   const topHeader=charaDateText(left.slice(0,8).filter(x=>x.y<115).map(x=>x.text).join(''));
   const headerDate=topHeader.match(/(新潟|東京|京都|阪神|中山|中京|小倉|札幌|函館|福島)(\d{1,2})\/(\d{1,2})/);
-  if(headerDate){venue=headerDate[1];date=`2026-${headerDate[2].padStart(2,'0')}-${headerDate[3].padStart(2,'0')}`;}
+  if(headerDate){venue=headerDate[1];date=`${options.year || 2026}-${headerDate[2].padStart(2,'0')}-${headerDate[3].padStart(2,'0')}`;}
 
   // PDF.js uses independent text item baselines for ranks/figures, and may put
   // 逃・先・追・脚・ギ on separate lines. Read the raw right-half items in a window
@@ -58,7 +58,7 @@ function charaParsePdfPages(pages,options={}){
   for(let i=0;i<left.length;i++){
    const l=left[i],t=l.text;
    const compact=charaCompact(t);const dt=charaDateText(t).match(/(新潟|東京|京都|阪神|中山|中京|小倉|札幌|函館|福島)(\d{1,2})\/(\d{1,2})/);
-   if(dt){venue=dt[1];date=`2026-${dt[2].padStart(2,'0')}-${dt[3].padStart(2,'0')}`}
+   if(dt){venue=dt[1];date=`${options.year || 2026}-${dt[2].padStart(2,'0')}-${dt[3].padStart(2,'0')}`}
    const rh=compact.match(/(新潟|東京|京都|阪神|中山|中京|小倉|札幌|函館|福島)(\d{1,2})R(.*)/i);
    if(rh){
     venue=rh[1];cur={id:`${date}|${venue}|${Number(rh[2])}`,date,venue,raceNo:Number(rh[2]),name:rh[3]||'',condition:'',horses:[],sourcePages:[]};races.push(cur);horse=null;headers++;
@@ -148,7 +148,9 @@ async function parsePDF(file){
   if(pg%8===0)await new Promise(resolve=>setTimeout(resolve,0));
  }
  setStatus('馬名・過去走・5指数を照合中…');
- const parsed=charaParsePdfPages(pages);
+ const matchedYear=String(file.name||'').match(/(?:^|[^0-9])(?:20)?(\\d{2})[01]\\d[0-3]\\d(?=$|[^0-9])/);
+ const year=matchedYear ? 2000+Number(matchedYear[1]) : new Date().getFullYear();
+ const parsed=charaParsePdfPages(pages,{year});
  if(!/CHARANIZE|脚力ポイント|逃げ・先行指数/.test(parsed.preview)){
   throw Error('CHARANIZE指数新聞ではないPDFの可能性があります。「指数新聞 … .pdf」を選んでください。');
  }
@@ -210,6 +212,7 @@ function clonePack(pack) {
 }
 export async function preparePdfImport(file,pack,progress) {
   if (!file || !/\.pdf$/i.test(file.name)) throw Error('CHARANIZE指数新聞のPDFファイルを選択してください。');
+  if (file.size > 60*1024*1024) throw Error('60MB以下のPDFを選んでください。');
   if (!pack || !pack.horses || !pack.races) throw Error('先に初期JSONの読み込みが必要です。');
   onStatus = typeof progress === 'function' ? progress : () => {};
   const parsed = await parsePDF(file); // same coordinate parser as CHARANIZE LAB
