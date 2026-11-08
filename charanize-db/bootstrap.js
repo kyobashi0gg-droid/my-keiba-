@@ -103,6 +103,18 @@
     const statusEl = document.getElementById(el.id === 'file-input' ? 'upload-status' : 'race-upload-status');
     if (statusEl) statusEl.textContent = '読み込み・端末保存中…';
     try {
+      const pdf = el.id === 'file-input' && /\\.pdf$/i.test(file.name);
+      if(pdf){
+        if(!window.CHARA_PDF_DB_IMPORT)throw Error('PDF解析機能を読み込めませんでした。');
+        const merged = await window.CHARA_PDF_DB_IMPORT.readAndMerge(file,activePack.horses,
+          message=>{if(statusEl)statusEl.textContent=message;});
+        const next = {...activePack,horses:merged.horses,
+          meta:{...activePack.meta,last_pdf_import:file.name,last_pdf_import_stats:merged.changes}};
+        await savePack(next);
+        if(statusEl)statusEl.textContent='PDFを端末保存しました。新規'+merged.changes.added+'走、既存照合'+merged.changes.matched+'走、指数衝突'+merged.changes.conflicts+'件。画面を更新します。';
+        location.reload();
+        return;
+      }
       const raw = await readFile(file);
       const next = {...activePack};
       if (raw.horses) {
