@@ -9,6 +9,8 @@
   const status = document.getElementById('gate-status');
   const input = document.getElementById('initial-file-input');
   let activePack = null;
+  const uploadStatus = document.getElementById('upload-status');
+  if(uploadStatus) uploadStatus.textContent='PDF取り込み機能 v20261109-4 読み込み済み。CHARANIZE指数新聞PDFを選択してください。';
 
   const dbPromise = new Promise((resolve, reject) => {
     if (!('indexedDB' in window)) return reject(new Error('このブラウザでは保存機能が使えません。'));
@@ -103,7 +105,7 @@
     const statusEl = document.getElementById(el.id === 'file-input' ? 'upload-status' : 'race-upload-status');
     if (statusEl) statusEl.textContent = '読み込み・端末保存中…';
     try {
-      const pdf = el.id === 'file-input' && /\.pdf$/i.test(file.name);
+      const pdf = el.id === 'file-input' && (/\.pdf$/i.test(file.name) || file.type === 'application/pdf');
       if(pdf){
         if(!window.CHARA_PDF_DB_IMPORT)throw Error('PDF解析機能を読み込めませんでした。');
         const merged = await window.CHARA_PDF_DB_IMPORT.readAndMerge(file,activePack.horses,
