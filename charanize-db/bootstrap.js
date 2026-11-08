@@ -110,6 +110,10 @@
           message=>{if(statusEl)statusEl.textContent=message;});
         const next = {...activePack,horses:merged.horses,
           meta:{...activePack.meta,last_pdf_import:file.name,last_pdf_import_stats:merged.changes}};
+        const report='PDF解析：'+merged.pdf.races+'レース・'+merged.pdf.horses+'頭・過去走'+merged.pdf.runs+'走。\n'
+          +'DB追加：'+merged.changes.added+'走／更新馬：'+merged.changes.horses+'頭／既存照合：'+merged.changes.matched+'走／指数衝突：'+merged.changes.conflicts+'件。\n'
+          +'既存DBを保持して端末に保存しますか？';
+        if(!confirm(report)){if(statusEl)statusEl.textContent='保存をキャンセルしました。既存データは変更していません。';return;}
         await savePack(next);
         if(statusEl)statusEl.textContent='PDFを端末保存しました。新規'+merged.changes.added+'走、既存照合'+merged.changes.matched+'走、指数衝突'+merged.changes.conflicts+'件。画面を更新します。';
         location.reload();
