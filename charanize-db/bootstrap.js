@@ -103,7 +103,7 @@
     const statusEl = document.getElementById(el.id === 'file-input' ? 'upload-status' : 'race-upload-status');
     if (statusEl) statusEl.textContent = '読み込み・端末保存中…';
     try {
-      const pdf = el.id === 'file-input' && /\\.pdf$/i.test(file.name);
+      const pdf = el.id === 'file-input' && /\.pdf$/i.test(file.name);
       if(pdf){
         if(!window.CHARA_PDF_DB_IMPORT)throw Error('PDF解析機能を読み込めませんでした。');
         const merged = await window.CHARA_PDF_DB_IMPORT.readAndMerge(file,activePack.horses,
