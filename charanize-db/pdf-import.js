@@ -177,15 +177,15 @@ async function parsePDF(file){
 const VENUE_CODE = {東:'東京',新:'新潟',京:'京都',阪:'阪神',中:'中山',小:'小倉',札:'札幌',函:'函館',名:'中京',福:'福島'};
 const METRICS = ['nige','sen','tsui','ashi','gear'];
 function compactDate(s) {
-  if (!/^\\d{6}$/.test(String(s||''))) return null;
+  if (!/^\d{6}$/.test(String(s||''))) return null;
   const y=2000+Number(s.slice(0,2)),m=Number(s.slice(2,4)),d=Number(s.slice(4,6));
   const date=new Date(Date.UTC(y,m-1,d));
   return date.getUTCFullYear()===y && date.getUTCMonth()===m-1 && date.getUTCDate()===d
     ? `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}` : null;
 }
 function normalizeRun(run, sourceName) {
-  const day=compactDate(run.date),where=String(run.where||'').match(/^([東新京阪中小札函名福])(\\d{1,2})R$/);
-  const course=String(run.surfaceDistance||'').match(/^(芝|ダ|障)(\\d{2})$/);
+  const day=compactDate(run.date),where=String(run.where||'').match(/^([東新京阪中小札函名福])(\d{1,2})R$/);
+  const course=String(run.surfaceDistance||'').match(/^(芝|ダ|障)(\d{2})$/);
   if (!day || !where || !course) return null;
   const metrics=METRICS.map(k=>Number.isFinite(run.indices?.[k]?.value)?run.indices[k].value:null);
   if(metrics.filter(Number.isFinite).length<2) return null;
@@ -200,14 +200,15 @@ function mergePreview(current, parsed, filename) {
   const byHorse=new Map();
   for(const race of parsed.races)for(const horse of race.horses){
     if(!horse.name || !Array.isArray(horse.runs)) continue;
-    if(!byHorse.has(horse.name))byHorse.set(horse.name,[]);
+    if(!byHorse.has(horse.name))byHorse.set(horse.name,{sex:horse.sex||'',age:horse.age||null,runs:[]});
     for(const run of horse.runs){
       const row=normalizeRun(run,filename);
-      if(row)byHorse.get(horse.name).push(row);
+      if(row)byHorse.get(horse.name).runs.push(row);
       else changes.skipped++;
     }
   }
-  for(const [name,incoming] of byHorse){
+  for(const [name,entry] of byHorse){
+    const incoming=entry.runs;
     if(!incoming.length)continue;
     const old=next[name], existing=(old?.[2]||[]).map(r=>r.slice()),seen=new Map(existing.map((r,i)=>[runKey(r),i]));
     let changed=false;
@@ -233,7 +234,7 @@ function mergePreview(current, parsed, filename) {
     if(!old||changed){
       existing.sort((a,b)=>String(b[0]).localeCompare(String(a[0]))||Number(b[2])-Number(a[2]));
       // Retain the existing DB's 10-history policy.
-      next[name]=[old?.[0]||'',old?.[1]||null,existing.slice(0,10)];
+      next[name]=[old?.[0]||entry.sex,old?.[1]||entry.age,existing.slice(0,10)];
       changes.horses++;
     }
   }
@@ -241,9 +242,9 @@ function mergePreview(current, parsed, filename) {
   return {horses:next,changes};
 }
 async function readAndMerge(file, currentHorses, onProgress) {
-  if(!file || !/\\.pdf$/i.test(file.name))throw Error('CHARANIZEのPDFを選んでください。');
+  if(!file || !/\.pdf$/i.test(file.name))throw Error('CHARANIZEのPDFを選んでください。');
   if(file.size>35*1024*1024)throw Error('PDFは35MB以下にしてください。');
-  const year=String(file.name).match(/(?:^|[^0-9])(20\\d{2}|2\\d)(?:0[1-9]|1[0-2])(?:[0-3]\\d)(?:[^0-9]|$)/);
+  const year=String(file.name).match(/(?:^|[^0-9])(20\d{2}|2\d)(?:0[1-9]|1[0-2])(?:[0-3]\d)(?:[^0-9]|$)/);
   PAPER_YEAR=year?(year[1].length===2?2000+Number(year[1]):Number(year[1])):new Date().getFullYear();
   progress=typeof onProgress==='function'?onProgress:()=>{};
   const parsed=await parsePDF(file);
