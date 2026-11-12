@@ -122,10 +122,15 @@
     return '';
   }
 
+  // Canonicalize all supported JRA date spellings before matching or writing.
   function normalizeDate(v) {
-    const s = String(v || '').trim();
-    const m = s.match(/(20\d{2})[\/.年-](\d{1,2})[\/.月-](\d{1,2})/);
-    return m ? `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}` : s;
+    const s=String(v||'').trim().replace(/[０-９]/g,c=>String(c.charCodeAt(0)-65296));
+    const m=s.match(/(20\d{2})\s*[.\/年-]\s*(\d{1,2})\s*[.\/月-]\s*(\d{1,2})/);
+    if(!m)return s;
+    const y=Number(m[1]),mo=Number(m[2]),d=Number(m[3]);
+    const dt=new Date(Date.UTC(y,mo-1,d));
+    if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==mo-1||dt.getUTCDate()!==d)return s;
+    return `${m[1]}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   }
   function normalizeGoing(v) { const s=String(v||''); if(/不良/.test(s))return'不良'; if(/稍/.test(s))return'稍重'; if(/重/.test(s))return'重'; if(/良/.test(s))return'良'; return''; }
   function normalizeSurface(v) { const s=String(v||''); if(/ダート|ダ|ﾀﾞ/i.test(s))return'ダ'; if(/芝/.test(s))return'芝'; return''; }
@@ -178,20 +183,87 @@
     let hash=2166136261; for(let i=0;i<raw.length;i++){hash^=raw.charCodeAt(i);hash=Math.imul(hash,16777619);} return `${horseKey}:${(hash>>>0).toString(36)}`;
   }
 
+  const meaningful=v=>v!==null&&v!==undefined&&String(v).trim()!=='';
+  const trackKey=v=>String(v||'').replace(/[\\s　・･]/g,'').trim();
+  const canonicalSurface=v=>normalizeSurface(v);
+
+  // A horse can only have one official JRA start on a given calendar day.
+  // Compare existing runs by canonical date (never by the hash/record id alone).
+  // On conflicting race/track/distance, fail closed instead of corrupting history.
+  function compatibleRun(old, incoming) {
+    const t1=trackKey(old.track),t2=trackKey(incoming.track);
+    if(t1&&t2&&t1!==t2)return false;
+    const d1=Number(old.distance),d2=Number(incoming.distance);
+    if(d1>0&&d2>0&&d1!==d2)return false;
+    const s1=canonicalSurface(old.surface),s2=canonicalSurface(incoming.surface);
+    if(s1&&s2&&s1!==s2)return false;
+    return true;
+  }
+
   async function saveOne(item) {
-    if (!item.nameKey || !item.runs.length) throw new Error('馬名または過去走を認識できません');
+    if(!item.nameKey||!item.runs.length)throw new Error('馬名または過去走を認識できません');
     const db=await openDb();
     try {
-      const tx=db.transaction([HORSES,RUNS],'readwrite'); const hs=tx.objectStore(HORSES), rs=tx.objectStore(RUNS);
-      let existing=await reqP(hs.index('nameKey').get(item.nameKey));
-      if(!existing && item.registrationNo) existing=await reqP(hs.index('registrationNo').get(item.registrationNo));
-      const key=existing?.key || (item.registrationNo?`reg:${item.registrationNo}`:`name:${item.nameKey}`);
-      let added=0;
-      for(const run of item.runs){const rec={...run,id:runId(key,run),horseKey:key,sourceFile:item.fileName,importedAt:item.parsedAt};const old=await reqP(rs.get(rec.id));if(!old)added++;rs.put({...old,...rec});}
-      hs.put({...existing,key,name:item.name,nameKey:item.nameKey,registrationNo:item.registrationNo||existing?.registrationNo||'',lastImportedAt:item.parsedAt,sourceFile:item.fileName,latestRunDate:item.newestDate||existing?.latestRunDate||'',dbSchemaVersion:18});
-      await new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)});
-      return { name:item.name, added, total:item.runs.length, sourceMarginRuns:item.marginRuns||0, hasMarginColumn:!!item.hasMarginColumn };
-    } finally { db.close(); }
+      const tx=db.transaction([HORSES,RUNS],'readwrite');
+      const hs=tx.objectStore(HORSES),rs=tx.objectStore(RUNS);
+      const completed=new Promise((resolve,reject)=>{
+        tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('登録処理を中断しました'));
+      });completed.catch(()=>{});
+      try {
+        const reg=String(item.registrationNo||'').trim();
+        const byReg=reg?await reqP(hs.index('registrationNo').get(reg)):null;
+        const byName=await reqP(hs.index('nameKey').get(item.nameKey));
+        if(byReg&&byName&&byReg.key!==byName.key)
+          throw Error('馬名と血統登録番号が別の登録馬を指しています。手動で確認してください');
+        if(byName?.registrationNo&&reg&&byName.registrationNo!==reg)
+          throw Error('既存馬の血統登録番号が一致しません');
+        const existing=byReg||byName;
+        const key=existing?.key||(reg?`reg:${reg}`:`name:${item.nameKey}`);
+        const oldRuns=await reqP(rs.index('horseKey').getAll(key));
+        const byDate=new Map();
+        for(const run of oldRuns){
+          const date=normalizeDate(run.date);
+          if(!date)continue;
+          const arr=byDate.get(date)||[];arr.push(run);byDate.set(date,arr);
+        }
+        const incomingDates=new Set();
+        let added=0,updated=0;
+        for(const raw of item.runs){
+          const run={...raw,date:normalizeDate(raw.date)};
+          if(!/^20\d{2}-\d{2}-\d{2}$/.test(run.date))
+            throw Error('開催日を読み取れない走があります。登録を中止しました');
+          if(incomingDates.has(run.date))throw Error(`${run.date}が取込元で重複しています`);
+          incomingDates.add(run.date);
+          const matches=byDate.get(run.date)||[];
+          if(matches.length>1)throw Error(`${run.date}には既存の重複走があります。先に重複修復が必要です`);
+          const old=matches[0]||null;
+          if(old&&!compatibleRun(old,run))throw Error(`${run.date}の競馬場・距離・芝ダが既存走と異なります`);
+          const rec={...old,id:old?.id||runId(key,run),horseKey:key};
+          for(const [k,v] of Object.entries(run))if(meaningful(v))rec[k]=v;
+          // Keep the existing stable id; do not rehash a previously stored run.
+          rec.id=old?.id||runId(key,run);
+          rec.horseKey=key;
+          rec.sourceFile=item.fileName;rec.importedAt=item.parsedAt;
+          if(!old)added++;else updated++;
+          rs.put(rec);
+        }
+        const allDates=[...oldRuns.map(r=>normalizeDate(r.date)),...item.runs.map(r=>normalizeDate(r.date))]
+          .filter(d=>/^20\d{2}-\d{2}-\d{2}$/.test(d)).sort();
+        const corrected=Boolean(existing?.nameCorrectedAt);
+        const name=corrected?existing.name:item.name;
+        hs.put({...existing,key,name,nameKey:normName(name),
+          registrationNo:reg||existing?.registrationNo||'',
+          lastImportedAt:item.parsedAt,sourceFile:item.fileName,
+          latestRunDate:allDates.at(-1)||existing?.latestRunDate||'',
+          dbSchemaVersion:18});
+        await completed;
+        return {name,added,updated,total:item.runs.length,sourceMarginRuns:item.marginRuns||0,hasMarginColumn:!!item.hasMarginColumn};
+      } catch(error) {
+        try{tx.abort()}catch{}
+        await completed.catch(()=>{});
+        throw error;
+      }
+    } finally {db.close(); }
   }
 
   async function existingCount() { const db=await openDb(); try{return await reqP(db.transaction(HORSES,'readonly').objectStore(HORSES).count());}finally{db.close();} }
