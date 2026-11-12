@@ -56,9 +56,9 @@
   async function readDb(){
     const db=await reqP(indexedDB.open(DB,1));
     try{
-      const tx=db.transaction(['horses','runs'],'readonly');
+      const tx=db.transaction(['horses','runs'],'readonly'),finished=done(tx);
       const [horses,runs]=await Promise.all([reqP(tx.objectStore('horses').getAll()),reqP(tx.objectStore('runs').getAll())]);
-      await done(tx);return {horses,runs};
+      await finished;return {horses,runs};
     }finally{db.close()}
   }
   function download(data){
@@ -91,7 +91,7 @@
     try{
       // Re-read and check the entire set before the atomic write transaction.
       const before=await readDb(); // separate connection, no write transaction yet
-      if(before.runs.length!==runs.length||before.horses.length!==horses.length)throw Error('検査後にDBが変更されました。再検査してください');
+      if(before.runs.length!==runs.length||before.horses.length!==horses.length||before.runs.some((r,i)=>r.id!==runs[i].id))throw Error('検査後にDBが変更されました。再検査してください');
       const fresh=inspect(before.runs);
       if(fresh.ambiguous.length||fresh.repairs.reduce((n,x)=>n+x.remove.length,0)!==count)
         throw Error('重複内容が変更されています。再検査してください');
