@@ -8,7 +8,8 @@
   const $=id=>document.getElementById(id);
   const norm=v=>String(v||'').replace(/[\s　・･]/g,'').trim();
   const WRONG_RE=/(競走馬データベース|データベース|Facebook|Twitter|Threads|Line|共有|ログイン|トップページ|検索)/i;
-  let limit=30;
+  const INITIAL_VISIBLE=2, PAGE_SIZE=10;
+  let limit=INITIAL_VISIBLE;
 
   function openDb(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
   const reqP=r=>new Promise((resolve,reject)=>{r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});
@@ -98,8 +99,8 @@
   }
 
   async function render(reset=false){
-    if(reset)limit=30;
-    const list=$('horseRecentList'),countEl=$('horseManageCount'),more=$('horseShowMore'),status=$('horseManageStatus');
+    if(reset)limit=INITIAL_VISIBLE;
+    const list=$('horseRecentList'),countEl=$('horseManageCount'),more=$('horseShowMore'),collapse=$('horseCollapse'),status=$('horseManageStatus');
     if(!list||!countEl)return;
     let horses=[];
     try{horses=(await listHorses()).sort(sortNewest)}catch{list.innerHTML='<div class="empty-recent">登録馬一覧を読み込めませんでした。</div>';return}
@@ -108,7 +109,12 @@
     countEl.textContent=`${horses.length}頭`;
     const shown=horses.slice(0,limit);
     list.innerHTML=shown.length?shown.map(h=>cardHtml(h,dups,audits.get(h.key))).join(''):'<div class="empty-recent">まだ登録馬がありません。</div>';
-    if(more){more.hidden=horses.length<=limit;more.textContent=`さらに表示（残り${Math.max(0,horses.length-limit)}頭）`;}
+    if(more){
+      const remaining=Math.max(0,horses.length-limit);
+      more.hidden=remaining===0;
+      more.textContent=`さらに${Math.min(PAGE_SIZE,remaining)}頭表示（残り${remaining}頭）`;
+    }
+    if(collapse)collapse.hidden=limit<=INITIAL_VISIBLE;
     const need=horses.filter(pending).length,dupCount=dups.size;
     if(status)status.textContent=`馬名確認待ち ${need}頭${dupCount?` / 重複候補 ${dupCount}頭`:''}`;
   }
@@ -132,7 +138,8 @@
       const save=e.target.closest?.('[data-save-name]');
       if(save)saveFromCard(save.closest('.recent-horse'),false);
     });
-    $('horseShowMore')?.addEventListener('click',()=>{limit+=30;render(false)});
+    $('horseShowMore')?.addEventListener('click',()=>{limit+=PAGE_SIZE;render(false)});
+    $('horseCollapse')?.addEventListener('click',()=>{limit=INITIAL_VISIBLE;render(false)});
     render(true);
   }
 
