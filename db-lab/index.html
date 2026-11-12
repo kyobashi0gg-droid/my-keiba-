@@ -24,6 +24,13 @@
     <div id="horseExportStatus" class="status" role="status" aria-live="polite"></div>
   </section>
 
+  <section class="card" aria-label="重複検査と修復">
+    <div class="db-import-head"><div><small>DATABASE SAFETY</small><strong>重複走の検査・修復</strong></div></div>
+    <p class="note">検査だけではDBを変更しません。修復時はバックアップをダウンロードしてから、同一馬・同一日の一致データのみ統合します。不一致のあるデータは自動修復しません。</p>
+    <div class="actions"><button id="dupRepairScan" type="button" class="secondary">重複を検査</button><button id="dupRepairExecute" type="button" class="secondary" disabled>確認して修復</button></div>
+    <div id="dupRepairStatus" class="status" role="status" aria-live="polite"></div>
+  </section>
+
   <section class="card db-import" aria-label="一括取り込み">
     <div class="db-import-head"><div><small>BATCH IMPORT</small><strong>用意済みの馬DBを一括取り込み</strong></div></div>
     <p id="batchPreview" class="note">追加データを確認中…</p>
