@@ -46,36 +46,106 @@ function getSignals(rows){let signal=[];const put=(type,label,desc,refs)=>signal
  return signal;
 }
 // v0.6: Explain running style separately from the finishing result. Observational only.
+// v0.7: Show only evidenced, horse-specific characteristics. No compulsory four-card report.
 function characterInsights(rows){
- if(!rows.length)return '<p class="hint">対象の過去走がありません。馬キャラは推測しません。</p>';
- if(surfaces(rows).length>1)return '<p class="hint">芝とダートが混在しています。比較するには芝ダを分けてください。</p>';
- const band=r=>{const d=Number(r[4]);return d<=1400?'1400m以下':d===1600?'1600m':d<=2200?'1800〜2200m':'2400m以上'};
- const groups=new Map();for(const r of rows){const k=band(r);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(r)}
- const [name,part]=[...groups].sort((a,b)=>b[1].length-a[1].length)[0];
- const good=part.filter(r=>Number(r[6])>=1&&Number(r[6])<=3),poor=part.filter(r=>Number(r[6])>=7);
- const front=part.filter(r=>{const p=parsePass(r);return p.length&&p[0]<=2});
- const frontGood=front.filter(r=>Number(r[6])>=1&&Number(r[6])<=3),frontPoor=front.filter(r=>Number(r[6])>=7);
- const mean=(list,k)=>{let a=list.map(r=>r[9]?.[k]).filter(num);return {n:a.length,v:a.length?a.reduce((x,y)=>x+y,0)/a.length:null}};
- const first=mean(part,0),second=mean(part,1);
- const initial=first.n>=3&&second.n>=3?
-  '逃指数（ゲートの出を含む初速）平均'+fmt(first.v)+'、先行指数（その後の先行力）平均'+fmt(second.v)+'。両者は別指標のため、数値差だけで初速型か二の脚型かを確定しません。':
-  '逃・先行指数が揃った標本が不足し、初速と二の脚の特徴は判定保留です。';
- let frontNote='前方を取った際の好走・凡走を比較できる標本が不足しています。';
- if(frontGood.length&&frontPoor.length)frontNote='最初の記録コーナーで2番手以内だった走りに、3着以内'+frontGood.length+'走と7着以下'+frontPoor.length+'走が混在。前へ行けたことだけでは結果を説明できません。';
- else if(frontGood.length>=2)frontNote='最初の記録コーナーで2番手以内から3着以内を'+frontGood.length+'走記録。ただし同じ位置からの凡走例が不足しています。';
- else if(frontPoor.length>=2)frontNote='最初の記録コーナーで2番手以内でも7着以下が'+frontPoor.length+'走。先行そのものが苦手とは断定しません。';
- let contrast='3着以内'+good.length+'走、7着以下'+poor.length+'走。両方2走以上ないため比較は保留します。';
- if(good.length>=2&&poor.length>=2){
-  const names=['逃（初速）','先（二の脚）','追走負荷','脚力','ギア'];
-  let z=names.map((k,i)=>{let a=mean(good,i),b=mean(poor,i);return a.n>=2&&b.n>=2?k+'：3着内'+fmt(a.v)+'／7着以下'+fmt(b.v):null}).filter(Boolean);
-  contrast=z.length?z.join('、')+'。この差は観測値であり、着順を分けた原因とは限りません。':'比較できる共通指数が不足しています。';
+ if(!rows.length)return '<p class="hint">対象の過去走がないため、馬キャラは判定できません。</p>';
+ if(surfaces(rows).length>1)return '<p class="hint">芝・ダート混在では判定しません。芝かダートを選択してください。</p>';
+ const band=r=>{const d=Number(r[4]);return !d?'距離不明':d<=1400?'1400m以下':d===1600?'1600m':d<=2200?'1800〜2200m':'2400m以上'};
+ const groups=new Map();
+ for(const r of rows){const k=band(r);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(r)}
+ const [distanceBand,part]=[...groups].sort((a,b)=>b[1].length-a[1].length)[0];
+ const positionData=part.map(r=>({r,p:parsePass(r)})).filter(x=>x.p.length);
+ const nearFront=positionData.filter(x=>x.p[0]<=2);
+ const fromBack=positionData.filter(x=>x.p[0]>=6);
+ const mid=positionData.filter(x=>x.p[0]>=3&&x.p[0]<=5);
+ const share=positionData.length;
+ const good=r=>Number(r[6])>=1&&Number(r[6])<=3;
+ const poor=r=>Number(r[6])>=7;
+ const cards=[];
+ const evidence=new Set();
+ function add(title,body,refs=[]){
+  if(cards.length>=3)return;
+  cards.push({title,body});
+  refs.forEach(r=>evidence.add(r));
  }
- const evidence=[...new Set([...frontGood.slice(0,2),...frontPoor.slice(0,2),...good.slice(0,1),...poor.slice(0,1)])];
- const ev=evidence.length?'<details class="chara-evidence"><summary>根拠の過去走を確認（'+evidence.length+'走）</summary><ul>'+evidence.map(r=>'<li>'+safe(runSummary(r))+'／通過 '+safe(r[7]||'—')+'／逃 '+fmt(r[9]?.[0])+'・先 '+fmt(r[9]?.[1])+'・追 '+fmt(r[9]?.[2])+'・脚 '+fmt(r[9]?.[3])+'・ギ '+fmt(r[9]?.[4])+'</li>').join('')+'</ul></details>':'';
- const card=(title,body)=>'<div class="chara-observe-card"><b>'+title+'</b><p>'+safe(body)+'</p></div>';
- return '<div class="chara-observe-scope">同じ芝ダ・最多の距離帯：'+safe(part[0][3])+' '+safe(name)+'／'+part.length+'走（表示'+rows.length+'走から抽出）</div>'+
- '<div class="chara-observe-grid">'+card('① 初速と二の脚',initial)+card('② 前方で運んだときの結果',frontNote)+card('③ 好走時と凡走時の指数',contrast)+card('④ まだ分からない戦術条件','ハナを取ってから緩めると不利か、飛ばして粘る方が得意か、競り合いや馬群で凡走するかは、この指数とコーナー通過順だけでは判断できません。区間ラップ・映像・相手関係の照合が必要です。')+'</div>'+ev+
- '<p class="help-line">※3着以内と7着以下は比較用の便宜的な区分です。着順は相手レベル・距離・騎手・馬場・進路でも変化します。最初の記録コーナーはゲート直後を示しません。指数だけから因果を決めません。</p>';
+ const style=share>=2&&nearFront.length>=2&&nearFront.length/share>=.5?'front':
+  share>=2&&fromBack.length>=2&&fromBack.length/share>=.5?'back':
+  share>=3&&mid.length>=2&&mid.length/share>=.5?'mid':
+  share>=3&&nearFront.length&&fromBack.length?'variable':'unknown';
+ if(style==='front'){
+  const now=nearFront.map(x=>x.r);
+  let body=part.length+'走中、通過順を確認できる'+share+'走のうち'+nearFront.length+'走で、最初の記録コーナーを2番手以内で通過。';
+  const g=now.filter(good),b=now.filter(poor);
+  if(g.length&&b.length)body+='同じ前方位置から3着以内'+g.length+'走と7着以下'+b.length+'走があり、先手を取ることだけでは成績差を説明できません。';
+  else if(g.length>=2)body+='そのうち'+g.length+'走で3着以内。前方で運ぶ形は好走実績がありますが、最善のペース配分は未確認です。';
+  else body+='逃げ・先行が基本的な位置取りの候補です。前で走った結果の良し悪しは断定しません。';
+  add('先手を取って運ぶ傾向',body,now.slice(0,3));
+ }else if(style==='back'){
+  const now=fromBack.map(x=>x.r);
+  let body='記録がある'+share+'走中'+fromBack.length+'走で、最初の記録コーナーが6番手以下。後方から脚を使う形が比較的多い馬です。';
+  const before4=fromBack.filter(x=>x.p.length>=2&&x.p[0]-x.p[x.p.length-1]>=3);
+  const stayBack=fromBack.filter(x=>x.p.length>=2&&x.p[x.p.length-1]>=6);
+  if(before4.length>=2)body+='うち'+before4.length+'走は最終コーナーまでに3つ以上順位を上げており、道中〜コーナーで進出する傾向があります。';
+  else if(stayBack.length>=2)body+='うち'+stayBack.length+'走は最終コーナーも6番手以下で、直線まで脚を温存する形が多くなっています。';
+  add('差し・追込の位置取り',body,now.slice(0,3));
+ }else if(style==='mid'){
+  add('中団から運ぶ傾向','通過順を確認できる'+share+'走中'+mid.length+'走で、最初の記録コーナーが3〜5番手。逃げ切り型や最後方一気型とは区別して評価します。',mid.slice(0,3).map(x=>x.r));
+ }else if(style==='variable'){
+  add('位置取りが一定しないタイプ','前方2番手以内と6番手以下の両方の記録があります。どちらが能力を発揮しやすいかは、好走時と凡走時を同じ条件で比較して判定します。',[nearFront[0].r,fromBack[0].r]);
+ }
+ const highGear=part.filter(r=>num(r[9]?.[4])&&r[9][4]>=65);
+ const highLeg=part.filter(r=>num(r[9]?.[3])&&r[9][3]>=75);
+ const dual=part.filter(r=>num(r[9]?.[4])&&r[9][4]>=65&&num(r[9]?.[3])&&r[9][3]>=70);
+ const legGearLow=part.filter(r=>num(r[9]?.[3])&&r[9][3]>=75&&num(r[9]?.[4])&&r[9][4]<60);
+ const stress=part.filter(r=>num(r[9]?.[2])&&r[9][2]>=75&&num(r[9]?.[3])&&r[9][3]>=70);
+ const canBeCloser=style==='back'||style==='mid';
+ if(canBeCloser&&dual.length>=2){
+  const named=dual.slice(0,3);
+  let body='同じ走りで脚力70以上・ギア65以上を'+dual.length+'走記録。末脚と加速性能を同時に示した実績があります。';
+  const venue=Object.create(null);for(const r of dual)venue[r[1]]=(venue[r[1]]||0)+1;
+  const max=[...Object.entries(venue)].sort((a,b)=>b[1]-a[1])[0];
+  if(max&&max[1]===dual.length&&dual.length>=2)body+='ただし、この高値は'+max[0]+'に集中しており、他場での再現性は別確認です。';
+  body+='瞬間的な一脚なのか長く使える脚なのかは、区間ラップがないため未確定です。';
+  add('加速力を伴う末脚が武器（候補）',body,named);
+ }else if(canBeCloser&&legGearLow.length>=2){
+  add('脚力型の差し・持続型を検証','脚力75以上でもギア60未満だった走りが'+legGearLow.length+'走あります。瞬間的な加速より一定の速い脚を続けるタイプという仮説は考えられますが、実際の持続区間を区間ラップで確認するまでは確定しません。',legGearLow.slice(0,3));
+ }else if(canBeCloser&&highGear.length>=2){
+  add('ギアを使える差し（候補）','ギア65以上を'+highGear.length+'走記録。加速力を発揮した履歴がありますが、瞬発的なキレか、徐々に加速するかはこの指数だけでは区別できません。',highGear.slice(0,3));
+ }else if(canBeCloser&&highLeg.length>=2){
+  add('繰り返し脚力を発揮','脚力75以上を'+highLeg.length+'走記録。末脚能力の再現例はありますが、末脚を使う時間の長さや加速過程は未確認です。',highLeg.slice(0,3));
+ }
+ if(style==='front'){
+  const strongStart=part.filter(r=>num(r[9]?.[0])&&r[9][0]>=65);
+  const strongAfter=part.filter(r=>num(r[9]?.[1])&&r[9][1]>=65);
+  const strongBoth=part.filter(r=>num(r[9]?.[0])&&r[9][0]>=65&&num(r[9]?.[1])&&r[9][1]>=65);
+  if(strongBoth.length>=2)add('初速とその後の先行力の両立','ゲートの出を含む逃指数65以上と、その後の先行指数65以上を同じ走りで'+strongBoth.length+'走記録。先手を取る能力構成が確認できます。',strongBoth.slice(0,3));
+  else if(strongStart.length>=2)add('ゲートを含む初速が特徴','逃指数65以上を'+strongStart.length+'走記録。ゲートを含む初速が高い履歴です。楽にハナを取ったあとに緩めるべきかは、区間ラップを確認する必要があります。',strongStart.slice(0,3));
+  else if(strongAfter.length>=2)add('二の脚・その後の先行力が特徴','先行指数65以上を'+strongAfter.length+'走記録。初速の後に前へ出る力を示していますが、ゲートで後手を踏んだ時の回復力は通過順だけでは確定できません。',strongAfter.slice(0,3));
+ }
+ if(cards.length<3&&stress.length>=2){
+  add('高い追走負荷でも脚力を記録','追走指数75以上の負荷と脚力70以上を同時に'+stress.length+'走記録。負荷経験と末脚の両立は確認できますが、速いペースへの適性そのものは区間ラップと着差で別に評価します。',stress.slice(0,3));
+ }
+ // Show outcome contrasts only when both sides have relevant examples.
+ const similar=style==='front'?nearFront.map(x=>x.r):style==='back'?fromBack.map(x=>x.r):style==='mid'?mid.map(x=>x.r):part;
+ const positives=similar.filter(good),negatives=similar.filter(poor);
+ if(cards.length<3&&positives.length>=2&&negatives.length>=2){
+  const avg=(rr,k)=>{const vals=rr.map(r=>r[9]?.[k]).filter(num);return vals.length>=2?vals.reduce((a,b)=>a+b,0)/vals.length:null};
+  const pLeg=avg(positives,3),nLeg=avg(negatives,3),pGear=avg(positives,4),nGear=avg(negatives,4);
+  let body='似た位置取りの3着以内'+positives.length+'走と7着以下'+negatives.length+'走を比較。';
+  if(pLeg!=null&&nLeg!=null)body+='脚力の平均は'+fmt(pLeg)+'対'+fmt(nLeg)+'。';
+  if(pGear!=null&&nGear!=null)body+='ギアの平均は'+fmt(pGear)+'対'+fmt(nGear)+'。';
+  body+='結果を分けた原因は指数だけでは特定できません。';
+  add('同じ走り方でも成績が分かれる',body,[...positives.slice(0,2),...negatives.slice(0,2)]);
+ }
+ if(!cards.length){
+  add('特徴判定は保留','今回の絞り込みでは同じ芝ダ・距離帯に'+part.length+'走の記録がありますが、位置取りや指数の再現性について十分な根拠が揃っていません。対象を広げるか過去走を確認してください。');
+ }
+ const desc=(title,body)=>'<div class="chara-observe-card"><b>'+safe(title)+'</b><p>'+safe(body)+'</p></div>';
+ const selected=[...evidence];
+ const evidenceHtml=selected.length?'<details class="chara-evidence"><summary>この馬の特徴の根拠となる過去走を見る（'+selected.length+'走）</summary><ul>'+selected.map(r=>'<li>'+safe(runSummary(r))+'／通過 '+safe(r[7]||'—')+'／逃 '+fmt(r[9]?.[0])+'・先 '+fmt(r[9]?.[1])+'・追 '+fmt(r[9]?.[2])+'・脚 '+fmt(r[9]?.[3])+'・ギ '+fmt(r[9]?.[4])+'</li>').join('')+'</ul></details>':'';
+ return '<div class="chara-observe-scope">対象：'+safe(part[0][3])+' '+safe(distanceBand)+'／'+part.length+'走。確認できた特徴を優先して表示</div>'+
+ '<div class="chara-observe-grid">'+cards.map(x=>desc(x.title,x.body)).join('')+'</div>'+evidenceHtml+
+ '<p class="help-line">※初速は逃指数、二の脚は先行指数。高指数は速い時計の再現を保証しません。瞬発型・持続型・漸進型の確定には区間ラップが必要です。コーナー順位だけでゲート直後の動きや勝敗原因を断定しません。</p>';
 }
 function evidenceText(r){let vals=r[9];return `${runSummary(r)}：脚${fmt(vals[3])}、ギア${fmt(vals[4])}、先${fmt(vals[1])}、追${fmt(vals[2])}`;}
 function renderEvidence(sig){return `<details class="evidence"><summary>根拠の過去走を確認 (${sig.refs.length}件表示)</summary><ul>${sig.refs.map(r=>`<li>${safe(evidenceText(r))}</li>`).join('')}</ul></details>`;}
