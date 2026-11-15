@@ -47,6 +47,45 @@ function getSignals(rows){let signal=[];const put=(type,label,desc,refs)=>signal
 }
 // v0.6: Explain running style separately from the finishing result. Observational only.
 // v0.7: Show only evidenced, horse-specific characteristics. No compulsory four-card report.
+// Cross-check the horse's performance in race-wide 33 with its actual recorded position changes.
+// Causal classifications (burst/sustained/gradual) still require sectionals or video.
+function individualLapStory(name,rows){
+ if(!name||!window.__CH_PRIVATE?.lapRuns?.byHorse)return null;
+ const matches=lapMatches(name,rows);
+ if(matches.length<2)return null;
+ const signed=v=>(v>0?'+':'')+fmt(v);
+ const pass=x=>parsePass(x.ch);
+ const valid=matches.filter(x=>pass(x).length>=2);
+ const wins=matches.filter(x=>Number(x.ch[6])>=1&&Number(x.ch[6])<=3);
+ if(!valid.length||!wins.length)return null;
+ const winsValid=valid.filter(x=>Number(x.ch[6])>=1&&Number(x.ch[6])<=3);
+ const advance=winsValid.filter(x=>{const p=pass(x);return p[0]-p[p.length-1]>=2});
+ const stay=winsValid.filter(x=>{const p=pass(x);return p[0]-p[p.length-1]<2});
+ const early=winsValid.filter(x=>pass(x)[0]<=2);
+ const later=winsValid.filter(x=>pass(x)[0]>=6);
+ const poor=valid.filter(x=>Number(x.ch[6])>=7);
+ const lo=Math.min(...wins.map(x=>x.raw[4])),hi=Math.max(...wins.map(x=>x.raw[4]));
+ const observations=[];
+ if(advance.length)observations.push('途中から順位を上げて3着以内'+advance.length+'走（例：'+pass(advance[0]).join('-')+'、実33'+signed(advance[0].raw[4])+'）');
+ if(stay.length)observations.push('コーナー間の順位上昇が2つ未満でも3着以内'+stay.length+'走（例：'+pass(stay[0]).join('-')+'、実33'+signed(stay[0].raw[4])+'）');
+ if(!observations.length)return null;
+ let body='レース全体の実33'+signed(lo)+'〜'+signed(hi)+'で3着以内'+wins.length+'走。'+observations.join('。')+'。';
+ if(advance.length&&stay.length)body+='途中進出と位置を大きく上げない競馬の両方で好走実績があります。';
+ const gear= wins.filter(x=>num(x.ch[9]?.[4])&&x.ch[9][4]>=65);
+ if(gear.length>=2){
+  const a=Math.min(...gear.map(x=>x.raw[4])),b=Math.max(...gear.map(x=>x.raw[4]));
+  body+='そのうちギア65以上'+gear.length+'走の実33は'+signed(a)+'〜'+signed(b)+'。';
+ }
+ if(poor.length>=2){
+  const pLo=Math.min(...poor.map(x=>x.raw[4])),pHi=Math.max(...poor.map(x=>x.raw[4]));
+  body+='一方7着以下'+poor.length+'走の実33は'+signed(pLo)+'〜'+signed(pHi)+'。ただし同じ位置取りや相手の強さを揃えないと、33による敗因とは言えません。';
+ }
+ const sharedVenues=[...new Set(wins.map(x=>x.raw[1]).filter(Boolean))];
+ if(sharedVenues.length===1&&wins.length>=2)body+='好走は'+sharedVenues[0]+'に集中しており、他場での再現は別途確認が必要です。';
+ body+='実33はレース全体の値で、馬自身の加速区間や瞬発・持続の型を確定するものではありません。';
+ const refs=[...new Set([...advance.slice(0,2),...stay.slice(0,2),...poor.slice(0,1)].map(x=>x.ch))];
+ return {title:'実33と位置取りから見た好走パターン',body,refs};
+}
 function characterInsights(rows){
  if(!rows.length)return '<p class="hint">対象の過去走がないため、馬キャラは判定できません。</p>';
  if(surfaces(rows).length>1)return '<p class="hint">芝・ダート混在では判定しません。芝かダートを選択してください。</p>';
@@ -72,6 +111,8 @@ function characterInsights(rows){
   share>=2&&fromBack.length>=2&&fromBack.length/share>=.5?'back':
   share>=3&&mid.length>=2&&mid.length/share>=.5?'mid':
   share>=3&&nearFront.length&&fromBack.length?'variable':'unknown';
+ const lapCharacter=individualLapStory(app.current,part);
+ if(lapCharacter)add(lapCharacter.title,lapCharacter.body,lapCharacter.refs);
  if(style==='front'){
   const now=nearFront.map(x=>x.r);
   let body=part.length+'走中、通過順を確認できる'+share+'走のうち'+nearFront.length+'走で、最初の記録コーナーを2番手以内で通過。';
