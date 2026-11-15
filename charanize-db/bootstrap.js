@@ -99,12 +99,26 @@
   // Capture changes before legacy file handlers so update persists instead of being lost on reload.
   document.addEventListener('change', async ev => {
     const el = ev.target;
-    if (!el || !['file-input','race-file-input'].includes(el.id)) return;
+    if (!el || !['file-input','race-file-input','lap-file-input'].includes(el.id)) return;
     ev.stopImmediatePropagation();
     const file = el.files?.[0]; if (!file || !activePack) return;
-    const statusEl = document.getElementById(el.id === 'file-input' ? 'upload-status' : 'race-upload-status');
+    const statusEl = document.getElementById(el.id === 'file-input' ? 'upload-status' : el.id === 'lap-file-input' ? 'lap-upload-status' : 'race-upload-status');
     if (statusEl) statusEl.textContent = '読み込み・端末保存中…';
     try {
+      if(el.id==='lap-file-input'){
+        if(!window.CHARA_LAP_SYNC)throw Error('実33取り込みモジュールが読み込めませんでした。');
+        const raw=await readFile(file);
+        const imported=window.CHARA_LAP_SYNC.parse(raw,activePack.lapRuns);
+        const st=imported.stats;
+        const approval='MY KEIBA DB LABの実33を取り込みます。\n'+
+         '読み取り'+st.imported+'走／保存対象'+st.total+'走・'+st.horseCount+'頭。\n'+
+         '同一過去走の重複'+st.duplicates+'件、実33の不一致'+st.conflicts+'件。\n'+
+         '指数DB・出走表は変更せず、実33を別領域に保存します。保存しますか？';
+        if(!confirm(approval)){if(statusEl)statusEl.textContent='実33の保存をキャンセルしました。既存データは変更していません。';return;}
+        await savePack({...activePack,lapRuns:imported});
+        if(statusEl)statusEl.textContent='実33の取り込み完了。画面を更新します。';
+        location.reload();return;
+      }
       const pdf = el.id === 'file-input' && (/\.pdf$/i.test(file.name) || file.type === 'application/pdf');
       if(pdf){
         if(!window.CHARA_PDF_DB_IMPORT)throw Error('PDF解析機能を読み込めませんでした。');
