@@ -215,7 +215,7 @@
 <select id="raceSel" hidden aria-hidden="true" tabindex="-1"></select>
 <div class="controls"><div class="control"><label for="surfaceSel">参照する過去走</label><select id="surfaceSel"><option value="course">今回と同じ芝・ダ</option><option value="all">芝・ダ両方（参考）</option></select></div><div class="control"><label for="spanSel">指数の集計方法</label><select id="spanSel"><option value="profile5" selected>過去5走の加重平均（基本）</option><option value="last">直近の該当走</option><option value="max">過去5走の各指数最高</option><option value="3">過去3走の最高</option></select></div><div class="control"><label for="horseSearch">馬名で絞る</label><input type="search" id="horseSearch" placeholder="馬名を入力"/></div></div><div class="row" style="margin-top:11px"><label class="switch"><input id="hideMissing" type="checkbox"/> 記録なしの馬を非表示</label><span class="note" id="raceMeta"></span></div></section>
 <section><div class="stats" id="stats"></div></section>
-<section id="rankOverview" class="rankOverview" aria-label="各指数TOP5"><div class="heading"><div><div class="kicker">RACE INDEX</div><h2>各指数の上位馬</h2></div><div class="note">指数ごとに上位順。過去5走の別々のレースの場合があります。</div></div><div id="ranks" class="rankgrid"></div></section>
+<section id="rankOverview" class="rankOverview" aria-label="各指数TOP5"><div class="heading"><div><div class="kicker">RACE INDEX</div><h2>各指数の上位馬</h2></div><div class="note" id="rankBasis">過去5走の加重平均で順位付け（各指数を別々に集計）</div></div><div id="ranks" class="rankgrid"></div></section>
 
 <section id="v10OfficialOverview" class="v10Official" aria-label="公式原指数水準の到達と追走負荷経験"></section>
 
@@ -316,7 +316,25 @@ function parseRunCourse(z){let short=(z.where||'').charAt(0);let vd=venueFull[sh
 function parseTargetCourse(r){let m=(r.condition||'').match(/^(芝|ダ|障)(\d+)/);return m?{venue:r.venue,surface:m[1],distance:Number(m[2])}:null}
 function baseline(course){return course&&state.bench.find(b=>b.venue===course.venue&&b.surface===course.surface&&b.distance===course.distance)}
 function calculateAdjustment(r,z,k){if(!['nige','sen'].includes(k)||!state.benchEnabled||state.pointsPerSec===null||!Number.isFinite(state.pointsPerSec)||state.pointsPerSec<=0)return {value:z.indices[k].value,adjusted:false};let src=parseRunCourse(z),target=parseTargetCourse(r);if(!src||!target||src.surface!==target.surface||src.distance!==target.distance)return null;let bs=baseline(src),bt=baseline(target);if(!bs||!bt)return null;return {value:z.indices[k].value+(bs.time-bt.time)*state.pointsPerSec,adjusted:true,seconds:bs.time-bt.time,source:src}}
-const pick=(r,h,k)=>{let arr=eligible(r,h).filter(x=>x.indices?.[k]?.value!==null&&x.indices?.[k]?.value!==undefined).map(run=>({run,adjust:calculateAdjustment(r,run,k)})).filter(x=>x.adjust!==null);if(state.span==='last'||state.span==='profile5')arr.sort((a,b)=>a.run.seq-b.run.seq);else arr.sort((a,b)=>b.adjust.value-a.adjust.value || a.run.seq-b.run.seq);if(!arr.length)return null;const z=arr[0];return {index:{...z.run.indices[k],value:z.adjust.value,rawValue:z.run.indices[k].value,adjusted:z.adjust.adjusted},run:z.run,adjust:z.adjust}};
+// Keep the TOP5 index source aligned with the character cards for the basic 5-run mode.
+const pick=(r,h,k)=>{
+ let arr=eligible(r,h).filter(run=>Number.isFinite(run.indices?.[k]?.value)).map(run=>({run,adjust:calculateAdjustment(r,run,k)})).filter(x=>x.adjust!==null);
+ if(!arr.length)return null;
+ if(state.span==='profile5'){
+  arr.sort((a,b)=>a.run.seq-b.run.seq);
+  const ww=arr.map(x=>({...x,w:Math.max(1,6-Math.min(5,x.run.seq||5))}));
+  const den=ww.reduce((sum,x)=>sum+x.w,0);
+  const avg=ww.reduce((sum,x)=>sum+x.adjust.value*x.w,0)/den;
+  const rawAvg=ww.reduce((sum,x)=>sum+x.run.indices[k].value*x.w,0)/den;
+  const adjusted=ww.some(x=>x.adjust.adjusted);
+  const latest=arr[0];
+  return {index:{...latest.run.indices[k],value:avg,rawValue:rawAvg,adjusted},run:latest.run,adjust:{value:avg,adjusted},count:arr.length};
+ }
+ if(state.span==='last')arr.sort((a,b)=>a.run.seq-b.run.seq);
+ else arr.sort((a,b)=>b.adjust.value-a.adjust.value || a.run.seq-b.run.seq);
+ const z=arr[0];
+ return {index:{...z.run.indices[k],value:z.adjust.value,rawValue:z.run.indices[k].value,adjusted:z.adjust.adjusted},run:z.run,adjust:z.adjust};
+};
 const ranks=(r,h)=>{let z={};for(const [k] of KEYS) z[k]=pick(r,h,k);return z};
 
 // Type classification is an independent provisional visualization, not an official CHARANIZE character label.
@@ -376,6 +394,7 @@ function render(){let r=race();if(!r){$('#tbody').innerHTML='<tr><td colspan="10
  let sorted=[...scored].sort((a,b)=>state.sort==='number'?(Number(a.h.number)||100)-(Number(b.h.number)||100):((b.ix[state.sort]?.index.value??-9999)-(a.ix[state.sort]?.index.value??-9999))|| (Number(a.h.number)||100)-(Number(b.h.number)||100));
  const isMix=state.surface==='all';$('#raceMeta').textContent=`${r.horses.length}頭 / 過去走${r.horses.reduce((n,h)=>n+eligible(r,h).length,0)}件 / ${r.date} / PDF掲載時点`+(isMix?' ・注意：芝ダ混在':'');
  $('#stats').innerHTML=[['出走馬',`${r.horses.length}頭`,'指数のある馬と未出走馬を含む'],['過去走記録',r.horses.reduce((n,h)=>n+eligible(r,h).length,0),'現在の芝ダ・表示条件で絞った数'],['逃指数 ≥80',scored.filter(x=>(x.ix.nige?.index.value??-999)>=80).length,'過去に80以上を記録'],['脚指数 ≥80',scored.filter(x=>(x.ix.ashi?.index.value??-999)>=80).length,'過去に80以上を記録']].map(x=>`<div class="stat"><small>${x[0]}</small><strong>${x[1]}</strong><small>${x[2]}</small></div>`).join('');
+ $('#rankBasis').textContent='順位の基準：'+(state.span==='profile5'?'過去5走の加重平均（新しい順に5・4・3・2・1）':state.span==='last'?'直近の該当走':state.span==='3'?'過去3走の各指数最高値':'過去5走の各指数最高値')+'／'+(state.surface==='course'?'同じ芝・ダート':'芝・ダート混合（参考）');
  $('#ranks').innerHTML=KEYS.map(([k,v])=>{let top=[...scored].filter(x=>x.ix[k]).sort((a,b)=>b.ix[k].index.value-a.ix[k].index.value).slice(0,5);return `<div class="panel rankcard"><div class="ranktitle">${v}指数 TOP 5</div>${top.length?top.map((x,i)=>`<div class="rankline"><span class="name">${i+1}. ${escapeHtml(x.h.name)}</span><b>${fmt(x.ix[k].index.value)}</b></div>`).join(''):'<p class="tiny">有効指数なし</p>'}</div>`}).join('');
  $('#tbody').innerHTML=sorted.length?sorted.map(({h,ix})=>`<tr><td><input type="checkbox" class="cmp" aria-label="${escapeHtml(h.name)}を比較" data-horse="${escapeHtml(h.name)}" ${state.selected.has(h.name)?'checked':''}></td><td><span class="horse" data-open="${escapeHtml(h.name)}"><span class="num">${escapeHtml(h.number)}</span>${escapeHtml(h.name)}</span><div class="tiny">${h.age}歳${h.sex}・${h.runs.length}走</div></td><td>${typePill(horseType(r,h))}</td>${KEYS.map(([k])=>`<td>${ind(ix[k]?.index)}${ix[k]?.index.adjusted?`<div class="cmpmeta">原${fmt(ix[k].index.rawValue)} → 仮補正</div>`:''}</td>`).join('')}<td>${escapeHtml(ix.ashi?.run?.where||ix.nige?.run?.where||'—')}</td><td><span class="tiny">${escapeHtml(h.rider||'')}</span>${h.flags?.length?`<div class="tiny">${h.flags.map(escapeHtml).join(' · ')}</div>`:''}</td></tr>`).join(''):'<tr><td colspan="10" id="empty">該当する馬がありません</td></tr>';
  $('#tabs').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.sort===state.sort));renderDetails(r);renderCompare(r);renderTypeSummary(r);renderScatter(r);benchState();
