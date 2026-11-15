@@ -75,6 +75,11 @@
   function launch(pack) {
     activePack = pack;
     window.__CH_PRIVATE = pack;
+    const lapState = document.getElementById('lap-upload-status');
+    if(lapState&&pack.lapRuns?.stats){
+      const st=pack.lapRuns.stats;
+      lapState.textContent='実33データ保存済み：'+st.total+'走・'+st.horseCount+'頭。取り込み済みの指数DBは保持しています。';
+    }
     gate.hidden = true;
     const script = document.createElement('script');
     script.src = './app.js?v=20261116-individual-traits-v07';
