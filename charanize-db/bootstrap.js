@@ -82,7 +82,7 @@
     }
     gate.hidden = true;
     const script = document.createElement('script');
-    script.src = './app.js?v=20261116-individual-traits-v07';
+    script.src = './app.js?v=20261116-lapjoin01';
     script.onerror = () => {
       gate.hidden = false;
       status.textContent = 'アプリ本体の読み込みに失敗しました。通信状態をご確認ください。';
