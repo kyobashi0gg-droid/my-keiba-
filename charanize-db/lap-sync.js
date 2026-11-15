@@ -4,6 +4,14 @@
  'use strict';
  const venueCodes={東:'東京',京:'京都',阪:'阪神',名:'中京',中:'中山',新:'新潟',福:'福島',小:'小倉',函:'函館',札:'札幌'};
  const normName=x=>String(x||'').normalize('NFKC').replace(/[\s　]+/g,'');
+ const normDate=x=>{
+  const t=String(x||'').trim();
+  const m=t.match(/^(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+  if(!m)return '';
+  const y=Number(m[1]),mo=Number(m[2]),d=Number(m[3]);
+  if(mo<1||mo>12||d<1||d>31)return '';
+  return String(y)+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+ };
  const normVenue=x=>{
   const t=String(x||'').normalize('NFKC');
   if(/^\d+[東京阪名中新福小函札]/.test(t))return venueCodes[t.match(/^\d+([東京阪名中新福小函札])/)[1]];
@@ -44,7 +52,7 @@
    for(const e of entries)if(Array.isArray(e)&&e.length>=10)merge(normName(name),e.slice(0,13));
   }
   for(const r of raw.runs){
-   const name=names.get(r.horseKey),lap=num(r.lap33),date=String(r.date||'');
+   const name=names.get(r.horseKey),lap=num(r.lap33),date=normDate(r.date);
    const surface=r.surface==='芝'?'芝':r.surface==='ダ'?'ダ':'';
    const distance=num(r.distance),venue=normVenue(r.track);
    if(!name||!date.match(/^\d{4}-\d{2}-\d{2}$/)||!surface||!distance||lap===null||Math.abs(lap)>25){skipped++;continue;}
@@ -63,7 +71,7 @@
  function match(name,run,pack){
   const list=pack?.byHorse?.[normName(name)];
   if(!list||!Array.isArray(run))return null;
-  const day=String(run[0]||''),surface=run[3],distance=num(run[4]),venue=normVenue(run[1]);
+  const day=normDate(run[0]),surface=run[3],distance=num(run[4]),venue=normVenue(run[1]);
   const candidates=list.filter(r=>r[0]===day&&r[2]===surface&&r[3]===distance&&(!venue||!r[1]||r[1]===venue));
   if(candidates.length!==1||candidates[0][4]===null)return null;
   return {data:candidates[0],courseConfirmed:!!venue&&!!candidates[0][1]};
