@@ -45,6 +45,38 @@ function getSignals(rows){let signal=[];const put=(type,label,desc,refs)=>signal
  if(turf.length&&dirt.length)put('neutral','芝・ダート両方の履歴あり','芝指数をダート能力に直接加算しない。高速ダートへの転用は別途検証',[...turf.slice(0,1),...dirt.slice(0,1)]);
  return signal;
 }
+// v0.6: Explain running style separately from the finishing result. Observational only.
+function characterInsights(rows){
+ if(!rows.length)return '<p class="hint">対象の過去走がありません。馬キャラは推測しません。</p>';
+ if(surfaces(rows).length>1)return '<p class="hint">芝とダートが混在しています。比較するには芝ダを分けてください。</p>';
+ const band=r=>{const d=Number(r[4]);return d<=1400?'1400m以下':d===1600?'1600m':d<=2200?'1800〜2200m':'2400m以上'};
+ const groups=new Map();for(const r of rows){const k=band(r);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(r)}
+ const [name,part]=[...groups].sort((a,b)=>b[1].length-a[1].length)[0];
+ const good=part.filter(r=>Number(r[6])>=1&&Number(r[6])<=3),poor=part.filter(r=>Number(r[6])>=7);
+ const front=part.filter(r=>{const p=parsePass(r);return p.length&&p[0]<=2});
+ const frontGood=front.filter(r=>Number(r[6])>=1&&Number(r[6])<=3),frontPoor=front.filter(r=>Number(r[6])>=7);
+ const mean=(list,k)=>{let a=list.map(r=>r[9]?.[k]).filter(num);return {n:a.length,v:a.length?a.reduce((x,y)=>x+y,0)/a.length:null}};
+ const first=mean(part,0),second=mean(part,1);
+ const initial=first.n>=3&&second.n>=3?
+  '逃指数（ゲートの出を含む初速）平均'+fmt(first.v)+'、先行指数（その後の先行力）平均'+fmt(second.v)+'。両者は別指標のため、数値差だけで初速型か二の脚型かを確定しません。':
+  '逃・先行指数が揃った標本が不足し、初速と二の脚の特徴は判定保留です。';
+ let frontNote='前方を取った際の好走・凡走を比較できる標本が不足しています。';
+ if(frontGood.length&&frontPoor.length)frontNote='最初の記録コーナーで2番手以内だった走りに、3着以内'+frontGood.length+'走と7着以下'+frontPoor.length+'走が混在。前へ行けたことだけでは結果を説明できません。';
+ else if(frontGood.length>=2)frontNote='最初の記録コーナーで2番手以内から3着以内を'+frontGood.length+'走記録。ただし同じ位置からの凡走例が不足しています。';
+ else if(frontPoor.length>=2)frontNote='最初の記録コーナーで2番手以内でも7着以下が'+frontPoor.length+'走。先行そのものが苦手とは断定しません。';
+ let contrast='3着以内'+good.length+'走、7着以下'+poor.length+'走。両方2走以上ないため比較は保留します。';
+ if(good.length>=2&&poor.length>=2){
+  const names=['逃（初速）','先（二の脚）','追走負荷','脚力','ギア'];
+  let z=names.map((k,i)=>{let a=mean(good,i),b=mean(poor,i);return a.n>=2&&b.n>=2?k+'：3着内'+fmt(a.v)+'／7着以下'+fmt(b.v):null}).filter(Boolean);
+  contrast=z.length?z.join('、')+'。この差は観測値であり、着順を分けた原因とは限りません。':'比較できる共通指数が不足しています。';
+ }
+ const evidence=[...new Set([...frontGood.slice(0,2),...frontPoor.slice(0,2),...good.slice(0,1),...poor.slice(0,1)])];
+ const ev=evidence.length?'<details class="chara-evidence"><summary>根拠の過去走を確認（'+evidence.length+'走）</summary><ul>'+evidence.map(r=>'<li>'+safe(runSummary(r))+'／通過 '+safe(r[7]||'—')+'／逃 '+fmt(r[9]?.[0])+'・先 '+fmt(r[9]?.[1])+'・追 '+fmt(r[9]?.[2])+'・脚 '+fmt(r[9]?.[3])+'・ギ '+fmt(r[9]?.[4])+'</li>').join('')+'</ul></details>':'';
+ const card=(title,body)=>'<div class="chara-observe-card"><b>'+title+'</b><p>'+safe(body)+'</p></div>';
+ return '<div class="chara-observe-scope">同じ芝ダ・最多の距離帯：'+safe(part[0][3])+' '+safe(name)+'／'+part.length+'走（表示'+rows.length+'走から抽出）</div>'+
+ '<div class="chara-observe-grid">'+card('① 初速と二の脚',initial)+card('② 前方で運んだときの結果',frontNote)+card('③ 好走時と凡走時の指数',contrast)+card('④ まだ分からない戦術条件','ハナを取ってから緩めると不利か、飛ばして粘る方が得意か、競り合いや馬群で凡走するかは、この指数とコーナー通過順だけでは判断できません。区間ラップ・映像・相手関係の照合が必要です。')+'</div>'+ev+
+ '<p class="help-line">※3着以内と7着以下は比較用の便宜的な区分です。着順は相手レベル・距離・騎手・馬場・進路でも変化します。最初の記録コーナーはゲート直後を示しません。指数だけから因果を決めません。</p>';
+}
 function evidenceText(r){let vals=r[9];return `${runSummary(r)}：脚${fmt(vals[3])}、ギア${fmt(vals[4])}、先${fmt(vals[1])}、追${fmt(vals[2])}`;}
 function renderEvidence(sig){return `<details class="evidence"><summary>根拠の過去走を確認 (${sig.refs.length}件表示)</summary><ul>${sig.refs.map(r=>`<li>${safe(evidenceText(r))}</li>`).join('')}</ul></details>`;}
 function renderSignal(sig){return `<div class="tagitem ${sig.type==='pos'?'pos':sig.type==='neg'?'neg':'neutral'}"><b>${sig.type==='pos'?'＋':sig.type==='neg'?'－':'・'}</b>${safe(sig.label)}</div><div class="smallnote" style="margin:3px 0 7px">${safe(sig.desc)}</div>${renderEvidence(sig)}`;}
@@ -100,6 +132,7 @@ function renderHorse(){let horse=getHorse(app.current);if(!horse)return;let all=
  $('average-caption').textContent=`条件一致の新しい${app.avgN}走で平均を計算。最低3走・各指数の欠損値は除外。過去10走の最高値とは分離。`;
  $('metrics').innerHTML=labels.map((name,i)=>{let a=avg(rows,i,app.avgN),peak=getPeak(rows,i);return `<div class="metric"><span>${name}</span><b>${different?'—':fmt(a.v)}</b><small>${different?'芝ダ混在':a.v===null?'標本不足':`n=${a.n}`}</small><small>最高 ${peak?fmt(peak[9][i]):'—'}</small></div>`}).join('');
  let positive=[],negative=[],neutral=[];if(!different){let signals=getSignals(rows);positive=signals.filter(x=>x.type==='pos');negative=signals.filter(x=>x.type==='neg');neutral=signals.filter(x=>x.type==='neutral');}
+ $('character-report').innerHTML=characterInsights(rows);
  $('diagnosis').innerHTML=`<div class="diagblock"><strong style="color:#137e5d">＋ 走れる条件・強み</strong>${positive.map(renderSignal).join('')||'<span class="hint">条件一致の過去走から、確認できる強い根拠はまだありません。</span>'}</div><div class="diagblock"><strong style="color:#ab5146">－ 注意したい条件・弱点</strong>${negative.map(renderSignal).join('')||'<span class="hint">明確なマイナス傾向は未検出。弱点がないという意味ではありません。</span>'}</div>${neutral.length?`<div class="diagblock" style="grid-column:1/-1"><strong>検証・保留</strong>${neutral.map(renderSignal).join('')}</div>`:''}`;
  $('series-picker').innerHTML=labels.map((label,i)=>`<button class="${app.chartSeries.includes(i)?'on':''}" data-s="${i}" style="--series:${colors[i]}">${label}</button>`).join('');
  $('series-picker').querySelectorAll('button').forEach(b=>b.onclick=()=>{let n=Number(b.dataset.s);if(app.chartSeries.includes(n)) {if(app.chartSeries.length>1)app.chartSeries=app.chartSeries.filter(x=>x!==n);}else app.chartSeries=[...app.chartSeries,n];renderHorse()});
@@ -327,7 +360,7 @@ function selectRaceHorse(name,scrollToDetails=true){
  app.current=name;
  const c=activeRace();if(c){const surface=c[1];if(['芝','ダ'].includes(surface)&&$('surface').value==='all')$('surface').value=surface;}
  if(app.db[name])selectHorse(name,false);
- else{$('horse-title').textContent=name;$('horse-meta').textContent='過去指数がDBに未収録';$('horse-condition').textContent='指数未収録';['metrics','diagnosis','curve','plot-legend','condition-bars','rows'].forEach(id=>$(id).innerHTML='');$('run-count').textContent='0走';$('average-caption').textContent='この馬について一致する過去指数がありません。推測で補完しません。';$('data-warning').textContent='';}
+ else{$('horse-title').textContent=name;$('horse-meta').textContent='過去指数がDBに未収録';$('horse-condition').textContent='指数未収録';['metrics','character-report','diagnosis','curve','plot-legend','condition-bars','rows'].forEach(id=>$(id).innerHTML='');$('run-count').textContent='0走';$('average-caption').textContent='この馬について一致する過去指数がありません。推測で補完しません。';$('data-warning').textContent='';}
  renderRaceHorses();
  if(scrollToDetails&&window.innerWidth<741){$('horse-title').scrollIntoView({block:'start',behavior:'smooth'});}
 }
