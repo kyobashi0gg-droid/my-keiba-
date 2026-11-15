@@ -193,11 +193,11 @@ function lapPanel(name,rows){
  const warning='実33はレース全体のラスト6F前半3F－後半3Fです。大逃げ・隊列分離では、この馬自身が受けた実効33と異なる可能性があります。レース全体の33だけでは中弛みや再加速の位置は特定できません。';
  const detail=matches.slice(0,12).map(x=>{
   const r=x.raw,ch=x.ch;
-  return '<tr><td>'+safe(r[0])+'</td><td>'+safe(r[1]||ch[1])+'</td><td>'+safe(r[2])+safe(r[3])+'m</td><td>'+safe(ch[6]??'—')+'</td><td><strong>'+signed(r[4])+'</strong></td><td>'+safe(ch[7]||r[5]||'—')+'</td><td>'+safe(r[8]||'—')+'</td></tr>';
+  return '<tr><td>'+safe(r[0])+'</td><td>'+safe(r[1]||ch[1])+'</td><td>'+safe(r[7]||'—')+'</td><td>'+safe(r[2])+safe(r[3])+'m</td><td>'+safe(ch[6]??'—')+'</td><td><strong>'+signed(r[4])+'</strong></td><td>'+safe(ch[7]||r[5]||'—')+'</td><td>'+safe(r[8]||'—')+'</td></tr>';
  }).join('');
  return '<div class="chara-observe-scope">指数と実33の照合：'+matches.length+' / '+rows.length+'走（競馬場確認済み'+courseProven+'走）</div>'+
  '<p class="lap-story-summary">'+safe(summary.join(' '))+'</p>'+
- '<details class="chara-evidence"><summary>照合した過去走・実33を見る（最大12走）</summary><div class="table-scroll"><table><thead><tr><th>日付</th><th>場</th><th>条件</th><th>着</th><th>実33</th><th>通過順</th><th>レース総評</th></tr></thead><tbody>'+detail+'</tbody></table></div></details>'+
+ '<details class="chara-evidence"><summary>照合した過去走・実33を見る（最大12走）</summary><div class="table-scroll"><table><thead><tr><th>日付</th><th>場</th><th>レース</th><th>条件</th><th>着</th><th>実33</th><th>通過順</th><th>レース総評</th></tr></thead><tbody>'+detail+'</tbody></table></div></details>'+
  '<p class="help-line">'+safe(warning)+'</p>';
 }
 function evidenceText(r){let vals=r[9];return `${runSummary(r)}：脚${fmt(vals[3])}、ギア${fmt(vals[4])}、先${fmt(vals[1])}、追${fmt(vals[2])}`;}
