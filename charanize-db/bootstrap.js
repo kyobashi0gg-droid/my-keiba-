@@ -190,8 +190,15 @@
         next.meta = raw.meta || next.meta;
       }
       if (raw.races) {
-        next.races = {...next.races, ...raw.races};
+        // A device backup restores its complete race set; older race-only JSON still merges.
+        next.races = raw.format==='CHARANIZE_WEB_PRIVATE_PACK_V1'
+          ? raw.races : {...next.races, ...raw.races};
         next.race_meta = raw.race_meta || next.race_meta;
+      }
+      if(raw.lapRuns!==undefined){
+        if(!raw.lapRuns||typeof raw.lapRuns!=='object'||!raw.lapRuns.byHorse||typeof raw.lapRuns.byHorse!=='object'||Array.isArray(raw.lapRuns.byHorse))
+          throw Error('実33バックアップが不正です。保存を中止しました。');
+        next.lapRuns=raw.lapRuns;
       }
       if (!raw.horses && !raw.races) throw Error('horses または races を含むJSONを選んでください。');
       await savePack(next);
