@@ -122,6 +122,47 @@ function frontPaceMarkup(pattern){
  '<p class="front-pace-explain">'+safe(pattern.description)+'</p>'+
  '<p class="front-pace-note">※実33はレース全体の値です。プラス33だから逃げられるという因果関係の証明ではありません。</p></div>';
 }
+// v0.10 - INDEX-ONLY hypothesis. NEVER consult finish, lap33, position or race outcomes here.
+// Pursuit is load exposure, not a direct measure of ability. No turf/dirt mixing.
+function pursuitLegResilience(rows){
+ const entries=rows.filter(r=>r[4]>=1800&&r[4]<=2200&&(r[3]==='芝'||r[3]==='ダ')&&
+   num(r[9]?.[2])&&num(r[9]?.[3])&&num(r[9]?.[4]));
+ if(entries.length<4)return null;
+ const surfacesHere=surfaces(entries);if(surfacesHere.length!==1)return null;
+ const ordered=entries.slice().sort((a,b)=>a[9][2]-b[9][2]);
+ const k=Math.max(2,Math.floor(ordered.length/3)); // Compare low and high load tails.
+ const low=ordered.slice(0,k),high=ordered.slice(-k);
+ const mean=(items,i)=>items.reduce((sum,r)=>sum+r[9][i],0)/items.length;
+ const lowPursuit=mean(low,2),highPursuit=mean(high,2);
+ const lowLeg=mean(low,3),highLeg=mean(high,3);
+ const allLeg=mean(entries,3),allGear=mean(entries,4);
+ const legMin=Math.min(...entries.map(r=>r[9][3])),legMax=Math.max(...entries.map(r=>r[9][3]));
+ const loadGap=highPursuit-lowPursuit,legGap=highLeg-lowLeg;
+ // Trial thresholds: require meaningful load contrast, and maintain strong legs
+ // in *both* tails. Gear must be relatively low; no outcome data in selection.
+ const qualified=loadGap>=18&&allLeg>=70&&legMin>=60&&
+    lowLeg>=68&&highLeg>=68&&Math.abs(legGap)<=10&&
+    allGear<=45;
+ if(!qualified)return null;
+ const detail='芝ダ'+entries[0][3]+'・1800〜2200m、指数が揃う'+entries.length+'走。'+
+  '追走指数の低い'+k+'走は追走平均'+fmt(lowPursuit)+'、脚力平均'+fmt(lowLeg)+'。'+
+  '追走指数の高い'+k+'走は追走平均'+fmt(highPursuit)+'、脚力平均'+fmt(highLeg)+'。'+
+  '追走負荷の高低差'+fmt(loadGap)+'に対し脚力の平均差'+(legGap>=0?'+':'')+fmt(legGap)+'。'+
+  '脚力全体平均'+fmt(allLeg)+'、最低'+fmt(legMin)+'、ギア平均'+fmt(allGear)+'。';
+ return {title:'追走負荷が変わっても脚力を維持（指数単独の候補）',
+   summary:'追走負荷の高低で脚力を大きく落とさず、ギアは低め。締まった33への対応力を別途検証したいタイプです。',
+   detail,refs:[...low.slice(0,2),...high.slice(0,2)],metrics:{n:entries.length,k,lowPursuit,highPursuit,lowLeg,highLeg,allLeg,allGear,legMin,legMax,loadGap,legGap}};
+}
+function pursuitLegMarkup(signal){
+ if(!signal)return '';
+ const v=signal.metrics;
+ return '<div class="pursuit-leg-signal"><div class="pursuit-leg-title">'+safe(signal.title)+'</div>'+
+ '<p>'+safe(signal.summary)+'</p>'+
+ '<div class="pursuit-leg-metrics"><span>追走 低負荷側 '+fmt(v.lowPursuit)+' → 高負荷側 '+fmt(v.highPursuit)+'</span>'+
+ '<span>脚力 '+fmt(v.lowLeg)+' → '+fmt(v.highLeg)+'</span><span>ギア平均 '+fmt(v.allGear)+'</span></div>'+
+ '<details><summary>指数だけで判定した根拠を見る</summary><p>'+safe(signal.detail)+'</p></details>'+
+ '<p class="pursuit-leg-caveat">※抽出には着順・実33・通過順を使用していません。締まった33への適性は未検証で、馬場・競馬場の偏りや相手レベルを別に確認します。</p></div>';
+}
 function characterInsights(rows){
  if(!rows.length)return '<p class="hint">対象の過去走がないため、馬キャラは判定できません。</p>';
  if(surfaces(rows).length>1)return '<p class="hint">芝・ダート混在では判定しません。芝かダートを選択してください。</p>';
@@ -221,6 +262,7 @@ function characterInsights(rows){
  const validWithPosition=part.filter(r=>parsePass(r).length>=2);
  const progressed=validWithPosition.filter(r=>{const p=parsePass(r);return p[0]-p[p.length-1]>=2&&good(r)});
  const held=validWithPosition.filter(r=>{const p=parsePass(r);return p[0]-p[p.length-1]<2&&good(r)});
+ const pursuitSignal=pursuitLegResilience(part);
  const frontPattern=style==='front'?frontPaceSignature(app.current,rows):null;
  const earlyRows=part.filter(r=>num(r[9]?.[0])&&num(r[9]?.[1]));
  const avgEarly=i=>earlyRows.length?earlyRows.reduce((sum,r)=>sum+r[9][i],0)/earlyRows.length:null;
@@ -262,12 +304,14 @@ function characterInsights(rows){
   const signed=v=>(v>0?'+':'')+fmt(v);
   return '実33'+signed(min)+'〜'+signed(max)+'で3着以内'+matched.length+'走（レース全体値）。';
  })();
+ if(pursuitSignal&&cards.length<3)add('指数だけで抽出した負荷耐性候補',pursuitSignal.detail,pursuitSignal.refs);
  const details=cards.map(x=>'<div class="chara-detail-row"><b>'+safe(x.title)+'</b><p>'+safe(x.body)+'</p></div>').join('');
  const selected=[...evidence];
  const evidenceHtml=selected.length?'<details class="chara-evidence"><summary>根拠の過去走を見る（'+selected.length+'走）</summary><ul>'+selected.map(r=>'<li>'+safe(runSummary(r))+'／通過 '+safe(r[7]||'—')+'／逃 '+fmt(r[9]?.[0])+'・先 '+fmt(r[9]?.[1])+'・追 '+fmt(r[9]?.[2])+'・脚 '+fmt(r[9]?.[3])+'・ギ '+fmt(r[9]?.[4])+'</li>').join('')+'</ul></details>':'';
  return '<div class="chara-observe-scope">対象：'+safe(part[0][3])+' '+safe(distanceBand)+'／'+part.length+'走</div>'+
  '<div class="horse-character-summary"><div class="horse-character-type">'+safe(type)+'</div>'+
  '<p class="horse-character-description">'+safe(synopsis)+'</p>'+
+ (pursuitSignal?pursuitLegMarkup(pursuitSignal):'')+
  (frontPattern?frontPaceMarkup(frontPattern):'')+
  (lapRange?'<p class="horse-character-lap">'+safe(lapRange)+'</p>':'')+
  '<p class="horse-character-caution">加速の瞬発型・持続型・漸進型は区間ラップ不足のため未確定です。</p></div>'+
