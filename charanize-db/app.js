@@ -449,12 +449,74 @@ function sourceDetails(r){
  return `<details class="single-source-warning"><summary${conflict.large?' style="color:#a35900;font-weight:800"':''}>${heading}</summary><div class="notice">${description}<ul>${details}</ul></div></details>`;
 }
 function renderRows(rows){return rows.map((r,i)=>{let notes=rowTags(r);return `<tr id="run-${i}"><td>${safe(date(r[0]))}</td><td>${safe(r[1])}${r[2]||''}R<br><small>${safe(r[10]||'')}</small></td><td>${safe(r[3])}${r[4]}m</td><td>${safe(r[5])}</td><td>${r[6]??'—'}</td><td>${safe(r[7]||'—')}</td><td>${safe(r[8]||'—')}</td>${r[9].map(v=>`<td class="num ${!num(v)?'':v>=90?'hi':v<0?'low':''}">${fmt(v)}</td>`).join('')}<td class="notes-cell">${notes.filter(x=>x.type!=='warn').length?notes.filter(x=>x.type!=='warn').map(x=>`<span class="mini ${x.type==='neg'?'neg':''}">${safe(x.label)}</span>`).join(''):(r[12]?'':'<span class="muted">明確な特徴なし</span>')}${sourceDetails(r)}</td></tr>`}).join('')}
+// v0.12: Two DIFFERENT deviation references, with all source scores kept unmodified.
+// Field = each runner's 5-1 weighted past-five mean; own = newest run vs OTHER runs of the same horse.
+function devStats(values, minCount){
+ const xs=values.filter(num);if(xs.length<minCount)return {n:xs.length,mean:null,sd:null};
+ const mean=xs.reduce((a,b)=>a+b,0)/xs.length,sd=Math.sqrt(xs.reduce((a,b)=>a+(b-mean)**2,0)/xs.length);
+ return {n:xs.length,mean,sd:sd>=2?sd:null};
+}
+function devOf(value,stat){
+ if(!num(value)||!stat||stat.mean===null||stat.sd===null)return null;
+ return 50+10*(value-stat.mean)/stat.sd;
+}
+function weightedIndex(rows,i){
+ const arr=rows.slice(0,5).map((r,j)=>({v:r[9]?.[i],w:5-j})).filter(x=>num(x.v));
+ if(arr.length<3)return null;
+ return arr.reduce((a,x)=>a+x.v*x.w,0)/arr.reduce((a,x)=>a+x.w,0);
+}
+function matchingBandRows(rows,surface,distance,day){
+ const band=distBand(distance);
+ return rows.filter(r=>(!day||!r[0]||r[0]<day)&&r[3]===surface&&distBand(r[4])===band);
+}
+function fieldDeviationFor(name){
+ const c=activeRace();
+ if(!c||!['芝','ダ'].includes(c[1])||!c[2]||!currentRunners().some(x=>x[1]===name))return null;
+ const entrants=currentRunners().map(([no,horseName])=>{
+  const h=getHorse(horseName);
+  const rows=h?matchingBandRows(horseRows(horseName),c[1],c[2],app.raceDate):[];
+  return {name:horseName,raw:keys.map((k,i)=>weightedIndex(rows,i))};
+ });
+ const me=entrants.find(x=>x.name===name);
+ return {horse:me,axes:keys.map((k,i)=>{
+  const values=entrants.map(x=>x.raw[i]).filter(num),ref=devStats(values,5);
+  return {label:labels[i],raw:me.raw[i],n:ref.n,score:devOf(me.raw[i],ref)};
+ }),total:entrants.length,surface:c[1],distance:c[2]};
+}
+function personalDeviationFor(name,shown){
+ const latest=shown[0];if(!latest)return null;
+ const sf=latest[3],distance=latest[4],all=horseRows(name);
+ const same=matchingBandRows(all,sf,distance,app.cutoff).filter(r=>r!==latest&&!(
+  r[0]===latest[0]&&r[1]===latest[1]&&r[2]===latest[2]&&r[4]===latest[4]));
+ return {latest,scope:sf+' '+distBand(distance),axes:keys.map((k,i)=>{
+  const reference=same.map(r=>r[9]?.[i]).filter(num);
+  const stat=devStats(reference,3);
+  return {label:labels[i],raw:latest[9]?.[i],n:stat.n,score:devOf(latest[9]?.[i],stat)};
+ })};
+}
+function dualDeviationHTML(name,shown){
+ const field=fieldDeviationFor(name),own=personalDeviationFor(name,shown);
+ const card=(heading,desc,axes,missing)=>{
+  if(!axes)return '<div class="dual-dev-card"><h4>'+safe(heading)+'</h4><p class="dual-dev-sub">'+safe(missing)+'</p></div>';
+  return '<div class="dual-dev-card"><h4>'+safe(heading)+'</h4><p class="dual-dev-sub">'+safe(desc)+'</p>'+
+   '<div class="dual-dev-axes">'+axes.map(a=>'<div class="dual-dev-axis"><span>'+a.label+'</span><strong class="'+(a.score>=60?'hot':'')+'">'+
+    (a.score===null?'—':Math.round(a.score))+'</strong><small>'+(a.score===null?(a.raw==null?'指数欠損':'標本不足・変動小'):'原'+fmt(a.raw))+' n='+a.n+'</small></div>').join('')+'</div></div>';
+ };
+ const fHtml=card('出走馬内偏差値',field?('同レース'+field.total+'頭・同芝ダと距離帯の直近5走加重平均'):'',
+ field?.axes,'選択レースの出走馬として表示した場合に計算します。');
+ const oHtml=card('馬自身の偏差値',own?('直近'+runSummary(own.latest)+'を、それ以外の'+own.scope+'の走歴と比較'):'',
+ own?.axes,'比較できる過去走がありません。');
+ return '<div class="dual-dev-title">2つの偏差値で「相手との能力」と「自分の変化」を分ける</div>'+
+  '<div class="dual-dev-grid">'+fHtml+oHtml+'</div>'+
+  '<p class="dual-dev-help">偏差値50が各比較集団の平均です。左は出走馬同士の相対比較、右は最新の1走を自分の他の過去走と比較（最新走を基準から除外）。各指数は最低で出走馬5頭、個体内の別走3走が必要で、標準偏差2未満は保留。追走は負荷経験であり高偏差値＝能力優秀とは限りません。コース・馬場・クラス差、収録数不足に注意。</p>';
+}
 function renderHorse(){let horse=getHorse(app.current);if(!horse)return;let all=horse[2],rows=all.filter(filt);let different=surfaces(rows).length>1;
  $('horse-title').textContent=app.current;const majorSourceRows=pastSourceDifferences(all);
   $('horse-meta').textContent=`${safe(horse[0]||'性別未記録')}・${horse[1]||'?'}歳（新聞時点）　収録${all.length}走・表示${rows.length}走`+(majorSourceRows.length?`　⚠指数差10以上 ${majorSourceRows.length}走・要確認`:'');$('horse-condition').textContent=rows.length?`${rows.length}走が条件一致`:'該当する走なし';
  $('average-caption').textContent=`条件一致の新しい${app.avgN}走で平均を計算。最低3走・各指数の欠損値は除外。過去10走の最高値とは分離。`;
  $('metrics').innerHTML=labels.map((name,i)=>{let a=avg(rows,i,app.avgN),peak=getPeak(rows,i);return `<div class="metric"><span>${name}</span><b>${different?'—':fmt(a.v)}</b><small>${different?'芝ダ混在':a.v===null?'標本不足':`n=${a.n}`}</small><small>最高 ${peak?fmt(peak[9][i]):'—'}</small></div>`}).join('');
  let positive=[],negative=[],neutral=[];if(!different){let signals=getSignals(rows);positive=signals.filter(x=>x.type==='pos');negative=signals.filter(x=>x.type==='neg');neutral=signals.filter(x=>x.type==='neutral');}
+ $('dual-deviation').innerHTML=dualDeviationHTML(app.current,rows);
  $('character-report').innerHTML=characterInsights(rows);
  $('lap-report').innerHTML=lapPanel(app.current,rows);
  $('diagnosis').innerHTML=`<div class="diagblock"><strong style="color:#137e5d">＋ 走れる条件・強み</strong>${positive.map(renderSignal).join('')||'<span class="hint">条件一致の過去走から、確認できる強い根拠はまだありません。</span>'}</div><div class="diagblock"><strong style="color:#ab5146">－ 注意したい条件・弱点</strong>${negative.map(renderSignal).join('')||'<span class="hint">明確なマイナス傾向は未検出。弱点がないという意味ではありません。</span>'}</div>${neutral.length?`<div class="diagblock" style="grid-column:1/-1"><strong>検証・保留</strong>${neutral.map(renderSignal).join('')}</div>`:''}`;
@@ -715,7 +777,7 @@ function selectRaceHorse(name,scrollToDetails=true){
  app.current=name;
  const c=activeRace();if(c){const surface=c[1];if(['芝','ダ'].includes(surface)&&$('surface').value==='all')$('surface').value=surface;}
  if(app.db[name])selectHorse(name,false);
- else{$('horse-title').textContent=name;$('horse-meta').textContent='過去指数がDBに未収録';$('horse-condition').textContent='指数未収録';['metrics','character-report','lap-report','diagnosis','curve','plot-legend','condition-bars','rows'].forEach(id=>$(id).innerHTML='');$('run-count').textContent='0走';$('average-caption').textContent='この馬について一致する過去指数がありません。推測で補完しません。';$('data-warning').textContent='';}
+ else{$('horse-title').textContent=name;$('horse-meta').textContent='過去指数がDBに未収録';$('horse-condition').textContent='指数未収録';['metrics','dual-deviation','character-report','lap-report','diagnosis','curve','plot-legend','condition-bars','rows'].forEach(id=>$(id).innerHTML='');$('run-count').textContent='0走';$('average-caption').textContent='この馬について一致する過去指数がありません。推測で補完しません。';$('data-warning').textContent='';}
  renderRaceHorses();
  if(scrollToDetails&&window.innerWidth<741){$('horse-title').scrollIntoView({block:'start',behavior:'smooth'});}
 }
