@@ -140,19 +140,21 @@
      if(!check.ok)throw Error('このブラウザには既存データがあります（馬'+check.horses+'頭・過去走'+check.runs+'走・分析領域'+check.existing.length+'件）。'
        +' 上書きを防ぐため復元を停止しました。移行先は新しいブラウザ環境を使用してください。');
      if(!confirm('この空のブラウザにMY KEIBA LABのバックアップを復元します。\n馬'+counts.horses+'頭・過去走'+counts.runs+'走・分析保存'+counts.localKeys+'件。\n復元を開始しますか？'))return false;
-     // Test localStorage capacity before committing any horse records.
-     const probeKey='__mykeiba-transfer-capacity-probe';
-     let original;try{
-       original=localStorage.getItem(probeKey);
-       const bytes=Object.values(data.local).reduce((n,v)=>n+v.length,0);
-       const approx='0'.repeat(Math.min(bytes,5_000_000));
-       localStorage.setItem(probeKey,approx);
-     }catch(e){throw Error('ブラウザの保存容量が不足しています。復元は開始していません。');}
-     finally{if(original===null||original===undefined)localStorage.removeItem(probeKey);else localStorage.setItem(probeKey,original);}
-     await writeDb(db,data.horseDb);
-     let n=0;
-     try{for(const [k,v] of Object.entries(data.local)){localStorage.setItem(k,v);n++;}}
-     catch(e){throw Error('馬DBの復元は完了しましたが、分析データ'+n+'/'+counts.localKeys+'件目で端末容量が不足しました。既存データを削除せず、これ以上操作しないでください。');}
+     // Restore small local data first. If a storage write or the later atomic DB
+     // transaction fails, remove only the keys written by this attempt.
+     const written=[];
+     try{
+       for(const [k,v] of Object.entries(data.local)){
+         localStorage.setItem(k,v);
+         written.push(k);
+       }
+       await writeDb(db,data.horseDb);
+     }catch(e){
+       for(const k of written){
+         try{localStorage.removeItem(k);}catch(_){}
+       }
+       throw Error('復元を完了できませんでした。復元途中の分析データは取り消しました。原因：'+String(e?.message||e));
+     }
      return true;
    }finally{db.close();}
  }
