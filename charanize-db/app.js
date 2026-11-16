@@ -81,7 +81,8 @@ function individualLapStory(name,rows){
   body+='一方7着以下'+poor.length+'走の実33は'+signed(pLo)+'〜'+signed(pHi)+'。ただし同じ位置取りや相手の強さを揃えないと、33による敗因とは言えません。';
  }
  const sharedVenues=[...new Set(wins.map(x=>x.raw[1]).filter(Boolean))];
- if(sharedVenues.length===1&&wins.length>=2)body+='好走は'+sharedVenues[0]+'に集中しており、他場での再現は別途確認が必要です。';
+ // An unknown venue must not be mistaken for evidence that all wins came from a single track.
+ if(wins.length>=2&&wins.every(x=>!!x.raw[1])&&sharedVenues.length===1)body+='照合できた好走は'+sharedVenues[0]+'に集中しており、他場での再現は別途確認が必要です。';
  body+='実33はレース全体の値で、馬自身の加速区間や瞬発・持続の型を確定するものではありません。';
  const refs=[...new Set([...advance.slice(0,2),...stay.slice(0,2),...poor.slice(0,1)].map(x=>x.ch))];
  return {title:'実33と位置取りから見た好走パターン',body,refs};
@@ -353,7 +354,7 @@ function lapMatches(name,rows){
  if(!lib||!pack?.byHorse)return [];
  const matched=[];
  for(const r of rows){
-  const result=lib.match(name,r,pack);
+  const result=lib.match(String(name||'').replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200d\u2060\ufeff]/g,''),r,pack);
   if(!result)continue;
   const x=result.data;
   const finish=Number(r[6]),sourceFinish=x[6];
@@ -909,7 +910,7 @@ function consultCreateText(scope){
  '5. 偏差値・馬キャラ・33・調教を総合し、A/B候補を論じる。未確認の情報は保留。',
  ];
  for(const [no,name] of chosen){
-  lines.push('','■ '+(no??'—')+'番 '+name);
+  lines.push('','■ '+(no??'—')+'番 '+String(name).replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200d\u2060\ufeff]/g,''));
   const h=getHorse(name);
   if(!h){lines.push('指数DB未収録。偏差値・馬キャラは保留');continue;}
   const raw=horseRows(name),all=deviationRuns(raw,race[1],race[2],app.raceDate,true);
