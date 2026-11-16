@@ -86,6 +86,42 @@ function individualLapStory(name,rows){
  const refs=[...new Set([...advance.slice(0,2),...stay.slice(0,2),...poor.slice(0,1)].map(x=>x.ch))];
  return {title:'実33と位置取りから見た好走パターン',body,refs};
 }
+// v0.9: exact-distance evidence by sign of race-wide 33, without causal inference.
+function frontPaceSignature(name,rows){
+ const records=lapMatches(name,rows).filter(x=>Number.isFinite(x.raw[4])&&parsePass(x.ch).length&&Number(x.ch[6])>0);
+ const grouped=new Map();
+ for(const x of records){const k=Number(x.ch[4]);if(!grouped.has(k))grouped.set(k,[]);grouped.get(k).push(x)}
+ const eligible=[...grouped.entries()].filter(([dist,v])=>v.length>=3).sort((a,b)=>b[1].length-a[1].length);
+ if(!eligible.length)return null;
+ const [distance,samples]=eligible[0];
+ const plus=samples.filter(x=>x.raw[4]>0),minus=samples.filter(x=>x.raw[4]<0),neutral=samples.filter(x=>x.raw[4]===0);
+ const stat=a=>({total:a.length,lead:a.filter(x=>parsePass(x.ch)[0]===1).length,good:a.filter(x=>Number(x.ch[6])<=3).length,leadGood:a.filter(x=>parsePass(x.ch)[0]===1&&Number(x.ch[6])<=3).length,nonleadGood:a.filter(x=>parsePass(x.ch)[0]>1&&Number(x.ch[6])<=3).length});
+ const p=stat(plus),m=stat(minus),overall=stat(samples);
+ const example=x=>{const r=x.ch;return String(r[0])+'（実33'+(x.raw[4]>0?'+':'')+fmt(x.raw[4])+'、通過'+(r[7]||'—')+'、'+r[6]+'着）';};
+ const plusLead=plus.find(x=>parsePass(x.ch)[0]===1&&Number(x.ch[6])<=3);
+ const minusOther=minus.find(x=>parsePass(x.ch)[0]>1&&Number(x.ch[6])<=3);
+ const leadGood=samples.filter(x=>parsePass(x.ch)[0]===1&&Number(x.ch[6])<=3);
+ const otherGood=samples.filter(x=>parsePass(x.ch)[0]>1&&Number(x.ch[6])<=3);
+ let description='芝ダと距離を揃えた'+distance+'mの'+samples.length+'走。';
+ if(p.total&&m.total){
+  description+='プラス33はハナ'+p.lead+'/'+p.total+'走、3着以内'+p.good+'走。マイナス33はハナ'+m.lead+'/'+m.total+'走、3着以内'+m.good+'走。';
+  if(p.total>=2&&m.total>=2&&p.lead>0&&m.lead===0)description+='この標本ではプラス33で逃げた例があり、マイナス33ではハナを取っていません。';
+ }else description+='プラスとマイナスの両方が揃っておらず、符号ごとの比較は保留します。';
+ if(leadGood.length&&otherGood.length>=2)description+='逃げても控えても好走実績があります。';
+ else if(leadGood.length>=2&&otherGood.length===0)description+='確認できた好走は逃げた形に集中していますが、逃げなければ走れないとまでは断定できません。';
+ if(plusLead)description+='逃げて好走した例：'+example(plusLead)+'。';
+ if(minusOther)description+='マイナス33で控えて好走した例：'+example(minusOther)+'。';
+ description+='競り合い・馬場・相手の強さ・道中の緩みはこの集計だけでは判定できません。';
+ return {distance,plus:p,minus:m,neutral:stat(neutral),leadGood:leadGood.length,nonleadGood:otherGood.length,description};
+}
+function frontPaceMarkup(pattern){
+ if(!pattern)return '';
+ const row=(label,st)=>'<div class="front-pace-row"><strong>'+safe(label)+'</strong><span>ハナ '+st.lead+'/'+st.total+'走</span><span>3着内 '+st.good+'走</span></div>';
+ return '<div class="front-pace-panel"><div class="front-pace-title">同距離'+pattern.distance+'mの実33と先頭確保</div>'+
+ (pattern.plus.total?row('プラス33',pattern.plus):'')+(pattern.minus.total?row('マイナス33',pattern.minus):'')+(pattern.neutral.total?row('33＝0',pattern.neutral):'')+
+ '<p class="front-pace-explain">'+safe(pattern.description)+'</p>'+
+ '<p class="front-pace-note">※実33はレース全体の値です。プラス33だから逃げられるという因果関係の証明ではありません。</p></div>';
+}
 function characterInsights(rows){
  if(!rows.length)return '<p class="hint">対象の過去走がないため、馬キャラは判定できません。</p>';
  if(surfaces(rows).length>1)return '<p class="hint">芝・ダート混在では判定しません。芝かダートを選択してください。</p>';
@@ -185,7 +221,20 @@ function characterInsights(rows){
  const validWithPosition=part.filter(r=>parsePass(r).length>=2);
  const progressed=validWithPosition.filter(r=>{const p=parsePass(r);return p[0]-p[p.length-1]>=2&&good(r)});
  const held=validWithPosition.filter(r=>{const p=parsePass(r);return p[0]-p[p.length-1]<2&&good(r)});
- const type=style==='front'?'逃げ・先行型':style==='back'?'後方差し型':style==='mid'?'中団差し型':style==='variable'?'位置取り自在型':'脚質判定保留';
+ const frontPattern=style==='front'?frontPaceSignature(app.current,rows):null;
+ const earlyRows=part.filter(r=>num(r[9]?.[0])&&num(r[9]?.[1]));
+ const avgEarly=i=>earlyRows.length?earlyRows.reduce((sum,r)=>sum+r[9][i],0)/earlyRows.length:null;
+ const escAvg=avgEarly(0),leadAvg=avgEarly(1);
+ const highInitial=escAvg!==null&&leadAvg!==null&&escAvg-leadAvg>=25&&escAvg>=60;
+ const highSecond=escAvg!==null&&leadAvg!==null&&leadAvg-escAvg>=8&&leadAvg>=60;
+ const controlled=frontPattern?.nonleadGood>=2;
+ const type=style==='front'?
+  (highInitial&&frontPattern?.leadGood>=1?'初速突出・逃げ主導型（候補）':
+   highSecond&&controlled?'二の脚優勢・控え可能型（候補）':
+   controlled?'控える競馬にも対応する先行型':
+   highInitial?'初速突出型（候補）':
+   highSecond?'二の脚優勢型（候補）':'逃げ・先行型'):
+  style==='back'?'後方差し型':style==='mid'?'中団差し型':style==='variable'?'位置取り自在型':'脚質判定保留';
  const mean=(rr,k)=>{const v=rr.map(r=>r[9]?.[k]).filter(num);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;};
  const leg=mean(part,3),gear=mean(part,4);
  const positionText=style==='back'?'序盤は後方から運ぶ傾向があります。':
@@ -201,7 +250,11 @@ function characterInsights(rows){
   (leg!==null&&gear!==null&&dual.length>=2?'脚力とギアを同時に高水準で記録しています。':
    highLeg.length>=2?'末脚の高指数を繰り返し記録しています。':
    highGear.length>=2?'加速に関係するギアの高指数を複数回記録しています。':'末脚の特徴を判断する指数標本は限定的です。');
- const synopsis=positionText+movementText+strength;
+ const firstStrength=style==='front'&&escAvg!==null&&leadAvg!==null?
+  ('逃指数の平均'+fmt(escAvg)+'、先行指数の平均'+fmt(leadAvg)+'。'+
+   (highInitial?'ゲートを含む初速が目立つ指数構成です。':highSecond?'初速の後の先行力が目立つ指数構成です。':'初速とその後の先行力をともに確認できます。')+
+   (frontPattern?.nonleadGood>=2?'先頭以外からの好走も確認できます。':'')):strength;
+ const synopsis=positionText+(style==='front'?'':movementText)+firstStrength;
  const lapRange=(()=>{
   const matched=lapMatches(app.current,part).filter(x=>good(x.ch));
   if(!matched.length)return '';
@@ -215,6 +268,7 @@ function characterInsights(rows){
  return '<div class="chara-observe-scope">対象：'+safe(part[0][3])+' '+safe(distanceBand)+'／'+part.length+'走</div>'+
  '<div class="horse-character-summary"><div class="horse-character-type">'+safe(type)+'</div>'+
  '<p class="horse-character-description">'+safe(synopsis)+'</p>'+
+ (frontPattern?frontPaceMarkup(frontPattern):'')+
  (lapRange?'<p class="horse-character-lap">'+safe(lapRange)+'</p>':'')+
  '<p class="horse-character-caution">加速の瞬発型・持続型・漸進型は区間ラップ不足のため未確定です。</p></div>'+
  '<details class="horse-character-more"><summary>詳しい分析と判断根拠を開く（'+cards.length+'項目）</summary>'+details+evidenceHtml+'</details>'+
