@@ -591,6 +591,25 @@ function candidateKind(name,h,cohort){
      '締まった33への対応力を事後検証したい候補。判定に33・着順・通過順を使用していません。';
   }
  }
+ if(kind==='legdominant'){
+  // Independent of finish and race-wide 33; distance bands and turf/dirt stay separate.
+  const groups=new Map();
+  for(const r of rows){
+   const d=Number(r[4]);if(d<1800||!['芝','ダ'].includes(r[3]))continue;
+   const key=r[3]+'-'+(d<=2200?'1800〜2200m':'2400m以上');
+   if(!groups.has(key))groups.set(key,[]);
+   groups.get(key).push(r);
+  }
+  const variants=[...groups.entries()].map(([key,part])=>({key,profile:legDominantProfile(part),part}))
+   .filter(x=>x.profile).sort((a,b)=>b.profile.gap-a.profile.gap||b.profile.l-a.profile.l);
+  const best=variants[0];
+  if(best){
+    match=true;evidence=best.part.find(r=>num(r[9]?.[3])&&num(r[9]?.[4]));sortValue=best.profile.gap;
+    reason='【指数単独・高脚力・ギア平均控えめ】'+best.key+' '+best.profile.n+'走。脚力平均'+fmt(best.profile.l)+
+     '、ギア平均'+fmt(best.profile.g)+'（最高'+fmt(best.profile.maxGear)+'）。'+best.profile.pursuitNote+
+     '。実33や着順は抽出に未使用。持久力の証明ではなく事後検証用候補。';
+  }
+ }
  if(kind==='dual'){match=dual.length>0;evidence=dual[0];reason=`同一走の脚${fmt(dual[0]?.[9][3])} ギ${fmt(dual[0]?.[9][4])}`;}
  if(['turfstable','turfweak','dirtgain','dirtweak'].includes(kind)){
   const surface=kind.startsWith('turf')?'芝':'ダ';
