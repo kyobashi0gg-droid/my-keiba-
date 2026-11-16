@@ -190,7 +190,7 @@ function pursuitLegMarkup(signal){
  '<details><summary>指数だけで判定した根拠を見る</summary><p>'+safe(signal.detail)+'</p></details>'+
  '<p class="pursuit-leg-caveat">※抽出には着順・実33・通過順を使用していません。締まった33への適性は未検証で、馬場・競馬場の偏りや相手レベルを別に確認します。</p></div>';
 }
-function characterInsights(rows){
+function characterInsights(rows,name=app.current){
  if(!rows.length)return '<p class="hint">対象の過去走がないため、馬キャラは判定できません。</p>';
  if(surfaces(rows).length>1)return '<p class="hint">芝・ダート混在では判定しません。芝かダートを選択してください。</p>';
  const band=r=>{const d=Number(r[4]);return !d?'距離不明':d<=1400?'1400m以下':d===1600?'1600m':d<=2200?'1800〜2200m':'2400m以上'};
@@ -215,7 +215,7 @@ function characterInsights(rows){
   share>=2&&fromBack.length>=2&&fromBack.length/share>=.5?'back':
   share>=3&&mid.length>=2&&mid.length/share>=.5?'mid':
   share>=3&&nearFront.length&&fromBack.length?'variable':'unknown';
- const lapCharacter=individualLapStory(app.current,part);
+ const lapCharacter=individualLapStory(name,part);
  if(lapCharacter)add(lapCharacter.title,lapCharacter.body,lapCharacter.refs);
  if(style==='front'){
   const now=nearFront.map(x=>x.r);
@@ -291,7 +291,7 @@ function characterInsights(rows){
  const held=validWithPosition.filter(r=>{const p=parsePass(r);return p[0]-p[p.length-1]<2&&good(r)});
  const sustainedCandidate=legDominantProfile(part);
  const pursuitSignal=pursuitLegResilience(part);
- const frontPattern=style==='front'?frontPaceSignature(app.current,rows):null;
+ const frontPattern=style==='front'?frontPaceSignature(name,rows):null;
  const earlyRows=part.filter(r=>num(r[9]?.[0])&&num(r[9]?.[1]));
  const avgEarly=i=>earlyRows.length?earlyRows.reduce((sum,r)=>sum+r[9][i],0)/earlyRows.length:null;
  const escAvg=avgEarly(0),leadAvg=avgEarly(1);
@@ -326,7 +326,7 @@ function characterInsights(rows){
    (frontPattern?.nonleadGood>=2?'先頭以外からの好走も確認できます。':'')):strength;
  const synopsis=positionText+(style==='front'?'':movementText)+firstStrength;
  const lapRange=(()=>{
-  const matched=lapMatches(app.current,part).filter(x=>good(x.ch));
+  const matched=lapMatches(name,part).filter(x=>good(x.ch));
   if(!matched.length)return '';
   const min=Math.min(...matched.map(x=>x.raw[4])),max=Math.max(...matched.map(x=>x.raw[4]));
   const signed=v=>(v>0?'+':'')+fmt(v);
@@ -863,11 +863,117 @@ function renderRaceComparison(){
  $('race-compare').innerHTML='<div class="comparison-grid">'+text.join('')+'</div>';
  $('race-compare').querySelectorAll('button').forEach(b=>b.onclick=()=>selectRaceHorse(b.dataset.cmphorse));
 }
+
+function consultDeviation(axes){
+ if(!axes)return '未確認';
+ return axes.map(a=>a.label+' '+(a.score===null?'保留('+a.reason+')':Math.round(a.score))+
+  '（本人'+a.sourceN+'走・基準'+a.n+(a.fallback?'・距離混合参考':'')+'）').join(' / ');
+}
+function consultHorseCharacter(name,rows){
+ if(!rows.length)return ['馬キャラ：指数不足で保留'];
+ const root=document.createElement('div');root.innerHTML=characterInsights(rows,name);
+ const read=sel=>root.querySelector(sel)?.textContent?.replace(/\s+/g,' ').trim()||'';
+ const v=['馬キャラ：'+(read('.horse-character-type')||'判定保留')+' / '+read('.chara-observe-scope')];
+ if(read('.horse-character-description'))v.push('概要：'+read('.horse-character-description'));
+ if(read('.horse-character-lap'))v.push('好走時の実33：'+read('.horse-character-lap'));
+ for(const e of [...root.querySelectorAll('.chara-detail-row')].slice(0,3)){
+  v.push('根拠：'+(e.querySelector('b')?.textContent||'')+' / '+(e.querySelector('p')?.textContent||''));
+ }
+ const leg=root.querySelector('.leg-dominant-panel,.pursuit-leg-signal');
+ if(leg)v.push('指数型の仮説：'+leg.textContent.replace(/\s+/g,' ').trim().slice(0,280));
+ return v;
+}
+function consultCreateText(scope){
+ const race=activeRace(),runners=currentRunners();
+ if(!race||!runners.length)throw Error('出走レースを選択してください。');
+ const chosen=scope==='horse'?runners.filter(r=>r[1]===app.current):runners;
+ if(!chosen.length)throw Error('相談対象の馬を選択してください。');
+ const lines=[
+ '【CHARANIZE DB LAB｜ラップ君に相談／指数・偏差値・馬キャラ v1】',
+ '開催：'+app.raceDate+' '+app.raceVenue+' '+app.raceNo+'R '+race[0]+' '+race[1]+race[2]+'m',
+ '対象：'+(scope==='horse'?'選択馬':'全出走馬')+chosen.length+'頭 / メンバー'+runners.length+'頭',
+ '',
+ '【重要】これはCHARANIZE指数側の補足資料。MY KEIBA LABのDB33、新聞PDF、テン/上がり順位、調教、相手関係を別途照合。欠けた資料を推測で埋めないこと。',
+ '・出走馬内偏差値は選択レースの全頭を比較。芝ダと距離帯を揃えた直近5走の加重平均。比較対象5頭未満は保留。',
+ '・馬自身の偏差値は今回の出走前の最新過去走と、自分の別走（最低3走）を比較。今回のレース結果は含まない。',
+ '・各偏差値50は比較集団の平均。距離混合参考は能力・適性の断定に使わない。芝とダートを混合しない。',
+ '・逃は初速、先は二の脚、追走は負荷経験。脚力指数は差し馬に有利な偏りに注意。脚力上位を瞬発力最上位と見なさない。',
+ '・持続力型、瞬発型などは仮説。上がり順位、走った位置、相手レベル、ラスト6F実33、中弛みと再加速で確認する。',
+ '・33＝ラスト6F前半3F−後半3F。実33はレース全体値。大逃げ・分離の後続実効33とは分ける。指数上位を機械的に本命にしない。',
+ '',
+ '【分析の依頼】',
+ '1. 全頭の逃・先・追走から隊列と先行圧の材料を探す。33予測はテン順・実通過順・中盤の緩みと照合。',
+ '2. 出走馬内偏差値と馬自身の偏差値を別々に評価し、今回のクラスと相手関係での再現性を検討。',
+ '3. 高脚力だが上がり順位が低い馬について、格上能力、持続力、先行負荷、キレ負け等の原因を比較。',
+ '4. 33適合型／33がズレても能力で勝ち切る能力克服型／今回のメンバーで力を出す型を分ける。',
+ '5. 偏差値・馬キャラ・33・調教を総合し、A/B候補を論じる。未確認の情報は保留。',
+ ];
+ for(const [no,name] of chosen){
+  lines.push('','■ '+(no??'—')+'番 '+name);
+  const h=getHorse(name);
+  if(!h){lines.push('指数DB未収録。偏差値・馬キャラは保留');continue;}
+  const raw=horseRows(name),all=deviationRuns(raw,race[1],race[2],app.raceDate,true);
+  const same=deviationRuns(raw,race[1],race[2],app.raceDate,false);
+  const field=fieldDeviationFor(name),self=personalDeviationFor(name,all);
+  lines.push('出走馬内偏差値：'+consultDeviation(field?.axes));
+  lines.push('馬自身の偏差値：'+consultDeviation(self?.axes)+(self?.latest?' / 基点 '+runSummary(self.latest):''));
+  lines.push('過去走：同芝ダ'+all.length+'走、同距離帯'+same.length+'走（DB最大10走）');
+  const charaRows=same.length?same:all;
+  if(!same.length&&all.length)lines.push('馬キャラは同距離帯に指数なし。芝ダ一致の異距離から参考評価。');
+  lines.push(...consultHorseCharacter(name,charaRows));
+  for(const r of all.slice(0,4)){
+   const ix=r[9]||[];
+   lines.push('過去走：'+runSummary(r)+' 通過'+(r[7]||'—')+' 上がり'+(r[8]??'—')+
+   ' / 逃'+fmt(ix[0])+' 先'+fmt(ix[1])+' 追'+fmt(ix[2])+' 脚'+fmt(ix[3])+' ギ'+fmt(ix[4]));
+  }
+  const laps=lapMatches(name,all).slice(0,4);
+  if(laps.length)for(const x of laps)lines.push('実33：'+runSummary(x.ch)+' レース全体'+(num(x.raw?.[4])?(x.raw[4]>0?'+':'')+fmt(x.raw[4]):'—')+' 場一致'+(x.courseConfirmed?'確認':'未確認'));
+  else lines.push('実33照合：一致する記録なし（DB原本を別途確認）');
+  const issues=all.filter(r=>largeSourceDifference(r).large).length;
+  if(issues)lines.push('⚠同一過去走で指数出典差が大きい'+issues+'走。既存採用値を維持。');
+ }
+ lines.push('','【回答希望】','まず指数・偏差値・馬キャラの発見と根拠を説明。MY KEIBA LAB資料と統合するときは33予測と能力評価を分け、未確認事項を明示。事前予測をレース結果から後付けしないでください。');
+ return lines.join('\n');
+}
+async function consultCopy(s){
+ try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(s);return true;}}catch(e){}
+ const input=document.createElement('textarea');input.value=s;input.style.position='fixed';input.style.opacity='0';
+ document.body.appendChild(input);input.focus();input.select();
+ let ok=false;try{ok=!!document.execCommand?.('copy');}catch(e){}
+ input.remove();return ok;
+}
+function initCharaConsult(){
+ const btn=$('chara-consult-copy'),share=$('chara-consult-share'),scope=$('chara-consult-scope'),
+  status=$('chara-consult-status'),preview=$('chara-consult-preview'),box=$('chara-consult-text');
+ if(!btn||!share||!scope||!status||!preview||!box)return;
+ async function send(mode){
+  if(btn.disabled)return;
+  btn.disabled=true;share.disabled=true;
+  try{
+   status.textContent='全頭の指数・偏差値・馬キャラを照合中…';
+   const value=consultCreateText(scope.value);
+   preview.hidden=false;box.value=value;
+   if(mode==='share'&&typeof navigator.share==='function'){
+    try{
+     await navigator.share({title:'CHARANIZE '+app.raceVenue+app.raceNo+'R',text:value});
+     status.textContent='共有先で送信内容を確認してください。';return;
+    }catch(e){if(e?.name==='AbortError'){status.textContent='共有をキャンセルしました。';return;}}
+   }
+   if(await consultCopy(value))status.textContent='コピー完了（'+value.length.toLocaleString('ja-JP')+'文字）。ChatGPTの今の会話へ貼り付けてください。';
+   else{preview.open=true;status.textContent='自動コピーできませんでした。全文欄を長押ししてコピーしてください。';}
+  }catch(e){status.textContent='相談文を作成できませんでした：'+String(e?.message||e);}
+  finally{btn.disabled=false;share.disabled=false;}
+ }
+ btn.onclick=()=>send('copy');share.onclick=()=>send('share');
+ scope.onchange=()=>{preview.hidden=true;preview.open=false;box.value='';status.textContent='対象変更後、ボタンを押すと再生成します。';};
+}
+
 function initRaceUX(){
  const details=document.querySelector('.race-comparison');details.addEventListener('toggle',()=>{if(details.open)renderRaceComparison()});
  const u=$('race-file-input');if(u)u.onchange=async e=>{let f=e.target.files?.[0];if(!f)return;try{let p=JSON.parse(await f.text());if(!p.races||!Object.keys(p.races).length)throw Error('racesを含む出走表JSONではありません');app.races=p.races;initRaces(true);$('race-upload-status').textContent=`${f.name}：${Object.keys(app.races).length}レースを画面内へ反映（保存には再生成が必要）`;}catch(err){$('race-upload-status').textContent='読み込み失敗：'+err.message}};
  const originalLookup=lookup;lookup=function(){app.cutoff='';originalLookup();renderRaceHorses()};
  initRaces(false);
+ initCharaConsult();
 }
 
 init();
