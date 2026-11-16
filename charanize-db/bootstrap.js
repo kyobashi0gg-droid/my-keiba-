@@ -10,7 +10,7 @@
   const input = document.getElementById('initial-file-input');
   let activePack = null;
   const uploadStatus = document.getElementById('upload-status');
-  if(uploadStatus) uploadStatus.textContent='PDF取り込み機能 v20261109-4 読み込み済み。CHARANIZE指数新聞PDFを選択してください。';
+  if(uploadStatus) uploadStatus.textContent='PDF取り込み機能 v20261117-1 読み込み済み。指数新聞PDFから出走表・指数履歴を一括更新できます。';
 
   const dbPromise = new Promise((resolve, reject) => {
     if (!('indexedDB' in window)) return reject(new Error('このブラウザでは保存機能が使えません。'));
@@ -128,15 +128,21 @@
       if(pdf){
         if(!window.CHARA_PDF_DB_IMPORT)throw Error('PDF解析機能を読み込めませんでした。');
         const merged = await window.CHARA_PDF_DB_IMPORT.readAndMerge(file,activePack.horses,
-          message=>{if(statusEl)statusEl.textContent=message;});
-        const next = {...activePack,horses:merged.horses,
-          meta:{...activePack.meta,last_pdf_import:file.name,last_pdf_import_stats:merged.changes}};
+          message=>{if(statusEl)statusEl.textContent=message;},activePack.races);
+        const newestRace=merged.raceKeys.slice().sort((a,b)=>b.localeCompare(a,'ja'))[0]||'';
+        const [pdfRaceDate,pdfRaceVenue]=newestRace.split('|');
+        const next = {...activePack,horses:merged.horses,races:merged.races,
+          meta:{...activePack.meta,last_pdf_import:file.name,last_pdf_import_stats:merged.changes,
+            last_pdf_race_stats:merged.raceChanges,last_pdf_race_date:pdfRaceDate||'',
+            last_pdf_race_venue:pdfRaceVenue||''}};
+        const rs=merged.raceChanges;
         const report='PDF解析：'+merged.pdf.races+'レース・'+merged.pdf.horses+'頭・過去走'+merged.pdf.runs+'走。\n'
-          +'DB追加：'+merged.changes.added+'走／更新馬：'+merged.changes.horses+'頭／既存照合：'+merged.changes.matched+'走／指数衝突：'+merged.changes.conflicts+'件。\n'
-          +'既存DBを保持して端末に保存しますか？';
+          +'出走表：新規'+rs.added+'レース／更新'+rs.updated+'レース／同一'+rs.unchanged+'レース／既存優先'+rs.preserved+'レース。\n'
+          +'指数DB：追加'+merged.changes.added+'走／更新馬'+merged.changes.horses+'頭／既存照合'+merged.changes.matched+'走／指数衝突'+merged.changes.conflicts+'件。\n'
+          +'出走表・指数履歴・実33データを保持し、端末内に保存しますか？';
         if(!confirm(report)){if(statusEl)statusEl.textContent='保存をキャンセルしました。既存データは変更していません。';return;}
         await savePack(next);
-        if(statusEl)statusEl.textContent='PDFを端末保存しました。新規'+merged.changes.added+'走、既存照合'+merged.changes.matched+'走、指数衝突'+merged.changes.conflicts+'件。画面を更新します。';
+        if(statusEl)statusEl.textContent='PDFを保存しました。レース新規'+rs.added+'件・更新'+rs.updated+'件、指数追加'+merged.changes.added+'走。画面を更新します。';
         location.reload();
         return;
       }
