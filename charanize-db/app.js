@@ -122,6 +122,33 @@ function frontPaceMarkup(pattern){
  '<p class="front-pace-explain">'+safe(pattern.description)+'</p>'+
  '<p class="front-pace-note">※実33はレース全体の値です。プラス33だから逃げられるという因果関係の証明ではありません。</p></div>';
 }
+// v0.11: broader INDEX-ONLY phenotype; intentionally not a stamina certification.
+// A single high-gear race is allowed; all tests are per-matched surface and distance band.
+function legDominantProfile(part){
+ const eligible=part.filter(r=>Number(r[4])>=1800&&['芝','ダ'].includes(r[3])&&
+   num(r[9]?.[3])&&num(r[9]?.[4]));
+ if(eligible.length<3||surfaces(eligible).length!==1)return null;
+ const legs=eligible.map(r=>r[9][3]),gears=eligible.map(r=>r[9][4]);
+ const mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
+ const l=mean(legs),g=mean(gears),gap=l-g;
+ if(l<70||g>45||gap<25||Math.min(...legs)<55)return null;
+ const withP=eligible.filter(r=>num(r[9]?.[2]));
+ let pursuitNote='追走指数の負荷変動と脚力維持の関係は、まだ検証できていません。';
+ if(withP.length>=3){
+  const ps=withP.map(r=>r[9][2]);
+  const pRange=Math.max(...ps)-Math.min(...ps);
+  pursuitNote='追走指数の観測範囲は'+fmt(Math.min(...ps))+'〜'+fmt(Math.max(...ps))+'（幅'+fmt(pRange)+'）。'+
+   (pRange<18?'追走負荷の変動幅が小さいため、負荷耐性の判定は保留します。':'追走負荷が変動していますが、脚力維持の判定には高低負荷の各群を追加検証します。');
+ }
+ return {n:eligible.length,l,g,gap,maxGear:Math.max(...gears),minLeg:Math.min(...legs),pursuitNote,refs:eligible.slice(0,3)};
+}
+function legDominantMarkup(signal){
+ if(!signal)return '';
+ return '<div class="leg-dominant-panel"><strong>高脚力・ギア控えめ型（指数単独・暫定）</strong>'+
+ '<p>同じ芝ダ・距離帯の'+signal.n+'走で、脚力平均'+fmt(signal.l)+'、ギア平均'+fmt(signal.g)+'。脚力とギアの平均差'+fmt(signal.gap)+'。ギア最高'+fmt(signal.maxGear)+'は発揮しており、キレる脚がないとは断定しません。</p>'+
+ '<p>'+safe(signal.pursuitNote)+'</p>'+
+ '<small>着順・実33を使わず抽出。持久力や締まった33への適性は、別の実戦検証が必要です。</small></div>';
+}
 // v0.10 - INDEX-ONLY hypothesis. NEVER consult finish, lap33, position or race outcomes here.
 // Pursuit is load exposure, not a direct measure of ability. No turf/dirt mixing.
 function pursuitLegResilience(rows){
@@ -262,6 +289,7 @@ function characterInsights(rows){
  const validWithPosition=part.filter(r=>parsePass(r).length>=2);
  const progressed=validWithPosition.filter(r=>{const p=parsePass(r);return p[0]-p[p.length-1]>=2&&good(r)});
  const held=validWithPosition.filter(r=>{const p=parsePass(r);return p[0]-p[p.length-1]<2&&good(r)});
+ const sustainedCandidate=legDominantProfile(part);
  const pursuitSignal=pursuitLegResilience(part);
  const frontPattern=style==='front'?frontPaceSignature(app.current,rows):null;
  const earlyRows=part.filter(r=>num(r[9]?.[0])&&num(r[9]?.[1]));
@@ -312,6 +340,7 @@ function characterInsights(rows){
  '<div class="horse-character-summary"><div class="horse-character-type">'+safe(type)+'</div>'+
  '<p class="horse-character-description">'+safe(synopsis)+'</p>'+
  (pursuitSignal?pursuitLegMarkup(pursuitSignal):'')+
+ (sustainedCandidate&&!pursuitSignal?legDominantMarkup(sustainedCandidate):'')+
  (frontPattern?frontPaceMarkup(frontPattern):'')+
  (lapRange?'<p class="horse-character-lap">'+safe(lapRange)+'</p>':'')+
  '<p class="horse-character-caution">加速の瞬発型・持続型・漸進型は区間ラップ不足のため未確定です。</p></div>'+
