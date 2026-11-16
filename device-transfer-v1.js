@@ -107,11 +107,34 @@
      }catch(e){tx.abort();reject(e);}
    });
  }
+ function openRestoreDb(){
+   return new Promise((resolve,reject)=>{
+     const req=indexedDB.open(DB_NAME,1);
+     req.onupgradeneeded=()=>{
+       const db=req.result;
+       if(!db.objectStoreNames.contains('horses')){
+         const h=db.createObjectStore('horses',{keyPath:'key'});
+         h.createIndex('nameKey','nameKey');h.createIndex('registrationNo','registrationNo');
+       }
+       if(!db.objectStoreNames.contains('runs')){
+         const r=db.createObjectStore('runs',{keyPath:'id'});
+         r.createIndex('horseKey','horseKey');r.createIndex('date','date');
+       }
+     };
+     req.onsuccess=()=>{
+       const db=req.result;
+       if(!hasStores(db)){db.close();reject(Error('既存の馬DBの構造が未対応です。データは変更していません。'));}
+       else resolve(db);
+     };
+     req.onerror=()=>reject(req.error||Error('馬DBを開けません。'));
+     req.onblocked=()=>reject(Error('別のMY KEIBA画面を閉じてください。'));
+   });
+ }
  async function restore(file){
    if(file.size>MAX_SIZE)throw Error('150MB以下のバックアップファイルを選んでください。');
    let data;try{data=JSON.parse(await file.text())}catch{throw Error('JSONファイルが読み取れません。');}
    const counts=validate(data);
-   const db=await openExisting();
+   const db=await openRestoreDb();
    try{
      const check=await targetIsEmpty(db);
      if(!check.ok)throw Error('このブラウザには既存データがあります（馬'+check.horses+'頭・過去走'+check.runs+'走・分析領域'+check.existing.length+'件）。'
