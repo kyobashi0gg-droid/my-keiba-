@@ -449,49 +449,64 @@ function sourceDetails(r){
  return `<details class="single-source-warning"><summary${conflict.large?' style="color:#a35900;font-weight:800"':''}>${heading}</summary><div class="notice">${description}<ul>${details}</ul></div></details>`;
 }
 function renderRows(rows){return rows.map((r,i)=>{let notes=rowTags(r);return `<tr id="run-${i}"><td>${safe(date(r[0]))}</td><td>${safe(r[1])}${r[2]||''}R<br><small>${safe(r[10]||'')}</small></td><td>${safe(r[3])}${r[4]}m</td><td>${safe(r[5])}</td><td>${r[6]??'—'}</td><td>${safe(r[7]||'—')}</td><td>${safe(r[8]||'—')}</td>${r[9].map(v=>`<td class="num ${!num(v)?'':v>=90?'hi':v<0?'low':''}">${fmt(v)}</td>`).join('')}<td class="notes-cell">${notes.filter(x=>x.type!=='warn').length?notes.filter(x=>x.type!=='warn').map(x=>`<span class="mini ${x.type==='neg'?'neg':''}">${safe(x.label)}</span>`).join(''):(r[12]?'':'<span class="muted">明確な特徴なし</span>')}${sourceDetails(r)}</td></tr>`}).join('')}
-// v0.12: Two DIFFERENT deviation references, with all source scores kept unmodified.
-// Field = each runner's 5-1 weighted past-five mean; own = newest run vs OTHER runs of the same horse.
-function devStats(values, minCount){
- const xs=values.filter(num);if(xs.length<minCount)return {n:xs.length,mean:null,sd:null};
- const mean=xs.reduce((a,b)=>a+b,0)/xs.length,sd=Math.sqrt(xs.reduce((a,b)=>a+(b-mean)**2,0)/xs.length);
+// v0.13: Dual deviations with an explicitly marked same-surface fallback.
+// Never calculate using the target race or claim a different distance is equivalent.
+function devStats(values,minCount){
+ const xs=values.filter(num);
+ if(xs.length<minCount)return {n:xs.length,mean:null,sd:null};
+ const mean=xs.reduce((a,b)=>a+b,0)/xs.length;
+ const sd=Math.sqrt(xs.reduce((a,b)=>a+(b-mean)**2,0)/xs.length);
  return {n:xs.length,mean,sd:sd>=2?sd:null};
 }
 function devOf(value,stat){
  if(!num(value)||!stat||stat.mean===null||stat.sd===null)return null;
  return 50+10*(value-stat.mean)/stat.sd;
 }
-function weightedIndex(rows,i){
- const arr=rows.slice(0,5).map((r,j)=>({v:r[9]?.[i],w:5-j})).filter(x=>num(x.v));
- if(arr.length<3)return null;
- return arr.reduce((a,x)=>a+x.v*x.w,0)/arr.reduce((a,x)=>a+x.w,0);
-}
-function matchingBandRows(rows,surface,distance,day){
+function deviationRuns(rows,surface,distance,day,broad){
  const band=distBand(distance);
- return rows.filter(r=>(!day||!r[0]||r[0]<day)&&r[3]===surface&&distBand(r[4])===band);
+ return rows.filter(r=>(!day||!r[0]||r[0]<day)&&r[3]===surface&&(broad||distBand(r[4])===band))
+  .slice().sort((a,b)=>String(b[0]||'').localeCompare(String(a[0]||'')));
+}
+function weightedIndexDetail(rows,i){
+ const valid=rows.slice(0,5).map((r,j)=>({v:r[9]?.[i],w:5-j})).filter(x=>num(x.v));
+ return {value:valid.length>=3?valid.reduce((a,x)=>a+x.v*x.w,0)/valid.reduce((a,x)=>a+x.w,0):null,count:valid.length};
 }
 function fieldDeviationFor(name){
  const c=activeRace();
  if(!c||!['芝','ダ'].includes(c[1])||!c[2]||!currentRunners().some(x=>x[1]===name))return null;
  const entrants=currentRunners().map(([no,horseName])=>{
-  const h=getHorse(horseName);
-  const rows=h?matchingBandRows(horseRows(horseName),c[1],c[2],app.raceDate):[];
-  return {name:horseName,raw:keys.map((k,i)=>weightedIndex(rows,i))};
+  const rows=horseRows(horseName);
+  return {name:horseName,strict:deviationRuns(rows,c[1],c[2],app.raceDate,false),
+    broad:deviationRuns(rows,c[1],c[2],app.raceDate,true)};
  });
  const me=entrants.find(x=>x.name===name);
- return {horse:me,axes:keys.map((k,i)=>{
-  const values=entrants.map(x=>x.raw[i]).filter(num),ref=devStats(values,5);
-  return {label:labels[i],raw:me.raw[i],n:ref.n,score:devOf(me.raw[i],ref)};
- }),total:entrants.length,surface:c[1],distance:c[2]};
+ return {total:entrants.length,axes:keys.map((k,i)=>{
+  const strict=entrants.map(x=>({name:x.name,...weightedIndexDetail(x.strict,i)}));
+  const myStrict=strict.find(x=>x.name===name),strictStats=devStats(strict.map(x=>x.value),5);
+  const strictVal=devOf(myStrict.value,strictStats);
+  // If the target has no comparable value, widen the ENTIRE field baseline, not only this horse.
+  const broaden=strictVal===null;
+  const broad=broaden?entrants.map(x=>({name:x.name,...weightedIndexDetail(x.broad,i)})):null;
+  const own=broaden?broad.find(x=>x.name===name):myStrict;
+  const stats=broaden?devStats(broad.map(x=>x.value),5):strictStats;
+  return {label:labels[i],raw:own.value,n:stats.n,sourceN:own.count,score:devOf(own.value,stats),
+   fallback:broaden,reason:own.count<3?'該当走が3走未満':stats.n<5?'比較馬5頭未満':stats.sd===null?'指数の変動小':'算出可能'};
+ }),surface:c[1],distance:c[2]};
 }
 function personalDeviationFor(name,shown){
  const latest=shown[0];if(!latest)return null;
  const sf=latest[3],distance=latest[4],all=horseRows(name);
- const same=matchingBandRows(all,sf,distance,app.cutoff).filter(r=>r!==latest&&!(
-  r[0]===latest[0]&&r[1]===latest[1]&&r[2]===latest[2]&&r[4]===latest[4]));
+ const isNotSame=r=>r!==latest&&!(r[0]===latest[0]&&r[1]===latest[1]&&r[2]===latest[2]&&r[4]===latest[4]);
+ const strict=deviationRuns(all,sf,distance,app.cutoff,false).filter(isNotSame);
+ const broad=deviationRuns(all,sf,distance,app.cutoff,true).filter(isNotSame);
  return {latest,scope:sf+' '+distBand(distance),axes:keys.map((k,i)=>{
-  const reference=same.map(r=>r[9]?.[i]).filter(num);
-  const stat=devStats(reference,3);
-  return {label:labels[i],raw:latest[9]?.[i],n:stat.n,score:devOf(latest[9]?.[i],stat)};
+  const target=latest[9]?.[i],strictValues=strict.map(r=>r[9]?.[i]).filter(num);
+  const s=devStats(strictValues,3),strictScore=devOf(target,s);
+  const fallback=strictScore===null,values=fallback?broad.map(r=>r[9]?.[i]).filter(num):strictValues;
+  const stat=fallback?devStats(values,3):s;
+  return {label:labels[i],raw:target,n:stat.n,sourceN:num(target)?1:0,
+   score:devOf(target,stat),fallback,
+   reason:!num(target)?'最新走の指数なし':stat.n<3?'比較できる別走が3走未満':stat.sd===null?'指数の変動小':'算出可能'};
  })};
 }
 function dualDeviationHTML(name,shown){
@@ -499,17 +514,23 @@ function dualDeviationHTML(name,shown){
  const card=(heading,desc,axes,missing)=>{
   if(!axes)return '<div class="dual-dev-card"><h4>'+safe(heading)+'</h4><p class="dual-dev-sub">'+safe(missing)+'</p></div>';
   return '<div class="dual-dev-card"><h4>'+safe(heading)+'</h4><p class="dual-dev-sub">'+safe(desc)+'</p>'+
-   '<div class="dual-dev-axes">'+axes.map(a=>'<div class="dual-dev-axis"><span>'+a.label+'</span><strong class="'+(a.score>=60?'hot':'')+'">'+
-    (a.score===null?'—':Math.round(a.score))+'</strong><small>'+(a.score===null?(a.raw==null?'指数欠損':'標本不足・変動小'):'原'+fmt(a.raw))+' n='+a.n+'</small></div>').join('')+'</div></div>';
+   '<div class="dual-dev-axes">'+axes.map(a=>{
+    const v=a.score===null?'—':Math.round(a.score);
+    const status=a.score===null?safe(a.reason):'原'+fmt(a.raw);
+    const scope=a.fallback?'［芝ダ一致・距離混合の参考］':'';
+    return '<div class="dual-dev-axis"><span>'+safe(a.label)+'</span><strong class="'+(a.score>=60?'hot':'')+'">'+v+
+     '</strong><small>'+status+' / 本人'+a.sourceN+'走・基準'+a.n+' '+scope+'</small></div>';
+   }).join('')+'</div></div>';
  };
- const fHtml=card('出走馬内偏差値',field?('同レース'+field.total+'頭・同芝ダと距離帯の直近5走加重平均'):'',
- field?.axes,'選択レースの出走馬として表示した場合に計算します。');
- const oHtml=card('馬自身の偏差値',own?('直近'+runSummary(own.latest)+'を、それ以外の'+own.scope+'の走歴と比較'):'',
- own?.axes,'比較できる過去走がありません。');
+ const fHtml=card('出走馬内偏差値',field?('同レース'+field.total+'頭・直近5走の加重平均'):'',
+  field?.axes,'選択レースの出走馬として表示した場合に計算します。');
+ const oHtml=card('馬自身の偏差値',own?('最新の該当走：'+runSummary(own.latest)+' を自分の別走と比較'):'',
+  own?.axes,'比較できる過去走がありません。');
  return '<div class="dual-dev-title">2つの偏差値で「相手との能力」と「自分の変化」を分ける</div>'+
   '<div class="dual-dev-grid">'+fHtml+oHtml+'</div>'+
-  '<p class="dual-dev-help">偏差値50が各比較集団の平均です。左は出走馬同士の相対比較、右は最新の1走を自分の他の過去走と比較（最新走を基準から除外）。各指数は最低で出走馬5頭、個体内の別走3走が必要で、標準偏差2未満は保留。追走は負荷経験であり高偏差値＝能力優秀とは限りません。コース・馬場・クラス差、収録数不足に注意。</p>';
+  '<p class="dual-dev-help">50は各比較集団の平均。まず同じ芝ダ・距離帯を使い、対象馬の指数履歴・比較標本が足りない場合は同じ芝ダの全距離へ広げて【参考】表示します。出走馬内は全頭で同じ範囲の過去5走加重平均を比較し、本人3走未満や基準5頭未満は保留。個体内は最新走を除外し別走3走以上で比較。標準偏差2未満は保留。距離や競馬場・馬場の差が指数に影響するため、距離混合の参考値は能力・適性の断定に使いません。追走は負荷経験であり能力順位ではありません。</p>';
 }
+
 function renderHorse(){let horse=getHorse(app.current);if(!horse)return;let all=horse[2],rows=all.filter(filt);let different=surfaces(rows).length>1;
  $('horse-title').textContent=app.current;const majorSourceRows=pastSourceDifferences(all);
   $('horse-meta').textContent=`${safe(horse[0]||'性別未記録')}・${horse[1]||'?'}歳（新聞時点）　収録${all.length}走・表示${rows.length}走`+(majorSourceRows.length?`　⚠指数差10以上 ${majorSourceRows.length}走・要確認`:'');$('horse-condition').textContent=rows.length?`${rows.length}走が条件一致`:'該当する走なし';
