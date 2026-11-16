@@ -39,6 +39,17 @@
 
     <div id="importStatus" class="import-status" hidden></div>
 
+    <section aria-labelledby="transfer-title" style="border:1px solid #b9d9c8;background:#f3faf5;border-radius:16px;padding:15px;margin:14px 0 16px">
+      <h2 id="transfer-title" style="margin:0 0 7px;font-size:17px;color:#205940">別端末への一括バックアップ・復元</h2>
+      <p style="margin:0 0 12px;font-size:12px;line-height:1.7;color:#526c5d">レース・予想・ラップ君の保存結果・DB33評価・馬DBの全過去走を、1つのJSONにまとめて保存します。指数新聞PDFの原本は含みません。</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px">
+        <button id="transfer-export" type="button" class="primary-btn" style="min-height:48px">この端末の全データを一括保存</button>
+        <label id="transfer-import-label" class="secondary-btn file-label" style="min-height:48px;display:flex;align-items:center;justify-content:center;text-align:center">別端末のバックアップを復元<input id="transfer-import" type="file" accept=".json,application/json" hidden /></label>
+      </div>
+      <p id="transfer-status" role="status" aria-live="polite" style="font-size:12px;color:#265b42;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere">バックアップはこの端末に保存します。データはサーバーへ送信されません。復元先に既存データがある場合は上書きせず停止します。</p>
+      <p style="margin:0;font-size:11px;color:#697f70;line-height:1.7">※秘密アクセスキーは書き出し対象外。スマホとタブレットは自動同期しません。新しい端末では先にこの一括バックアップを復元してください。</p>
+    </section>
+
     <section class="summary-grid" aria-label="集計">
       <article class="summary-card"><span>登録レース</span><strong id="raceCount">0</strong></article>
       <article class="summary-card"><span>KTM</span><strong id="ktmCount">0</strong></article>
@@ -174,5 +185,6 @@
   <script src="lapkun-roundtrip-v61.js?v=20261024-existing-chat-v66" defer></script>
   <script src="smartrc-sync-core-v1.js" defer></script>
   <script src="smartrc-sync-v1.js" defer></script>
+  <script src="device-transfer-v1.js?v=20261117-transfer1" defer></script>
 </body>
 </html>
