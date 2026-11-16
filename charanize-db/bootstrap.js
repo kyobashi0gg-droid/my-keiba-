@@ -62,8 +62,15 @@
     if (!raw || typeof raw !== 'object') throw Error('JSONの形式が正しくありません。');
     const horses = normalizeHorsePack(raw);
     if (!raw.races || !Object.keys(raw.races).length) throw Error('出走表（races）がありません。初回用のデータJSONを選んでください。');
-    return {format:'CHARANIZE_WEB_PRIVATE_PACK_V1', horses,
+    const pack={format:'CHARANIZE_WEB_PRIVATE_PACK_V1', horses,
       meta:raw.meta || {}, races:raw.races, race_meta:raw.race_meta || {}};
+    // Preserve the user's matched 33 records when restoring a full-device backup.
+    if(raw.lapRuns!==undefined){
+      if(!raw.lapRuns||typeof raw.lapRuns!=='object'||!raw.lapRuns.byHorse||typeof raw.lapRuns.byHorse!=='object'||Array.isArray(raw.lapRuns.byHorse))
+        throw Error('バックアップの実33データ形式が不正です。保存は中止しました。');
+      pack.lapRuns=raw.lapRuns;
+    }
+    return pack;
   }
   async function readFile(file) {
     if (!file || file.size > MAX_BYTES) throw Error('35MB以下のJSONファイルを選んでください。');
@@ -89,6 +96,36 @@
     };
     document.body.appendChild(script);
   }
+  // Local backup for moving a privately stored index DB to a second device.
+  // Export is explicit; never upload licensed PDF-derived content to GitHub or a server.
+  const exportButton=document.getElementById('private-pack-export');
+  const exportStatus=document.getElementById('private-pack-export-status');
+  if(exportButton)exportButton.addEventListener('click',()=>{
+    try{
+      if(!activePack?.horses||!activePack?.races)throw Error('書き出す指数DB・出走表がありません。');
+      const data=JSON.stringify({
+        format:'CHARANIZE_WEB_PRIVATE_PACK_V1',
+        horses:activePack.horses,races:activePack.races,
+        meta:activePack.meta||{},race_meta:activePack.race_meta||{},
+        ...(activePack.lapRuns?{lapRuns:activePack.lapRuns}:{}),
+      });
+      const size=new Blob([data],{type:'application/json;charset=utf-8'});
+      if(size.size>MAX_BYTES)throw Error('バックアップが35MBを超えます。転送形式の調整が必要なため出力を中止しました。');
+      const link=document.createElement('a');
+      const url=URL.createObjectURL(size);
+      const stamp=new Date().toISOString().slice(0,10).replace(/-/g,'');
+      link.href=url;
+      link.download='CHARANIZE_DB_LAB_BACKUP_'+stamp+'.json';
+      document.body.appendChild(link);link.click();link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),30000);
+      if(exportStatus)exportStatus.textContent='バックアップを保存しました（'+(size.size/1048576).toFixed(1)+'MB）。'
+        +'指数'+Object.keys(activePack.horses).length+'頭・出走表'+Object.keys(activePack.races).length+'レース'
+        +(activePack.lapRuns?.byHorse?'・実33照合データあり':'・実33照合データなし')
+        +'。ファイルをタブレットへ送って初回画面で読み込んでください。';
+    }catch(e){
+      if(exportStatus)exportStatus.textContent='バックアップできませんでした：'+String(e?.message||e);
+    }
+  });
   input.addEventListener('change', async () => {
     const file = input.files?.[0]; if (!file) return;
     status.textContent = '指数DBを読み込み、端末内に保存しています…';
