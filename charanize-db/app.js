@@ -605,9 +605,9 @@ function candidateKind(name,h,cohort){
   const best=variants[0];
   if(best){
     match=true;evidence=best.part.find(r=>num(r[9]?.[3])&&num(r[9]?.[4]));sortValue=best.profile.gap;
-    reason='【指数単独・高脚力・ギア平均控えめ】'+best.key+' '+best.profile.n+'走。脚力平均'+fmt(best.profile.l)+
+    reason='【指数単独・高脚力・ギア平均控えめ】'+best.key.replace('-', ' ')+' '+best.profile.n+'走。脚力平均'+fmt(best.profile.l)+
      '、ギア平均'+fmt(best.profile.g)+'（最高'+fmt(best.profile.maxGear)+'）。'+best.profile.pursuitNote+
-     '。実33や着順は抽出に未使用。持久力の証明ではなく事後検証用候補。';
+     '実33や着順は抽出に未使用。持久力の証明ではなく事後検証用候補。';
   }
  }
  if(kind==='dual'){match=dual.length>0;evidence=dual[0];reason=`同一走の脚${fmt(dual[0]?.[9][3])} ギ${fmt(dual[0]?.[9][4])}`;}
