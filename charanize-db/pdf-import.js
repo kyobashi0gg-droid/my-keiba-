@@ -195,6 +195,48 @@ function normalizeRun(run, sourceName) {
     metrics,'',1,null];
 }
 function runKey(r){return [r[0],r[1],r[2],r[3],r[4]].join('|');}
+function mergeRaceCards(parsed,currentRaces={}){
+  // The PDF's race heading + horse cards are a separate source from past-run indices.
+  const previous=currentRaces&&typeof currentRaces==='object'?currentRaces:{};
+  const groups=new Map();
+  for(const race of parsed.races||[]){
+    const day=String(race.date||'').trim(), venue=String(race.venue||'').trim(),no=Number(race.raceNo);
+    const course=String(race.condition||'').normalize('NFKC').replace(/\s+/g,'').match(/^(芝|ダ|障)(\d{3,4})m?$/);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||!venue||!Number.isInteger(no)||no<1||no>12||!course)
+      throw Error('出走表の開催日・競馬場・R・芝ダ距離を確認できないため、PDFを保存しません。');
+    const key=`${day}|${venue}|${no}`,surface=course[1],distance=Number(course[2]);
+    let g=groups.get(key);
+    if(!g){g={no,name:String(race.name||'').trim(),surface,distance,runners:new Map()};groups.set(key,g);}
+    if(g.surface!==surface||g.distance!==distance)throw Error(`${key}のコース情報がPDF内で一致しません。`);
+    if(!g.name&&race.name)g.name=String(race.name).trim();
+    for(const horse of race.horses||[]){
+      const name=String(horse.name||'').normalize('NFKC').trim(),rawNo=String(horse.number??'');
+      if(!name)continue;
+      const number=/^(?:[1-9]|1[0-8])$/.test(rawNo)?Number(rawNo):null;
+      if(!g.runners.has(name)||g.runners.get(name)===null&&number!==null)g.runners.set(name,number);
+    }
+  }
+  const updated={},raceKeys=[],raceChanges={added:0,updated:0,unchanged:0,preserved:0,horses:0};
+  for(const [key,g] of groups){
+    const runners=[...g.runners].map(([name,no])=>[no,name])
+      .sort((a,b)=>(a[0]??999)-(b[0]??999)||a[1].localeCompare(b[1],'ja'));
+    if(!runners.length)throw Error(`${key}の出走馬を読み取れませんでした。`);
+    raceKeys.push(key);
+    const old=previous[key];
+    // Guard existing confirmed cards against losing runners on a partially parsed re-import.
+    if(Array.isArray(old)&&Array.isArray(old[3])&&old[3].length>runners.length){
+      raceChanges.preserved++;
+      continue;
+    }
+    const card=[g.name||old?.[0]||`${g.no}R`,g.surface,g.distance,runners];
+    if(!old)raceChanges.added++;
+    else if(JSON.stringify(old)===JSON.stringify(card))raceChanges.unchanged++;
+    else raceChanges.updated++;
+    updated[key]=card;
+    raceChanges.horses+=runners.length;
+  }
+  return {races:{...previous,...updated},raceChanges,raceKeys};
+}
 function mergePreview(current, parsed, filename) {
   const next={...current}, changes={horses:0,added:0,matched:0,conflicts:0,skipped:0};
   const byHorse=new Map();
@@ -238,10 +280,9 @@ function mergePreview(current, parsed, filename) {
       changes.horses++;
     }
   }
-  if(changes.added===0 && changes.horses===0 && changes.matched===0)throw Error('追加可能な指数履歴がありません。PDF形式を確認してください。');
   return {horses:next,changes};
 }
-async function readAndMerge(file, currentHorses, onProgress) {
+async function readAndMerge(file, currentHorses, onProgress, currentRaces={}) {
   if(!file || !/\.pdf$/i.test(file.name))throw Error('CHARANIZEのPDFを選んでください。');
   if(file.size>35*1024*1024)throw Error('PDFは35MB以下にしてください。');
   const year=String(file.name).match(/(?:^|[^0-9])(20\d{2}|2\d)(?:0[1-9]|1[0-2])(?:[0-3]\d)(?:[^0-9]|$)/);
@@ -249,7 +290,10 @@ async function readAndMerge(file, currentHorses, onProgress) {
   progress=typeof onProgress==='function'?onProgress:()=>{};
   const parsed=await parsePDF(file);
   const merged=mergePreview(currentHorses,parsed,file.name);
-  return {...merged,pdf:{races:parsed.races.length,horses:parsed.count,runs:parsed.runs,indexed:parsed.indexed}};
+  const cards=mergeRaceCards(parsed,currentRaces);
+  if(!merged.changes.added&&!merged.changes.matched&&!merged.changes.horses&&!cards.raceChanges.added&&!cards.raceChanges.updated)
+    throw Error('指数履歴または出走表に取り込めるデータがありません。PDF形式を確認してください。');
+  return {...merged,...cards,pdf:{races:parsed.races.length,horses:parsed.count,runs:parsed.runs,indexed:parsed.indexed}};
 }
 window.CHARA_PDF_DB_IMPORT={readAndMerge};
 })();
