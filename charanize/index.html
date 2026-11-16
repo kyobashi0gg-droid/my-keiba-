@@ -766,10 +766,12 @@ if(a!=null&&g!=null)adv.push(`末脚とギア：脚 ${a.toFixed(0)}／ギ ${g.to
 return adv}
 // Two independent references: field compares entrant summaries; individual compares one run against OTHER runs of the same horse.
 function dualScore(v,values,minN){
- if(!Number.isFinite(v))return {score:null,n:values.length};
- const st=measure(values.filter(Number.isFinite));
- if(st.n<minN||!Number.isFinite(st.sd)||st.sd<2)return {score:null,n:st.n};
- return {score:Math.round((50+10*(v-st.mu)/st.sd)*10)/10,n:st.n};
+ const xs=values.filter(Number.isFinite),n=xs.length;
+ if(!Number.isFinite(v)||n<minN)return {score:null,n};
+ const mean=xs.reduce((a,b)=>a+b,0)/n;
+ const sd=Math.sqrt(xs.reduce((a,b)=>a+(b-mean)**2,0)/n);
+ if(sd<2)return {score:null,n};
+ return {score:Math.round((50+10*(v-mean)/sd)*10)/10,n};
 }
 function charDualDeviation(d,st){
  const axes=labs.map(([k,label])=>{
