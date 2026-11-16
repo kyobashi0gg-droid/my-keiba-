@@ -4,11 +4,11 @@
 let progress = () => {};
 let PAPER_YEAR = 2026;
 const setStatus = message => progress(message);
-function charaCompact(s){return String(s||'').normalize('NFKC').replace(/\s+/g,'')}
+function charaCompact(s){return String(s||'').normalize('NFKC').replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200d\u2060\ufeff]/g,'').replace(/\s+/g,'')}
 // Android PDF.js may insert U+0001 between a venue name and its month/day.
 // Clean date headings only; leave all horse/index parsing exactly as verified in v15.
 function charaDateText(s){return charaCompact(s).replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200d\u2060\ufeff]/g,'')}
-function charaNormalize(s){return String(s||'').normalize('NFKC').replace(/[\u2007\u00a0]/g,' ').replace(/\s+/g,' ').trim()}
+function charaNormalize(s){return String(s||'').normalize('NFKC').replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200d\u2060\ufeff]/g,'').replace(/[\u2007\u00a0]/g,' ').replace(/\s+/g,' ').trim()}
 function charaReadValues(t){
  const out={};
  for(const [symbol,key] of [['逃','nige'],['先','sen'],['追','tsui'],['脚','ashi'],['ギ','gear']]){
