@@ -201,7 +201,17 @@
 .raceGrid .racePickButton[aria-pressed="true"] small{color:#e2f3f0}
 .raceSelectPanel .controls{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:650px){.raceNavigator{padding:12px 10px}.racePills{gap:7px}.racePickButton{padding:9px 12px}.raceGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.raceSelectPanel .controls{grid-template-columns:1fr 1fr}.raceSelectPanel .controls .control:last-child{grid-column:1 / -1}}
-</style></head>
+</style><style>
+.charaDualDev{margin-top:13px;border:1px solid #cfe3da;background:#f6faf7;border-radius:13px;padding:13px}
+.charaDualDev h3{color:#23614f;font-size:15px;margin:0 0 8px}
+.charaDualScroll{overflow-x:auto}
+.charaDualDev table{width:100%;border-collapse:collapse;table-layout:fixed}
+.charaDualDev th,.charaDualDev td{padding:8px 5px;border-bottom:1px solid #e0e9e4;font-size:12px;text-align:center}
+.charaDualDev th{color:#365f50}.charaDualDev td b{display:block;font-size:17px;color:#1b735d}
+.charaDualDev td small{font-size:10px;display:block;color:#6e8075;margin-top:4px}
+.charaDualDev p{color:#647d70;line-height:1.65;font-size:11px;margin:10px 0 0}
+</style>
+</head>
 <body><header><div class="wrap"><div class="brand"><div class="brandmark">▥</div><div><h1>CHARANIZE LAB <span style="font-size:12px;color:#90d4cb">v17</span></h1><div class="sub">MY KEIBA LABとは独立 ｜ 逃・先・追走負荷・脚・ギアの「キャラ」を見える化</div></div></div></div></header>
 <main class="wrap"><section class="panel" style="margin-top:12px;border-color:#8db8b1;background:#f2faf7"><b>CHARANIZE LAB（個人用・データ非公開）</b><p class="note">CHARANIZEの「指数新聞」PDF、または当サイトの解析済みJSONを読み込むと、公式指数水準と同クラス比較を表示します。読み込みデータはGitHub側には送信せず、お使いのブラウザ内に保存します。</p></section>
 <section class="panel filetools"><div class="tools"><div class="row"><label class="drop" title="PDFを選んで読み込み">📄 指数新聞PDF・解析JSONを取込む<input type="file" id="fileInput" accept=".pdf,.json,.txt,application/pdf,application/json"/></label><button class="btn" id="demoBtn">サンプルを初期化</button><button class="btn" id="csvBtn">表示中レースをCSV出力</button><button class="btn" id="jsonBtn">解析データを保存</button></div><span id="status">CHARANIZE指数新聞PDF／解析済みJSONを選んでください</span></div><p class="note" style="margin:9px 0 0">対応形式：<b>CHARANIZEの指数新聞PDF</b>／このビューアで出力した<b>解析JSON</b>。鈴木ショータPDF新聞（菊花賞G1.pdfなど）は別版型のため、CHARANIZEの逃・先・追・脚・ギア指数は取得できません。端末保存の容量制限に備えて、読込後はJSONを書き出してください。</p></section>
@@ -754,10 +764,42 @@ if(s!=null&&a!=null)adv.push(`前半と終盤：先 ${s.toFixed(0)}／脚 ${a.to
 if(t!=null&&a!=null)adv.push(`追走負荷と末脚：追負 ${t.toFixed(0)}／脚 ${a.toFixed(0)}（高負荷でも脚を使えたかはレース内容を確認）`);
 if(a!=null&&g!=null)adv.push(`末脚とギア：脚 ${a.toFixed(0)}／ギ ${g.toFixed(0)}（一瞬の加速と持続力は別）`);
 return adv}
+// Two independent references: field compares entrant summaries; individual compares one run against OTHER runs of the same horse.
+function dualScore(v,values,minN){
+ if(!Number.isFinite(v))return {score:null,n:values.length};
+ const st=measure(values.filter(Number.isFinite));
+ if(st.n<minN||!Number.isFinite(st.sd)||st.sd<2)return {score:null,n:st.n};
+ return {score:Math.round((50+10*(v-st.mu)/st.sd)*10)/10,n:st.n};
+}
+function charDualDeviation(d,st){
+ const axes=labs.map(([k,label])=>{
+  const val=st.raw[k].v;
+  const field=d.arr.map(item=>item.raw[k].v).filter(Number.isFinite);
+  const fieldSc=dualScore(val,field,5);
+  const all=eligible(d.r,st.h).slice().sort((a,b)=>(a.seq||99)-(b.seq||99));
+  const target=all.find(z=>Number.isFinite(z.indices?.[k]?.value));
+  let ownSc={score:null,n:0},baselineType='同芝ダ・距離帯';
+  if(target){
+   const sf=whereSurface(target),band=groupDistance(getDist(target));
+   const seen=new Set(),other=all.filter(z=>{
+    const key=[z.date,z.where,z.surfaceDistance].join('|');
+    if(z===target||key===[target.date,target.where,target.surfaceDistance].join('|')||seen.has(key))return false;
+    seen.add(key);
+    return whereSurface(z)===sf&&groupDistance(getDist(z))===band&&Number.isFinite(z.indices?.[k]?.value);
+   });
+   ownSc=dualScore(target.indices[k].value,other.map(z=>z.indices[k].value),3);
+  }
+  return {label,k,fieldSc,ownSc,raw:val,targetRaw:target?.indices?.[k]?.value};
+ });
+ const cell=(v,n,raw)=>'<td><b>'+(v==null?'—':v.toFixed(0))+'</b><small>'+(v==null?'標本不足・変動小':'原'+fmtVal(raw))+' / n='+n+'</small></td>';
+ return '<div class="charaDualDev"><h3>2つの偏差値を比較</h3><div class="charaDualScroll"><table><thead><tr><th>指数</th><th>出走馬内</th><th>馬自身</th></tr></thead><tbody>'+
+ axes.map(x=>'<tr><th>'+esc(x.label)+'</th>'+cell(x.fieldSc.score,x.fieldSc.n,x.raw)+cell(x.ownSc.score,x.ownSc.n,x.targetRaw)+'</tr>').join('')+
+ '</tbody></table></div><p>出走馬内＝同レース全頭の過去5走加重平均を比較。馬自身＝その馬の最新該当走を、同じ芝ダ・距離帯の別走と比較（対象走は基準から除外）。50が各集団平均。5頭未満・別走3走未満・ばらつきが小さい場合は算出しません。追走は負荷経験であり能力順位ではありません。</p></div>';
+}
 function charFocus(d){if(!d.arr.length)return '';let st=d.arr.find(x=>x.h.name===selectedHorse);if(!st){st=d.arr[0];selectedHorse=st.h.name;}let typ=desc(st),h=st.h;
 const extra=compareRelation(st).map(s=>`<div class="charaExplain">${esc(s)}</div>`).join('');const bars=labs.map(([k,label])=>{let sc=axisScore(st,k),raw=st.raw[k].v,b=st.base[k];return `<div class="charaAxisRow"><b>${label}</b><b style="color:${styleScore(sc,k)}">${sc==null?'—':sc.toFixed(0)}</b><div class="track"><div class="fill" style="width:${clipped(sc)}%;background:${styleScore(sc,k)}"></div><div class="mid"></div></div><small>原 ${fmtVal(raw)}</small></div>`}).join('');
-const source=st.raw.sen.run;
-return `<div class="heading" style="margin-top:0"><div><div class="kicker">FOCUS CHARACTER</div><h2>${esc(h.number)} ${esc(h.name)} <span class="charaType">${esc(typ.title)}</span></h2></div><button type="button" class="smallbtn" id="charaSeeHistory">全過去走を見る</button></div><div class="charaFocusGrid"><div class="charaRadar">${makeRadar([st])}<div class="charaTip">今回の集団基準と比較した個性の輪郭。追＝追走負荷。</div></div><div class="charaFocusData">${bars}<div class="charaExplain"><strong>キャラ仮分類：</strong>${esc(typ.why)}。この分類は公式の指数分類ではありません。</div>${extra}</div></div><div class="charaTip" style="margin-top:8px">参照走：${esc(lastSource(st))} ｜ 5軸は<span style="font-weight:750">${state.span==='last'?'同一走から取得':state.span==='profile5'?'過去5走の加重平均（項目別の記録数は異なる）':'異なるレースの最高値が混在する可能性'}</span>。各指数の参照コースは元新聞の馬詳細でも確認できます。</div>`
+const source=st.raw.sen.run;const dual=charDualDeviation(d,st);
+return `<div class="heading" style="margin-top:0"><div><div class="kicker">FOCUS CHARACTER</div><h2>${esc(h.number)} ${esc(h.name)} <span class="charaType">${esc(typ.title)}</span></h2></div><button type="button" class="smallbtn" id="charaSeeHistory">全過去走を見る</button></div><div class="charaFocusGrid"><div class="charaRadar">${makeRadar([st])}<div class="charaTip">今回の集団基準と比較した個性の輪郭。追＝追走負荷。</div></div><div class="charaFocusData">${bars}<div class="charaExplain"><strong>キャラ仮分類：</strong>${esc(typ.why)}。この分類は公式の指数分類ではありません。</div>${extra}</div></div>${dual}<div class="charaTip" style="margin-top:8px">参照走：${esc(lastSource(st))} ｜ 5軸は<span style="font-weight:750">${state.span==='last'?'同一走から取得':state.span==='profile5'?'過去5走の加重平均（項目別の記録数は異なる）':'異なるレースの最高値が混在する可能性'}</span>。各指数の参照コースは元新聞の馬詳細でも確認できます。</div>`
 }
 
 // v6: class-level checks are observational. The 'tsui' value reflects load, not merit.
