@@ -773,30 +773,52 @@ function dualScore(v,values,minN){
  if(sd<2)return {score:null,n};
  return {score:Math.round((50+10*(v-mean)/sd)*10)/10,n};
 }
+function charDualBand(distance){
+ const d=Number(distance);return d<=1400?'short':d===1600?'mile':d<=2200?'middle':'long';
+}
+function charDualRaw(r,h,k){
+ const surf=String(r.condition||'')[0],distance=Number(String(r.condition||'').match(/\d+/)?.[0]);
+ if(!['芝','ダ'].includes(surf)||!distance)return null;
+ const band=charDualBand(distance);
+ const runs=h.runs.filter(z=>whereSurface(z)===surf&&charDualBand(getDist(z))===band&&
+   (state.span!=='3'||z.seq<=3)).sort((a,b)=>(a.seq||99)-(b.seq||99));
+ const valid=runs.filter(z=>Number.isFinite(z.indices?.[k]?.value));
+ if(!valid.length)return null;
+ if(state.span==='profile5'){
+   if(valid.length<3)return null;
+   const weighted=valid.map(z=>({v:z.indices[k].value,w:Math.max(1,6-Math.min(5,z.seq||5))}));
+   return weighted.reduce((a,x)=>a+x.v*x.w,0)/weighted.reduce((a,x)=>a+x.w,0);
+ }
+ if(state.span==='last')return valid[0].indices[k].value;
+ return Math.max(...valid.map(z=>z.indices[k].value));
+}
 function charDualDeviation(d,st){
+ const surf=String(d.r.condition||'')[0],distance=Number(String(d.r.condition||'').match(/\d+/)?.[0]);
  const axes=labs.map(([k,label])=>{
-  const val=st.raw[k].v;
-  const field=d.arr.map(item=>item.raw[k].v).filter(Number.isFinite);
-  const fieldSc=dualScore(val,field,5);
-  const all=eligible(d.r,st.h).slice().sort((a,b)=>(a.seq||99)-(b.seq||99));
+  // Compare all entrants independently of whichever benchmark is chosen for the radar.
+  const raw=charDualRaw(d.r,st.h,k);
+  const field=d.arr.map(item=>charDualRaw(d.r,item.h,k)).filter(Number.isFinite);
+  const fieldSc=dualScore(raw,field,5);
+  const all=st.h.runs.filter(z=>whereSurface(z)===surf&&charDualBand(getDist(z))===charDualBand(distance))
+   .sort((a,b)=>(a.seq||99)-(b.seq||99));
   const target=all.find(z=>Number.isFinite(z.indices?.[k]?.value));
-  let ownSc={score:null,n:0},baselineType='同芝ダ・距離帯';
+  let ownSc={score:null,n:0};
   if(target){
-   const sf=whereSurface(target),band=groupDistance(getDist(target));
    const seen=new Set(),other=all.filter(z=>{
     const key=[z.date,z.where,z.surfaceDistance].join('|');
     if(z===target||key===[target.date,target.where,target.surfaceDistance].join('|')||seen.has(key))return false;
     seen.add(key);
-    return whereSurface(z)===sf&&groupDistance(getDist(z))===band&&Number.isFinite(z.indices?.[k]?.value);
+    return Number.isFinite(z.indices?.[k]?.value);
    });
    ownSc=dualScore(target.indices[k].value,other.map(z=>z.indices[k].value),3);
   }
-  return {label,k,fieldSc,ownSc,raw:val,targetRaw:target?.indices?.[k]?.value};
+  return {label,k,fieldSc,ownSc,raw,targetRaw:target?.indices?.[k]?.value};
  });
  const cell=(v,n,raw)=>'<td><b>'+(v==null?'—':v.toFixed(0))+'</b><small>'+(v==null?'標本不足・変動小':'原'+fmtVal(raw))+' / n='+n+'</small></td>';
+ const mode=state.span==='profile5'?'過去5走加重平均':state.span==='last'?'直近該当走':'指数最高値';
  return '<div class="charaDualDev"><h3>2つの偏差値を比較</h3><div class="charaDualScroll"><table><thead><tr><th>指数</th><th>出走馬内</th><th>馬自身</th></tr></thead><tbody>'+
  axes.map(x=>'<tr><th>'+esc(x.label)+'</th>'+cell(x.fieldSc.score,x.fieldSc.n,x.raw)+cell(x.ownSc.score,x.ownSc.n,x.targetRaw)+'</tr>').join('')+
- '</tbody></table></div><p>出走馬内＝同レース全頭の過去5走加重平均を比較。馬自身＝その馬の最新該当走を、同じ芝ダ・距離帯の別走と比較（対象走は基準から除外）。50が各集団平均。5頭未満・別走3走未満・ばらつきが小さい場合は算出しません。追走は負荷経験であり能力順位ではありません。</p></div>';
+ '</tbody></table></div><p>出走馬内＝同レース全頭の'+mode+'を今回と同じ芝ダ・距離帯で比較（3走未満の加重平均は除外）。馬自身＝最新の該当走を同じ芝ダ・距離帯の別走と比較し、対象走を基準から除外。50が各集団平均。出走馬5頭未満・別走3走未満・標準偏差2未満は保留。追走は負荷経験であり能力順位ではありません。</p></div>';
 }
 function charFocus(d){if(!d.arr.length)return '';let st=d.arr.find(x=>x.h.name===selectedHorse);if(!st){st=d.arr[0];selectedHorse=st.h.name;}let typ=desc(st),h=st.h;
 const extra=compareRelation(st).map(s=>`<div class="charaExplain">${esc(s)}</div>`).join('');const bars=labs.map(([k,label])=>{let sc=axisScore(st,k),raw=st.raw[k].v,b=st.base[k];return `<div class="charaAxisRow"><b>${label}</b><b style="color:${styleScore(sc,k)}">${sc==null?'—':sc.toFixed(0)}</b><div class="track"><div class="fill" style="width:${clipped(sc)}%;background:${styleScore(sc,k)}"></div><div class="mid"></div></div><small>原 ${fmtVal(raw)}</small></div>`}).join('');
