@@ -181,12 +181,44 @@ function characterInsights(rows){
  if(!cards.length){
   add('特徴判定は保留','今回の絞り込みでは同じ芝ダ・距離帯に'+part.length+'走の記録がありますが、位置取りや指数の再現性について十分な根拠が揃っていません。対象を広げるか過去走を確認してください。');
  }
- const desc=(title,body)=>'<div class="chara-observe-card"><b>'+safe(title)+'</b><p>'+safe(body)+'</p></div>';
+ // Concise first-screen summary, detailed evidence only on demand.
+ const validWithPosition=part.filter(r=>parsePass(r).length>=2);
+ const progressed=validWithPosition.filter(r=>{const p=parsePass(r);return p[0]-p[p.length-1]>=2&&good(r)});
+ const held=validWithPosition.filter(r=>{const p=parsePass(r);return p[0]-p[p.length-1]<2&&good(r)});
+ const type=style==='front'?'逃げ・先行型':style==='back'?'後方差し型':style==='mid'?'中団差し型':style==='variable'?'位置取り自在型':'脚質判定保留';
+ const mean=(rr,k)=>{const v=rr.map(r=>r[9]?.[k]).filter(num);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;};
+ const leg=mean(part,3),gear=mean(part,4);
+ const positionText=style==='back'?'序盤は後方から運ぶ傾向があります。':
+  style==='front'?'序盤に前方を確保する競馬が中心です。':
+  style==='mid'?'中団から競馬を進める傾向があります。':
+  style==='variable'?'レースによって序盤の位置取りが変わります。':'位置取りの記録が不足しています。';
+ const movementText=progressed.length>=2&&held.length?'途中から順位を上げても、位置を大きく変えずに運んでも好走実績があります。':
+  progressed.length>=2?'コーナー間で順位を上げて好走する形が複数あります。':
+  held.length>=2?'大きく位置を上げずに好走した実績が複数あります。':'進出のタイミングはまだ特定できません。';
+ const strength=style==='front'?
+  (part.filter(r=>num(r[9]?.[0])&&r[9][0]>=65).length>=2?'ゲートを含む初速を複数回発揮しています。':
+   part.filter(r=>num(r[9]?.[1])&&r[9][1]>=65).length>=2?'その後の先行力を複数回発揮しています。':'初速と二の脚のどちらが武器かは未確定です。'):
+  (leg!==null&&gear!==null&&dual.length>=2?'脚力とギアを同時に高水準で記録しています。':
+   highLeg.length>=2?'末脚の高指数を繰り返し記録しています。':
+   highGear.length>=2?'加速に関係するギアの高指数を複数回記録しています。':'末脚の特徴を判断する指数標本は限定的です。');
+ const synopsis=positionText+movementText+strength;
+ const lapRange=(()=>{
+  const matched=lapMatches(app.current,part).filter(x=>good(x.ch));
+  if(!matched.length)return '';
+  const min=Math.min(...matched.map(x=>x.raw[4])),max=Math.max(...matched.map(x=>x.raw[4]));
+  const signed=v=>(v>0?'+':'')+fmt(v);
+  return '実33'+signed(min)+'〜'+signed(max)+'で3着以内'+matched.length+'走（レース全体値）。';
+ })();
+ const details=cards.map(x=>'<div class="chara-detail-row"><b>'+safe(x.title)+'</b><p>'+safe(x.body)+'</p></div>').join('');
  const selected=[...evidence];
- const evidenceHtml=selected.length?'<details class="chara-evidence"><summary>この馬の特徴の根拠となる過去走を見る（'+selected.length+'走）</summary><ul>'+selected.map(r=>'<li>'+safe(runSummary(r))+'／通過 '+safe(r[7]||'—')+'／逃 '+fmt(r[9]?.[0])+'・先 '+fmt(r[9]?.[1])+'・追 '+fmt(r[9]?.[2])+'・脚 '+fmt(r[9]?.[3])+'・ギ '+fmt(r[9]?.[4])+'</li>').join('')+'</ul></details>':'';
- return '<div class="chara-observe-scope">対象：'+safe(part[0][3])+' '+safe(distanceBand)+'／'+part.length+'走。確認できた特徴を優先して表示</div>'+
- '<div class="chara-observe-grid">'+cards.map(x=>desc(x.title,x.body)).join('')+'</div>'+evidenceHtml+
- '<p class="help-line">※初速は逃指数、二の脚は先行指数。高指数は速い時計の再現を保証しません。瞬発型・持続型・漸進型の確定には区間ラップが必要です。コーナー順位だけでゲート直後の動きや勝敗原因を断定しません。</p>';
+ const evidenceHtml=selected.length?'<details class="chara-evidence"><summary>根拠の過去走を見る（'+selected.length+'走）</summary><ul>'+selected.map(r=>'<li>'+safe(runSummary(r))+'／通過 '+safe(r[7]||'—')+'／逃 '+fmt(r[9]?.[0])+'・先 '+fmt(r[9]?.[1])+'・追 '+fmt(r[9]?.[2])+'・脚 '+fmt(r[9]?.[3])+'・ギ '+fmt(r[9]?.[4])+'</li>').join('')+'</ul></details>':'';
+ return '<div class="chara-observe-scope">対象：'+safe(part[0][3])+' '+safe(distanceBand)+'／'+part.length+'走</div>'+
+ '<div class="horse-character-summary"><div class="horse-character-type">'+safe(type)+'</div>'+
+ '<p class="horse-character-description">'+safe(synopsis)+'</p>'+
+ (lapRange?'<p class="horse-character-lap">'+safe(lapRange)+'</p>':'')+
+ '<p class="horse-character-caution">加速の瞬発型・持続型・漸進型は区間ラップ不足のため未確定です。</p></div>'+
+ '<details class="horse-character-more"><summary>詳しい分析と判断根拠を開く（'+cards.length+'項目）</summary>'+details+evidenceHtml+'</details>'+
+ '<p class="help-line">※逃指数はゲートを含む初速、先行指数はその後の先行力。コーナー順位の変化は個別の加速を直接示しません。</p>';
 }
 // Race-level 33 is supplied by MY KEIBA DB LAB. It is not an individual horse split.
 function lapMatches(name,rows){
