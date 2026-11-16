@@ -875,7 +875,8 @@ initRaceUX();
 // Show the last completed import after a reload. Only metadata is stored, never PDF pages.
 const lastImport=window.__CH_PRIVATE?.meta;
 if(lastImport?.last_pdf_import && lastImport?.last_pdf_import_stats && $('upload-status')){
- const a=lastImport.last_pdf_import_stats;
- $('upload-status').textContent=`前回PDF: ${lastImport.last_pdf_import}｜追加${a.added||0}走・照合${a.matched||0}走・更新${a.horses||0}頭・指数差異${a.conflicts||0}件・指数未掲載${a.skipped||0}走。差異は既存値を維持しています。`;
+ const a=lastImport.last_pdf_import_stats,r=lastImport.last_pdf_race_stats;
+ const raceReport=r?`出走表：新規${r.added||0}R・更新${r.updated||0}R・既存保護${r.preserved||0}R。｜`:'';
+ $('upload-status').textContent=`前回PDF: ${lastImport.last_pdf_import}｜${raceReport}指数：追加${a.added||0}走・照合${a.matched||0}走・更新${a.horses||0}頭・指数差異${a.conflicts||0}件・指数未掲載${a.skipped||0}走。指数差異は既存値を維持しています。`;
 }
 })();
