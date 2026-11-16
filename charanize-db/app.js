@@ -550,6 +550,18 @@ function candidateKind(name,h,cohort){
    reason=`【${best.key}】高負荷側 ${describe(best.high)} → 低負荷側 ${describe(best.low)}。追走${sign(-best.loadDrop)}・脚力${sign(best.legGain)}。${best.sameVenue?'同じ競馬場での比較。':'競馬場が異なるため再現性に注意。'}${best.newerLow?'後の走りで追走負荷が低い。':'時間順の負荷低下ではなく、過去走間の条件差。'}${best.high[12]||best.low[12]?'指数に出典差あり。':''}2走比較の仮説であり、クラス・相手関係・33・ペースを未調整。`;
   }
  }
+ if(kind==='pursuitstable'){
+  // Index-only extraction: no finish, lap33 or passing position in selection.
+  const found=['芝','ダ'].map(surface=>pursuitLegResilience(rows.filter(r=>r[3]===surface))).filter(Boolean)
+    .sort((a,b)=>b.metrics.allLeg-a.metrics.allLeg||b.metrics.loadGap-a.metrics.loadGap);
+  const best=found[0];
+  if(best){
+   match=true;evidence=best.refs[0];sortValue=best.metrics.allLeg;
+   const v=best.metrics;
+   reason='【指数単独の追走負荷変動・脚力維持型】1800〜2200m・'+v.n+'走／'+best.detail+
+     '締まった33への対応力を事後検証したい候補。判定に33・着順・通過順を使用していません。';
+  }
+ }
  if(kind==='dual'){match=dual.length>0;evidence=dual[0];reason=`同一走の脚${fmt(dual[0]?.[9][3])} ギ${fmt(dual[0]?.[9][4])}`;}
  if(['turfstable','turfweak','dirtgain','dirtweak'].includes(kind)){
   const surface=kind.startsWith('turf')?'芝':'ダ';
