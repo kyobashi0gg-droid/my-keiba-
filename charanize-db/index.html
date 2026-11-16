@@ -65,6 +65,16 @@
 .chara-detail-row b{display:block;color:#28604d;font-size:14px;margin-bottom:6px}
 .chara-detail-row p{font-size:13px;line-height:1.8;color:#425c50;margin:0;overflow-wrap:anywhere}
 @media(max-width:740px){.horse-character-summary{padding:14px}.horse-character-description{font-size:14px;line-height:1.8}.horse-character-type{font-size:14px}}
+
+/* Exact-distance pace comparison is a compact evidence-led module. */
+.front-pace-panel{border:1px solid #d6e5dc;background:#fff;border-radius:13px;padding:11px 13px;margin:10px 0}
+.front-pace-title{font-size:13px;font-weight:800;color:#175e49;margin-bottom:7px}
+.front-pace-row{display:grid;grid-template-columns:minmax(90px,1.15fr) repeat(2,minmax(75px,1fr));gap:5px;align-items:center;padding:9px 0;border-bottom:1px solid #ebf1ed;font-size:12px;color:#315346}
+.front-pace-row strong{font-size:12px;color:#216950}
+.front-pace-row span{white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+.front-pace-explain{font-size:12px;line-height:1.8;color:#355449;margin:10px 0 6px}
+.front-pace-note{font-size:11px;line-height:1.7;color:#687a70;margin:0}
+@media(max-width:410px){.front-pace-row{grid-template-columns:minmax(74px,1fr) repeat(2,minmax(69px,1fr));gap:3px;font-size:11px}.front-pace-row strong{font-size:11px}.front-pace-panel{padding:10px}}
 </style></head><body><div class="layout"><aside class="rail"><div class="brand">◉ CHARANIZE<br> DB Lab <small>PERSONAL RACING ANALYSIS</small></div><button class="navbtn active" data-nav="horse">▤　レース・出走馬選択</button><button class="navbtn" data-nav="discover">◈　条件別の発掘検索</button><button class="navbtn" data-nav="update">⊞　新聞データ更新</button><div class="rail-note">MY KEIBA LAB と連携する独立Web版<br>過去10走・条件別の能力と弱点を読み解く</div></aside><div class="workspace"><nav class="mobilebar"><button data-nav="horse" class="active">レース選択</button><button data-nav="discover">条件検索</button><button data-nav="update">データ更新</button></nav><header class="topbar"><div><div class="eyebrow">PERSONAL RACING ANALYSIS / CHARANIZE</div><h1>CHARANIZE DB Lab</h1><div class="sub">走れる条件と走れない条件を、過去指数から見極める</div></div><a href="https://kyobashi0gg-droid.github.io/my-keiba-/" class="go-home" target="_blank" rel="noreferrer">MY KEIBA LAB ↗</a></header><main class="main"><details class="ch-help"><summary>指数の注意事項を見る（追走負荷・脚力・ギア）</summary><div class="help-body"><b>追走指数の見方：</b>過去走で経験した<b>追走負荷の水準</b>を示します。高値は高い負荷を受けて走った実績であり、<b>総合能力が高いという判定ではありません。</b>同じ走りの脚力・ギア・着順・位置取りを組み合わせ、負荷を受けても脚を使えたか確認します。追走指数が低いだけで能力不足とは判定しません。</div></details><div class="stats"><div class="stat"><small>登録馬</small><b id="stats-h">—</b></div><div class="stat"><small>収録過去走</small><b id="stats-r">—</b></div><div class="stat"><small>新聞原本</small><b id="stats-source">—</b></div><div class="stat"><small>新聞対象末日</small><b id="last-asof" style="font-size:17px;margin-top:6px">—</b></div></div>
 <div id="tab-horse" class="tabview active"><section class="panel race-panel" id="race-panel">
 <div class="race-top"><div><div class="eyebrow">RACE FIRST / 指数新聞連携</div><h2 class="section-title" style="margin:2px 0 0">出走レースから選択</h2></div><label class="date-label">開催日 <select id="race-date"></select></label></div>
