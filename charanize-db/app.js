@@ -144,7 +144,7 @@ function pursuitLegResilience(rows){
     lowLeg>=68&&highLeg>=68&&Math.abs(legGap)<=10&&
     allGear<=45;
  if(!qualified)return null;
- const detail='芝ダ'+entries[0][3]+'・1800〜2200m、指数が揃う'+entries.length+'走。'+
+ const detail='対象：'+entries[0][3]+'1800〜2200m、指数が揃う'+entries.length+'走。'+
   '追走指数の低い'+k+'走は追走平均'+fmt(lowPursuit)+'、脚力平均'+fmt(lowLeg)+'。'+
   '追走指数の高い'+k+'走は追走平均'+fmt(highPursuit)+'、脚力平均'+fmt(highLeg)+'。'+
   '追走負荷の高低差'+fmt(loadGap)+'に対し脚力の平均差'+(legGap>=0?'+':'')+fmt(legGap)+'。'+
