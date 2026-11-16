@@ -763,9 +763,11 @@ function initRaces(keep=false){
  const entries=raceEntries(),dates=[...new Set(entries.map(e=>e.day))];
  if(!entries.length){$('race-title').textContent='登録済みの出走表なし';return}
  const dd=$('race-date');dd.innerHTML=dates.map(d=>`<option value="${safe(d)}">${safe(d.slice(0,4)+'年'+Number(d.slice(5,7))+'月'+Number(d.slice(8,10))+'日')}</option>`).join('');
- if(!keep||!dates.includes(app.raceDate))app.raceDate=dates[0];dd.value=app.raceDate;
+ const importedDay=window.__CH_PRIVATE?.meta?.last_pdf_race_date;
+ if(!keep||!dates.includes(app.raceDate))app.raceDate=dates.includes(importedDay)?importedDay:dates[0];dd.value=app.raceDate;
  let dayItems=entries.filter(e=>e.day===app.raceDate),venues=[...new Set(dayItems.map(e=>e.venue))];
- if(!keep||!venues.includes(app.raceVenue))app.raceVenue=venues.includes('東京')?'東京':venues[0];
+ const importedVenue=window.__CH_PRIVATE?.meta?.last_pdf_race_venue;
+ if(!keep||!venues.includes(app.raceVenue))app.raceVenue=venues.includes(importedVenue)?importedVenue:venues.includes('東京')?'東京':venues[0];
  dd.onchange=e=>{app.raceDate=e.target.value;app.raceVenue='';app.raceNo='';renderRaces(true)};
  renderRaces(!keep);
 }
