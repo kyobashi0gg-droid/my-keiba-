@@ -176,7 +176,11 @@
    // Integrated dashboard is re-rendered, so listen on document rather than one transient input.
    document.addEventListener('change',e=>{
      if(e.target?.id==='transfer-import'||e.target?.id==='v4-transfer-import-file')onImport(e.target);
-   });
+   },true);
+   document.addEventListener('input',e=>{
+     if(e.target?.id==='v4-transfer-import-file'&&e.target.files?.length)
+       status('ファイル選択を検知：'+e.target.files[0].name+'。読み込み処理を待っています…');
+   },true);
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
  window.MyKeibaDeviceTransferV1={validate,allowed};
