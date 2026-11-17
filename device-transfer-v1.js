@@ -94,7 +94,17 @@
    const tx=db.transaction(STORES,'readonly');
    const [horses,runs]=await Promise.all([request(tx.objectStore('horses').count()),request(tx.objectStore('runs').count())]);
    const existing=Object.keys(localStorage).filter(allowed);
-   return {ok:horses===0&&runs===0&&existing.length===0,horses,runs,existing};
+   // A freshly opened installation may auto-create an empty main state.
+   // Permit replacing ONLY that known, verifiably empty initialization key.
+   const safeEmpty=existing.filter(k=>{
+     if(k!=='my-keiba-lab-v2')return false;
+     try{
+       const v=JSON.parse(localStorage.getItem(k));
+       return Array.isArray(v?.races)&&v.races.length===0
+         && Object.keys(v).every(field=>field==='races'||field==='version'||field==='updatedAt');
+     }catch{return false;}
+   });
+   return {ok:horses===0&&runs===0&&existing.length===safeEmpty.length,horses,runs,existing,safeEmpty};
  }
  function writeDb(db,horseDb){
    return new Promise((resolve,reject)=>{
@@ -140,9 +150,8 @@
      if(!check.ok)throw Error('このブラウザには既存データがあります（馬'+check.horses+'頭・過去走'+check.runs+'走・分析領域'+check.existing.length+'件）。'
        +' 上書きを防ぐため復元を停止しました。移行先は新しいブラウザ環境を使用してください。');
      if(!confirm('この空のブラウザにMY KEIBA LABのバックアップを復元します。\n馬'+counts.horses+'頭・過去走'+counts.runs+'走・分析保存'+counts.localKeys+'件。\n復元を開始しますか？'))return false;
-     // Restore small local data first. If a storage write or the later atomic DB
-     // transaction fails, remove only the keys written by this attempt.
-     const written=[];
+     // Preserve the verified empty initialization state for rollback.
+     const written=[],prior=new Map(check.safeEmpty.map(k=>[k,localStorage.getItem(k)]));
      try{
        for(const [k,v] of Object.entries(data.local)){
          localStorage.setItem(k,v);
@@ -151,7 +160,7 @@
        await writeDb(db,data.horseDb);
      }catch(e){
        for(const k of written){
-         try{localStorage.removeItem(k);}catch(_){}
+         try{if(prior.has(k))localStorage.setItem(k,prior.get(k));else localStorage.removeItem(k);}catch(_){}
        }
        throw Error('復元を完了できませんでした。復元途中の分析データは取り消しました。原因：'+String(e?.message||e));
      }
