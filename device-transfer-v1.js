@@ -147,8 +147,21 @@
    const db=await openRestoreDb();
    try{
      const check=await targetIsEmpty(db);
-     if(!check.ok)throw Error('このブラウザには既存データがあります（馬'+check.horses+'頭・過去走'+check.runs+'走・分析領域'+check.existing.length+'件）。'
-       +' 上書きを防ぐため復元を停止しました。移行先は新しいブラウザ環境を使用してください。');
+     if(!check.ok){
+       const details=check.existing.map(k=>{
+         let shape='未解析';
+         try{
+           const raw=localStorage.getItem(k)||'';
+           const obj=JSON.parse(raw);
+           shape=Array.isArray(obj)?'配列'+obj.length+'件':
+             obj&&typeof obj==='object'?'項目：'+Object.keys(obj).slice(0,12).join(', '):
+             '型：'+typeof obj;
+         }catch{shape='JSON以外';}
+         return k+'（'+shape+'）';
+       }).join(' / ');
+       throw Error('既存データの保護により停止：馬'+check.horses+'頭・過去走'+check.runs+'走・分析領域'+check.existing.length+'件。'
+         +' 保存キーの診断：'+details+'。この内容をラップ君に送ってください。削除・上書きはしていません。');
+     }
      if(!confirm('この空のブラウザにMY KEIBA LABのバックアップを復元します。\n馬'+counts.horses+'頭・過去走'+counts.runs+'走・分析保存'+counts.localKeys+'件。\n復元を開始しますか？'))return false;
      // Preserve the verified empty initialization state for rollback.
      const written=[],prior=new Map(check.safeEmpty.map(k=>[k,localStorage.getItem(k)]));
