@@ -11,7 +11,7 @@
        MAX_SIZE=150*1024*1024;
  const $=id=>document.getElementById(id);
  const status=(message,kind='info')=>{
-   const el=$('transfer-status');if(el){el.textContent=message;el.dataset.kind=kind;}
+   for(const id of ['transfer-status','v4-transfer-status']){const el=$(id);if(el){el.textContent=message;el.dataset.kind=kind;}}
  };
  const allowed=k=>(/^my-keiba-/i.test(k)||/^MYKEIBA_/i.test(k))&&!EXCLUDED.has(k)&&!/secret|token|password|private.access|credential|api.key/i.test(k);
  const request=req=>new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('IndexedDB操作に失敗しました'));});
