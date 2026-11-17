@@ -126,6 +126,7 @@
           <button class="v4-primary wide" type="button" data-v4-transfer="export">この端末の全データを一括保存</button>
           <button class="v4-secondary wide" type="button" data-v4-transfer="import">別端末のバックアップを復元</button>
         </div>
+        <p id="v4-transfer-status" role="status" aria-live="polite" style="font-size:12px;line-height:1.6;color:#206848;overflow-wrap:anywhere"></p>
         <p class="v4-muted" style="font-size:11px;margin-top:12px">※上の「保存」は従来のレース用バックアップです。全データ移行にはこちらを使用してください。既存データのある端末への復元は停止します。</p>
       </article>
 
