@@ -78,6 +78,12 @@
 
     document.querySelector('#v4PdfBtn').addEventListener('click', () => document.querySelector('#sourceInput')?.click());
     document.querySelector('#v4SaveBtn').addEventListener('click', () => document.querySelector('#exportBtn')?.click());
+    app.addEventListener('click', e => {
+      const btn=e.target.closest('[data-v4-transfer]');
+      if(!btn)return;
+      const id=btn.dataset.v4Transfer==='export'?'transfer-export':'transfer-import';
+      document.getElementById(id)?.click();
+    });
     document.querySelector('#v4CloseDetail').addEventListener('click', closeDetail);
     document.querySelector('#v4Detail').addEventListener('click', e => { if (e.target.id === 'v4Detail') closeDetail(); });
     document.querySelectorAll('.v4-nav').forEach(btn => btn.addEventListener('click', () => setTab(btn.dataset.tab)));
@@ -110,6 +116,17 @@
           <div class="v4-stat"><span>穴注目</span><strong>${values.length}</strong></div>
         </div>
         <div class="v4-action-grid"><button class="v4-primary wide" data-v4-action="pdf">＋ 新聞PDFを読み込む</button><button class="v4-secondary" data-v4-tab="races">レース一覧</button><button class="v4-secondary" data-v4-tab="ktm">KTMを見る</button></div>
+      </article>
+
+      <article class="v4-card soft" id="v4-device-transfer" style="margin-top:16px">
+        <p class="v4-eyebrow">DEVICE BACKUP</p>
+        <h2 class="v4-h2" style="margin:6px 0 10px">別端末へのデータ移行</h2>
+        <p class="v4-muted">レース・調教・馬DBの全過去走・実33・ラップ君の保存結果をまとめてJSON保存。タブレットに移すためのバックアップです。</p>
+        <div class="v4-action-grid">
+          <button class="v4-primary wide" type="button" data-v4-transfer="export">この端末の全データを一括保存</button>
+          <button class="v4-secondary wide" type="button" data-v4-transfer="import">別端末のバックアップを復元</button>
+        </div>
+        <p class="v4-muted" style="font-size:11px;margin-top:12px">※上の「保存」は従来のレース用バックアップです。全データ移行にはこちらを使用してください。既存データのある端末への復元は停止します。</p>
       </article>
 
       <div class="v4-section-head"><div><p class="v4-eyebrow">VALUE RANKING</p><h2 class="v4-h2">穴候補 上位</h2></div><button class="v4-link" data-v4-tab="races">全レース</button></div>
