@@ -100,8 +100,10 @@
      if(k!=='my-keiba-lab-v2')return false;
      try{
        const v=JSON.parse(localStorage.getItem(k));
-       return Array.isArray(v?.races)&&v.races.length===0
-         && Object.keys(v).every(field=>field==='races'||field==='version'||field==='updatedAt');
+       return v&&typeof v==='object'&&!Array.isArray(v)
+         && Array.isArray(v.races)&&v.races.length===0
+         && Object.keys(v).every(field=>['races','meta','version','updatedAt'].includes(field))
+         && (!('meta' in v)||(v.meta&&typeof v.meta==='object'&&!Array.isArray(v.meta)));
      }catch{return false;}
    });
    return {ok:horses===0&&runs===0&&existing.length===safeEmpty.length,horses,runs,existing,safeEmpty};
@@ -162,7 +164,7 @@
        throw Error('既存データの保護により停止：馬'+check.horses+'頭・過去走'+check.runs+'走・分析領域'+check.existing.length+'件。'
          +' 保存キーの診断：'+details+'。この内容をラップ君に送ってください。削除・上書きはしていません。');
      }
-     if(!confirm('この空のブラウザにMY KEIBA LABのバックアップを復元します。\n馬'+counts.horses+'頭・過去走'+counts.runs+'走・分析保存'+counts.localKeys+'件。\n復元を開始しますか？'))return false;
+     if(!confirm('タブレットの0レース初期状態（metaを含む）はバックアップで置き換えます。既存の馬DBは0頭・過去走0走です。\nMY KEIBA LABのバックアップを復元します。\n馬'+counts.horses+'頭・過去走'+counts.runs+'走・分析保存'+counts.localKeys+'件。\n復元を開始しますか？'))return false;
      // Preserve the verified empty initialization state for rollback.
      const written=[],prior=new Map(check.safeEmpty.map(k=>[k,localStorage.getItem(k)]));
      try{
