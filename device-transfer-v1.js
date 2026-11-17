@@ -158,21 +158,25 @@
      return true;
    }finally{db.close();}
  }
- async function onImport(){
-   const input=$('transfer-import'),btn=$('transfer-import-label'),file=input.files?.[0];
-   if(!file)return;
+ async function onImport(input){
+   const file=input?.files?.[0],btn=input?.id==='transfer-import'?$('transfer-import-label'):input?.closest('label');
+   if(!file){status('JSONファイルが選択されていません。');return;}
    try{
-     btn.style.pointerEvents='none';status('バックアップを検証しています…');
+     if(btn)btn.style.pointerEvents='none';
+     status('選択：'+file.name+'（'+(file.size/1048576).toFixed(1)+'MB）。バックアップを検証しています…');
      const restored=await restore(file);
      if(restored){status('復元完了。レース、馬DB、ラップ君の保存結果を読み込み直します。','success');location.reload();}
      else status('復元をキャンセルしました。データは変更していません。');
    }catch(e){status('復元できませんでした：'+(e?.message||String(e)),'error');}
-   finally{btn.style.pointerEvents='';input.value='';}
+   finally{if(btn)btn.style.pointerEvents='';input.value='';}
  }
  function init(){
-   const btn=$('transfer-export'),input=$('transfer-import');
+   const btn=$('transfer-export');
    if(btn)btn.addEventListener('click',exportAll);
-   if(input)input.addEventListener('change',onImport);
+   // Integrated dashboard is re-rendered, so listen on document rather than one transient input.
+   document.addEventListener('change',e=>{
+     if(e.target?.id==='transfer-import'||e.target?.id==='v4-transfer-import-file')onImport(e.target);
+   });
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
  window.MyKeibaDeviceTransferV1={validate,allowed};
