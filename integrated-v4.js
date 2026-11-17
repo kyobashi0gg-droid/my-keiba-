@@ -124,10 +124,10 @@
         <p class="v4-muted">レース・調教・馬DBの全過去走・実33・ラップ君の保存結果をまとめてJSON保存。タブレットに移すためのバックアップです。</p>
         <div class="v4-action-grid">
           <button class="v4-primary wide" type="button" data-v4-transfer="export">この端末の全データを一括保存</button>
-          <label class="v4-secondary wide" style="display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer;text-align:center;min-height:56px">
-            別端末のバックアップを復元
-            <input id="v4-transfer-import-file" type="file" accept=".json,application/json" aria-label="バックアップJSONを選択して復元" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer" />
-          </label>
+          <div class="v4-secondary wide" style="padding:12px;display:flex;flex-direction:column;gap:8px;align-items:stretch;text-align:left">
+            <strong>別端末のバックアップを復元</strong>
+            <input id="v4-transfer-import-file" type="file" accept=".json,application/json" aria-label="バックアップJSONを選択して復元" style="display:block;width:100%;font-size:15px;min-height:44px" />
+          </div>
         </div>
         <p id="v4-transfer-status" role="status" aria-live="polite" style="font-size:12px;line-height:1.6;color:#206848;overflow-wrap:anywhere"></p>
         <p class="v4-muted" style="font-size:11px;margin-top:12px">※上の「保存」は従来のレース用バックアップです。全データ移行にはこちらを使用してください。既存データのある端末への復元は停止します。</p>
