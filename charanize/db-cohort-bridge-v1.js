@@ -93,17 +93,24 @@ function choose(r,paper,deps){
  return {...paper,source:'paper',dbReason:db.reason};
 }
 function esc(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function decorate(root,co){
+function decorate(root,co,d,scoreFn){
  if(!root)return;
  const p=document.createElement('div');
  p.style.cssText='margin:10px 0 14px;padding:11px 12px;border:1px solid #d3e5e0;border-radius:10px;background:#f7fbfa;font-size:12px;line-height:1.7;color:#294c48';
  const source=co.source==='db'?'CHARANIZE DB LABの蓄積指数':'CHARANIZE Labの現在の指数新聞';
  const status=loading?'DB LABを読み込み中…':loaded?'DB LAB：指数付き'+total+'走／クラス判明'+known+'走／登録'+horseCount+'頭':'DB LAB：'+issue;
+ const means=[];
+ if(co.valid&&d?.arr&&typeof scoreFn==='function')for(const [k,label] of [['nige','逃'],['sen','先'],['ashi','脚'],['gear','ギ']]){
+   const xs=d.arr.map(st=>scoreFn(st,co,k)).filter(Number.isFinite);
+   const value=xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:null;
+   means.push(label+' '+(value===null?'—':value.toFixed(1))+' ('+xs.length+'頭)');
+ }
  p.innerHTML='<label for="charaClassSourceV1" style="font-weight:700;margin-right:8px">②の比較基準</label>'+
   '<select id="charaClassSourceV1" style="padding:7px 9px;border:1px solid #a6c8be;border-radius:7px;background:white">'+
   '<option value="auto">DB LAB優先（不足時は新聞）</option><option value="db">DB LABのみ</option><option value="paper">今の指数新聞のみ</option></select>'+
   '<button type="button" id="charaClassReloadV1" style="margin-left:7px;padding:7px;border:1px solid #a6c8be;border-radius:7px;background:white">DB再読込</button>'+
   '<div style="margin-top:7px">使用中：<b>'+esc(source)+'</b>／'+esc(status)+'</div>'+
+  (means.length?'<div style="margin-top:5px"><b>今回の出走馬の平均偏差値：</b>'+esc(means.join(' ／ '))+'</div>':'')+
   (co.dbReason?'<div>DB LABが使えない理由：'+esc(co.dbReason)+'</div>':'')+
   '<div style="color:#637c78">クラス不明の履歴は除外。同じ端末・同じブラウザのDBだけを参照し、DB内容は変更しません。公式のクラス平均ではありません。</div>';
  root.prepend(p);
