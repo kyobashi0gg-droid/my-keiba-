@@ -849,7 +849,7 @@ let v6PoolCache=null,v6CacheRef=null;
 function v6Pool(){if(v6CacheRef!==state.races){v6PoolCache=pool();v6CacheRef=state.races;}return v6PoolCache;}
 function v6IsJumpRace(r){return /障|[JＪ][GＧ][123１-３]|ジャンプ/.test(String(r?.name||''))}
 function v6Class(t){t=String(t||'').replace(/ｸﾗｽ/g,'クラス');if(/障|[JＪ][GＧ][123１-３]|ジャンプ/.test(t))return null;
- if(/(?:G1|Ｇ１|GI|GⅠ)/.test(t))return 'G1';if(/(?:G2|Ｇ２|GII|GⅡ)/.test(t))return 'G2';if(/(?:G3|Ｇ３|GIII|GⅢ)/.test(t))return 'G3';
+ if(/(?:G3|Ｇ３|GIII|GⅢ)/.test(t))return 'G3';if(/(?:G2|Ｇ２|GII|GⅡ)/.test(t))return 'G2';if(/(?:G1|Ｇ１|GI|GⅠ)/.test(t))return 'G1';
  if(/(?:OP|オープン|\(L\)|（L）|[ＳS]\(L\))/.test(t))return 'OP/L';
  if(/3勝/.test(t))return '3勝';if(/2勝/.test(t))return '2勝';if(/1勝/.test(t))return '1勝';
  if(/未勝利/.test(t))return '未勝利';if(/新馬/.test(t))return '新馬';return null;
