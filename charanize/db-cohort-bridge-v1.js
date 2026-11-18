@@ -19,8 +19,21 @@ function getClass(s){
  return null;
 }
 function courseVenue(s){return venues[s]||s||'';}
-function classify(pack,r){
+function classify(pack,r,horse){
  const own=getClass(r[10]);if(own)return own;
+ // Class is supplied by the separately imported MY KEIBA DB Lab records.
+ // Require an unambiguous same horse / date / venue / surface / distance match.
+ const norm=x=>String(x||'').normalize('NFKC').replace(/[\s　]+/g,'');
+ const byHorse=pack.lapRuns?.byHorse;
+ const lapRows=byHorse&&(byHorse[horse]||byHorse[norm(horse)]);
+ if(Array.isArray(lapRows)){
+   const matches=lapRows.filter(z=>Array.isArray(z)&&z[0]===r[0]&&
+     courseVenue(z[1])===courseVenue(r[1])&&z[2]===r[3]&&Number(z[3])===Number(r[4]));
+   if(matches.length===1){
+     const c=getClass(matches[0][10])||getClass(matches[0][7]);
+     if(c)return c;
+   }
+ }
  const card=pack.races?.[String(r[0]||'')+'|'+courseVenue(r[1])+'|'+String(r[2]||'')];
  return card&&typeof card==='object'?getClass(card.name||card.race_name||card.class_name):null;
 }
@@ -35,7 +48,7 @@ function compile(pack){
      if(!vals.some(v=>v!==null))continue;
      const id=[horse,r[0],courseVenue(r[1]),r[2],r[3],r[4]].join('|');
      if(set.has(id))continue;set.add(id);all++;
-     const cls=classify(pack,r);if(!cls)continue;
+     const cls=classify(pack,r,horse);if(!cls)continue;
      identified++;
      result.push({horse,cls,sf:r[3],dist:Number(r[4]),vals});
    }
