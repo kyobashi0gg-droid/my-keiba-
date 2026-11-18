@@ -11,9 +11,9 @@ try{let x=localStorage.getItem(MODE_KEY);if(['auto','db','paper'].includes(x))mo
 function getClass(s){
  s=String(s||'').normalize('NFKC').replace(/ｸﾗｽ/g,'クラス');
  if(/障|ジャンプ/.test(s))return null;
- if(/(?:G1|GI|GⅠ)/i.test(s))return 'G1';
- if(/(?:G2|GII|GⅡ)/i.test(s))return 'G2';
  if(/(?:G3|GIII|GⅢ)/i.test(s))return 'G3';
+ if(/(?:G2|GII|GⅡ)/i.test(s))return 'G2';
+ if(/(?:G1|GI|GⅠ)/i.test(s))return 'G1';
  if(/(?:OP|オープン|\(L\)|（L）)/i.test(s))return 'OP/L';
  for(const c of ['3勝','2勝','1勝','未勝利','新馬'])if(s.includes(c))return c;
  return null;
