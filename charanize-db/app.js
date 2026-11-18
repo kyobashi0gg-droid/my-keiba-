@@ -641,6 +641,36 @@ function loadReliefPair(rows,minP=15,minL=20,minUsableLeg=60){
  pairs.sort((a,b)=>b.legGain-a.legGain||b.loadDrop-a.loadDrop);
  return pairs.length?{...pairs[0],matches:pairs.length}:null;
 }
+// High-pursuit leg retention: same race's pursuit and leg indices, never an
+// inference that a high-pursuit race necessarily finished well.
+function highPursuitLegKeep(rows,minP=75,minLeg=65,minRuns=2){
+ const groups=new Map(), seen=new Set();
+ const band=d=>d<=1400?'1400m以下':d<=1600?'1500〜1600m':d<=2200?'1800〜2200m':'2400m以上';
+ for(const r of rows){
+  const p=r[9]?.[2],leg=r[9]?.[3],dist=Number(r[4]);
+  if(!['芝','ダ'].includes(r[3])||!Number.isFinite(dist)||dist<=0||
+    !num(p)||!num(leg)||p<minP)continue;
+  const runId=[r[0],r[1],r[2],r[3],dist].join('|');
+  if(seen.has(runId))continue;seen.add(runId);
+  const key=r[3]+'／'+band(dist);
+  if(!groups.has(key))groups.set(key,[]);
+  groups.get(key).push(r);
+ }
+ const choices=[];
+ for(const [key,high] of groups){
+   const maintained=high.filter(r=>r[9][3]>=minLeg);
+   if(maintained.length<minRuns)continue;
+   const mean=x=>x.length?x.reduce((sum,r)=>sum+r,0)/x.length:null;
+   const legs=maintained.map(r=>r[9][3]);
+   const gears=maintained.map(r=>r[9][4]).filter(num);
+   maintained.sort((a,b)=>String(b[0]||'').localeCompare(String(a[0]||'')));
+   choices.push({key,totalHigh:high.length,kept:maintained.length,
+     meanLeg:mean(legs),meanGear:mean(gears),refs:maintained,
+     bestLeg:Math.max(...legs)});
+ }
+ choices.sort((a,b)=>b.kept-a.kept||b.meanLeg-a.meanLeg||b.bestLeg-a.bestLeg);
+ return choices[0]||null;
+}
 function candidateKind(name,h,cohort){
  const rows=candidateRows(h),p=getPeak(rows,3),recent=avg(rows,3,3),ago=rows.slice(3,8).map(r=>r[9][3]).filter(num),olderMean=ago.length>=2?ago.reduce((a,b)=>a+b,0)/ago.length:null;
  const wet=rows.filter(r=>selectedWet(r[5])&&r[6]&&r[6]<=3&&num(r[9][3])&&r[9][3]>=70);
@@ -653,6 +683,18 @@ function candidateKind(name,h,cohort){
  if(kind==='wet'){match=wet.length>0;evidence=wet[0];reason=`道悪好走実績${wet.length}走・脚${fmt(wet[0]?.[9][3])}（道悪適性判定ではない）`;}
  if(kind==='dirtwet'){const d=wet.filter(r=>r[3]==='ダ');match=d.length>0;evidence=d[0];reason=`ダート道悪好走実績${d.length}走・脚${fmt(d[0]?.[9][3])}（上昇幅未比較）`;}
  if(kind==='frontweak'){match=weak.length>=1;evidence=weak[0];reason=`先行後の7着以下・脚力45未満が${weak.length}走`;}
+ if(kind==='pursuitlegkeep'){
+  const best=highPursuitLegKeep(rows,Number($('keep-min-pursuit').value),
+    Number($('keep-min-leg').value),Number($('keep-min-runs').value));
+  if(best){
+   match=true;evidence=best.refs[0];sortValue=best.kept*100+best.meanLeg;
+   reason='【高追走でも脚力維持／'+best.key+'】追走基準以上'+best.totalHigh+'走のうち脚力基準以上'+best.kept+'走'+
+     '（脚力平均'+fmt(best.meanLeg)+'、ギア平均'+(best.meanGear===null?'未記録':fmt(best.meanGear))+'）。'+
+     (best.kept>=2?'複数走の経験あり。':'該当1走のみの参考候補。')+
+     ' 根拠：'+best.refs.slice(0,3).map(r=>date(r[0])+' '+r[1]+(r[2]||'')+'R 追'+fmt(r[9][2])+'／脚'+fmt(r[9][3])+'／ギ'+fmt(r[9][4])).join('、')+
+     '。これは高負荷経験時の指数記録であり、実33・着順・相手水準は未判定。';
+  }
+ }
  if(kind==='pursuitweak'){match=pursuit.length>=1;evidence=pursuit[0];reason=`追走高値＋終い低下${pursuit.length}走`;}
  if(kind==='loadrelief'){
   const best=loadReliefPair(rows,Number($('load-pursuit-gap').value),Number($('load-leg-gain').value),Number($('load-min-leg').value));
@@ -725,6 +767,7 @@ function candidateKind(name,h,cohort){
  return match?{name,n:rows.length,evidence,reason,peak:sortValue}:null;
 }
 function renderDiscover(){
+ $('pursuit-legkeep-controls').classList.toggle('hidden',app.preset!=='pursuitlegkeep');
  $('load-relief-controls').classList.toggle('hidden',app.preset!=='loadrelief');
  const scoped=scopedRunners(),all=app.db;
  const nameList=scoped.scope==='all'?Object.keys(all):[...scoped.entries.keys()];
@@ -748,6 +791,7 @@ function init(){let meta=app.meta||{};$('stats-h').textContent=(meta.horses||Obj
  document.querySelectorAll('[data-avg]').forEach(b=>b.onclick=()=>{app.avgN=Number(b.dataset.avg);document.querySelectorAll('[data-avg]').forEach(x=>x.classList.toggle('on',x===b));renderHorse()});
  $('bar-index').onchange=e=>{app.chartIndex=Number(e.target.value);renderHorse()};$('preset').onchange=e=>{app.preset=e.target.value;app.discoveryLimit=32;if(app.preset.startsWith('turf'))$('discover-surface').value='芝';else if(app.preset.startsWith('dirt'))$('discover-surface').value='ダ';renderDiscover()};
  for(const id of ['load-pursuit-gap','load-leg-gain','load-min-leg'])$(id).onchange=()=>{app.discoveryLimit=32;renderDiscover()};
+ for(const id of ['keep-min-pursuit','keep-min-leg','keep-min-runs'])$(id).onchange=()=>{app.discoveryLimit=32;renderDiscover()};
   for(const id of ['discover-scope','discover-surface','discover-wetlevel'])$(id).onchange=()=>{app.discoveryLimit=32;renderDiscover()};$('more-candidates').onclick=()=>{app.discoveryLimit+=40;renderDiscover()};
  $('file-input').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;$('upload-status').textContent='読み込み中…';try{let parsed=JSON.parse(await f.text());if(parsed.horses&&parsed.meta&&Object.values(parsed.horses)[0]?.runs){let compact={};for(let [name,h] of Object.entries(parsed.horses))compact[name]=[h.sex,h.age_as_of_latest_paper,h.runs.map(r=>[r.date,r.venue,r.race_no,r.surface,r.distance,r.going,r.finish,r.passing,r.last3f,keys.map(k=>r.indices?.[k]??null),(r.race_name||'').split('　')[0].slice(0,25),r.sources?.length||1,r.conflicts||null])];parsed={meta:parsed.meta,horses:compact};}if(!parsed.horses||Object.keys(parsed.horses).length<1||!Array.isArray(Object.values(parsed.horses)[0]?.[2]))throw Error('対応するCHARANIZE DB形式ではありません');app.db=parsed.horses;app.meta=parsed.meta;initFilters();init();selectHorse(app.db[app.current]?app.current:Object.keys(app.db)[0]);$('upload-status').textContent=`${f.name} を読み込みました。更新は現在の画面内に反映されています。保持するには更新済みHTMLの再生成が必要です。`;}catch(err){$('upload-status').textContent='読み込めませんでした：'+err.message}};
  $('evidence-dialog').querySelector('[data-close]').onclick=()=>$('evidence-dialog').close();
