@@ -1094,7 +1094,7 @@ function v9ClassOverview(d,co){
  <div class="v9Caution">数字は同級標本内の相対偏差値です。追走指数は負荷指標のため優劣判定に含めません。指数基準を超えた頭数は勝ち馬の頭数や勝率を意味しません。基準未達とデータ不足は分けています。</div></details>`;
 }
 
-function v6Render(d){const co=v6ClassCohort(d.r);v10RawOverview(d);v9ClassOverview(d,co);window.CHARA_DB_COHORT_BRIDGE?.decorate(document.getElementById('classRaceOverview'),co);document.getElementById('charaOfficialGuide').innerHTML=v7Guide(d);document.getElementById('charaClassProfile').innerHTML=v6ClassPanel(d,co);document.getElementById('charaFieldMatrix').innerHTML=v6GroupPanel(d,co);}
+function v6Render(d){const co=v6ClassCohort(d.r);v10RawOverview(d);v9ClassOverview(d,co);window.CHARA_DB_COHORT_BRIDGE?.decorate(document.getElementById('classRaceOverview'),co,d,v6ClassScore);document.getElementById('charaOfficialGuide').innerHTML=v7Guide(d);document.getElementById('charaClassProfile').innerHTML=v6ClassPanel(d,co);document.getElementById('charaFieldMatrix').innerHTML=v6GroupPanel(d,co);}
 
 function charRender(){if(!document.getElementById('charaDashboard'))return;let d=charData();if(!d)return;let base=d.br;let sizes=labs.map(([k,label])=>label+':'+base[k].n);let mode=baseMode==='race'?'出走馬の相対比較':'収録過去走（重複を除いた同芝ダ・距離）';
 let warn=anyRefCaution(base)?'｜※一部の軸は母数30未満、参考値に注意':'';
