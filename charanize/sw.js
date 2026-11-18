@@ -1,5 +1,5 @@
 const CACHE='charanize-lab-v21-db-cohort-20261119';
-const ASSETS=['./index.html','./db-cohort-bridge-v1.js?v=20261119-1','./manifest.webmanifest','./icon.svg'];
+const ASSETS=['./index.html','./db-cohort-bridge-v1.js?v=20261119-2','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)));self.skipWaiting()});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('charanize-lab-')&&key!==CACHE).map(key=>caches.delete(key)))));self.clients.claim()});
 self.addEventListener('fetch',event=>{if(event.request.method!=='GET'||new URL(event.request.url).origin!==self.location.origin)return;event.respondWith(fetch(event.request).then(resp=>{if(resp.ok){let copy=resp.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy))}return resp}).catch(()=>caches.match(event.request).then(cached=>cached||caches.match('./index.html'))))});
