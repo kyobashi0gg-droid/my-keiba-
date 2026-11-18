@@ -692,6 +692,7 @@ for(const id of ['v4target','v4aTrack','v4bTrack','v4aIndex','v4bIndex','v4aPace
 sync(true);
 })();
 </script>
+<script src="./db-cohort-bridge-v1.js?v=20261119-1"></script>
 <script>
 (()=>{'use strict';
 const labs=[['nige','逃'],['sen','先'],['tsui','追負'],['ashi','脚'],['gear','ギ']];
@@ -855,7 +856,7 @@ function v6Class(t){t=String(t||'').replace(/ｸﾗｽ/g,'クラス');if(/障|[J
 }
 function v6CandidateRuns(r,h){let target=(r.condition||'').charAt(0);return h.runs.filter(z=>target==='芝'||target==='ダ'?whereSurface(z)===target:false).filter(z=>z.seq<=5).sort((a,b)=>a.seq-b.seq);}
 function v6TargetClass(r){return v6Class(r.name)||null}
-function v6ClassCohort(r){if(v6IsJumpRace(r))return {className:null,valid:false,reason:'障害競走は平地指数のクラス比較対象外です'};let className=v6TargetClass(r),sf=(r.condition||'').charAt(0),dist=Number(((r.condition||'').match(/\d+/)||[])[0]);
+function v6PaperClassCohort(r){if(v6IsJumpRace(r))return {className:null,valid:false,reason:'障害競走は平地指数のクラス比較対象外です'};let className=v6TargetClass(r),sf=(r.condition||'').charAt(0),dist=Number(((r.condition||'').match(/\d+/)||[])[0]);
  if(!className||!['芝','ダ'].includes(sf)||!dist)return {className,valid:false,reason:'開催クラスが不明、または芝ダ・距離を特定できません'};
  let data=v6Pool().filter(o=>o.sf===sf&&v6Class(o.z.summary?.split(' ')[0])===className),chosen,scope;
  let exact=data.filter(o=>o.dist===dist);let near=data.filter(o=>groupDistance(o.dist)===groupDistance(dist));
@@ -865,6 +866,10 @@ function v6ClassCohort(r){if(v6IsJumpRace(r))return {className:null,valid:false,
  else return {className,valid:false,reason:`収録済みの同クラス走 ${data.length}件。クラス基準の算定に必要な比較走が不足`};
  let stats={};for(const [k]of labs){let values=chosen.map(o=>o.z.indices?.[k]?.value).filter(x=>x!=null&&Number.isFinite(x));stats[k]=measure(values)}
  return {className,valid:true,stats,scope,records:chosen.length,horses:new Set(chosen.map(z=>z.horse)).size};
+}
+function v6ClassCohort(r){
+ const paper=v6PaperClassCohort(r),bridge=window.CHARA_DB_COHORT_BRIDGE;
+ return bridge?bridge.choose(r,paper,{targetClass:v6TargetClass,groupDistance,measure,labs,isJump:v6IsJumpRace}):paper;
 }
 function v6S(v){return v==null?'—':Number(v).toFixed(0)}
 function v11ClassRaw(st,k){
@@ -1089,7 +1094,7 @@ function v9ClassOverview(d,co){
  <div class="v9Caution">数字は同級標本内の相対偏差値です。追走指数は負荷指標のため優劣判定に含めません。指数基準を超えた頭数は勝ち馬の頭数や勝率を意味しません。基準未達とデータ不足は分けています。</div></details>`;
 }
 
-function v6Render(d){const co=v6ClassCohort(d.r);v10RawOverview(d);v9ClassOverview(d,co);document.getElementById('charaOfficialGuide').innerHTML=v7Guide(d);document.getElementById('charaClassProfile').innerHTML=v6ClassPanel(d,co);document.getElementById('charaFieldMatrix').innerHTML=v6GroupPanel(d,co);}
+function v6Render(d){const co=v6ClassCohort(d.r);v10RawOverview(d);v9ClassOverview(d,co);window.CHARA_DB_COHORT_BRIDGE?.decorate(document.getElementById('classRaceOverview'),co);document.getElementById('charaOfficialGuide').innerHTML=v7Guide(d);document.getElementById('charaClassProfile').innerHTML=v6ClassPanel(d,co);document.getElementById('charaFieldMatrix').innerHTML=v6GroupPanel(d,co);}
 
 function charRender(){if(!document.getElementById('charaDashboard'))return;let d=charData();if(!d)return;let base=d.br;let sizes=labs.map(([k,label])=>label+':'+base[k].n);let mode=baseMode==='race'?'出走馬の相対比較':'収録過去走（重複を除いた同芝ダ・距離）';
 let warn=anyRefCaution(base)?'｜※一部の軸は母数30未満、参考値に注意':'';
@@ -1115,6 +1120,7 @@ document.getElementById('charaFocus').addEventListener('click',e=>{if(e.target.i
 document.getElementById('raceSel').addEventListener('change',()=>{selectedHorse=null;v10LevelChoice='auto';charRender()});
 const p=pool();console.info('CHARANIZE v5',state.races.length,'races',p.length,'deduplicated historical records');
 charRender();
+window.CHARA_DB_COHORT_BRIDGE?.load(()=>charRender());
 })();
 
 </script><script>if(location.protocol==='https:'&&'serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').catch(()=>{});});}</script></body></html>
