@@ -42,8 +42,14 @@
     const pairlist=(f.pairs||[]).map(p=>
       '<div><b>'+esc(p.kind)+' '+esc(p.scenario)+'</b>：'+esc(p.numbers[0])+' '+esc(p.names[0])+
       '＋'+esc(p.numbers[1])+' '+esc(p.names[1])+'：'+esc(p.result)+'</div>').join('');
-    return '<div class="v71-forecast"><b>11/20付の事前本線：'+signed(f.main_lo)+'〜'+signed(f.main_hi)+'</b>'+
-      '<div>'+horselist+'</div><div>'+pairlist+'</div><p>'+esc(f.unknown)+'</p>'+
+    const source=esc(f.source_version|| (f.displayed_as_of?f.displayed_as_of+'付の事前分析':'事前分析スクリーンショット'));
+    const main=(f.main_lo==null||f.main_hi==null)?'本線33：画像で未確認':
+      '本線33：'+signed(f.main_lo)+'〜'+signed(f.main_hi);
+    const branch=(f.scenarios||[]).map(y=>
+      '<div><b>'+esc(y.kind)+'</b> '+signed(y.lo)+'〜'+signed(y.hi)+
+      ' / 実33との照合 '+(y.hit?'一致':'範囲外')+'</div>').join('');
+    return '<div class="v71-forecast"><b>'+source+' ／ '+main+'</b>'+
+      '<div>'+branch+'</div><div>'+horselist+'</div><div>'+pairlist+'</div><p>'+esc(f.unknown)+'</p>'+
       '<small>ユーザー提供スクリーンショットで表示内容を確認。隠れている評価は採点しない。</small></div>';
   }
   function html(x){
@@ -94,7 +100,7 @@
   }
   function load(){
     if(loading)return loading;
-    loading=fetch('./race-reviews/2026-11-21.json?v=20261121-5r',{cache:'no-cache'})
+    loading=fetch('./race-reviews/2026-11-21.json?v=20261121-v1-capture',{cache:'no-cache'})
       .then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json();})
       .then(d=>{
         if(d?.schema!=='MYKEIBA_RACE_REVIEW_V1'||!Array.isArray(d.races))throw Error('review schema');
