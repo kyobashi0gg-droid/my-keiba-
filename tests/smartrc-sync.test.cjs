@@ -25,5 +25,14 @@ for (const patch of [{tenRank:0},{agariRank:19},{tenPast1f:'124'},{tenRank:2.5}]
 }
 const newer=structuredClone(feed); newer.races[0].revision=2; newer.races[0].horses[0].tenRank=3;
 assert.equal(merge(r.state,newer,now).state.races[0].horses[0].tenRank,3);
+const withP=structuredClone(feed);withP.races[0].revision=3;
+withP.races[0].horses[0].tenPattern=15;
+withP.races[0].horses[1].tenPattern=0;
+const pResult=merge(r.state,withP,now);
+assert.equal(pResult.state.races[0].horses[0].tenPattern,15);
+assert.equal(pResult.state.races[0].horses[1].tenPattern,0);
+const missingP=structuredClone(feed);missingP.races[0].revision=4;
+assert.equal(merge(pResult.state,missingP,now).state.races[0].horses[0].tenPattern,15);
+for(const invalid of [-1,14,51,'15',1.5]){const bad=structuredClone(withP);bad.races[0].horses[0].tenPattern=invalid;assert.throws(()=>merge(input,bad,now));}
 assert.throws(()=>merge(input,{...feed,races:[packet,packet]},now));
-console.log('PASS: merge, identity/date/roster guards, missing values, replay/manual edits, revisions, invalid data');
+console.log('PASS: merge, identity/date/roster guards, missing values, replay/manual edits, revisions, tenPattern, invalid data');
