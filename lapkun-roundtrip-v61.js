@@ -56,6 +56,8 @@
     }
     const pace=window.MyKeibaPaceSimV42?.consultSection?.(r);
     if(pace)lines.push('', '【サイトの展開シミュレーション（補助）】',pace);
+    const tenPattern=window.MyKeibaTenPatternV69?.consultSection?.(r);
+    if(tenPattern)lines.push('', '【テンP連動・新方式の比較検証】',tenPattern);
     const rank=window.MyKeibaLapConsultV46?.siteRankingSection?.();
     if(rank)lines.push('',rank);
     const c1400=window.MyKeibaLapConsultV46?.caution1400Section?.(r);
