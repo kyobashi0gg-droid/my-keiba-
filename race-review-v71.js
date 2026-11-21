@@ -51,6 +51,10 @@
       '<p><b>次回の改善：</b>'+esc(a.lesson)+'</p></details>'+
       '<details><summary>全馬結果・通過順</summary><div class="v71-overflow"><table><thead><tr><th>着順</th><th>馬番 馬名</th><th>通過順</th><th>上り</th></tr></thead><tbody>'+
       results(x.results)+'</tbody></table></div></details>'+
+      '<details><summary>事前DBとの照合／予想採点の扱い</summary>'+
+      '<p>'+esc(a.prediction||'事前固定予想未照合')+'</p>'+
+      (a.advance?'<p><b>事前DB：</b>'+esc(a.advance)+'</p>':'')+
+      (a.conditional?'<p>'+esc(a.conditional)+'</p>':'')+'</details>'+
       '<p class="v71-warning">事前MAIN/FAST/SLOW・A/B・PAIRは原文未照合。事前保存結果を上書きせず、的中判定は保留。</p>'+
       '<a href="'+esc(x.source)+'" target="_blank" rel="noopener noreferrer">JRA公式の確定結果を確認 ↗</a>';
   }
