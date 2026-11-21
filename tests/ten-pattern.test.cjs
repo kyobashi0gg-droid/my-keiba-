@@ -1,0 +1,37 @@
+const assert=require('node:assert/strict');
+const core=require('../ten-pattern-core-v69.js');
+function race(patterns,styles={}){
+  const horses=patterns.map((p,i)=>({id:'h'+i,number:i+1,name:'馬'+(i+1),tenPattern:p===null?undefined:p,style:styles[i]||''}));
+  const legacy={horses:horses.map((h,i)=>({h,tenRank:i+1,speedRank:i+1,position:i<3?'先行':'中団'})),base:1.4,pressure:'高',mainRange:{min:.6,max:1.1}};
+  return {race:{horses},legacy};
+}
+assert.equal(core.pattern(null),null);
+assert.equal(core.pattern(''),null);
+assert.equal(core.pattern(0),0);
+assert.equal(core.pattern(15),15);
+assert.equal(core.pattern(40),null);
+let {race:r,legacy:l}=race([15,15,15,30,50,0]);
+let p=core.analyze(r,l);
+assert.equal(p.ready,true);
+assert.equal(p.knownCount,6);
+assert.equal(p.p15,3);
+assert.equal(p.pressure,'高');
+assert.deepEqual(p.reference33,{min:.6,max:1.1});
+({race:r,legacy:l}=race([15,0,0,0,0,0]));
+p=core.analyze(r,l);
+assert.equal(p.pressure,'低');
+assert.deepEqual(p.reference33,{min:1.6,max:2.1});
+({race:r,legacy:l}=race([15,15,null,null,null,null]));
+p=core.analyze(r,l);
+assert.equal(p.ready,false);
+assert.equal(p.pressure,'判定保留');
+assert.equal(p.reference33,null);
+assert.equal(p.knownCount,2);
+({race:r,legacy:l}=race([15,15,15,30,50,0],{0:'追込'}));
+p=core.analyze(r,l);
+assert.equal(p.horses[0].needsReview,true);
+assert.ok(p.horses[0].score<=.45);
+assert.notEqual(p.horses[0].kind,'先行力上位');
+assert.equal(core.analyze(null,l),null);
+assert.equal(core.analyze(r,null),null);
+console.log('PASS: tenP categories, absent vs none, pressure, provisional33, style conflict and missingness guard');
