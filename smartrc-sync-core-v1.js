@@ -2,6 +2,10 @@
 (function (root) {
   'use strict';
   const fields = ['tenPast1f', 'tenPrev1f', 'tenRank', 'agariRank', 'tenPattern'];
+  // New feed packets must declare whether their P column was checked.
+  // Historical packets remain compatible and are never misread as P=0.
+  const TEN_P_START = Date.parse('2026-11-21T06:15:00Z');
+  const has = (o,k) => Object.prototype.hasOwnProperty.call(o,k);
   const norm = v => String(v ?? '').normalize('NFKC').replace(/[\s　]/g, '');
   const key = h => `${Number(h.number)}:${norm(h.name)}`;
   function iso(v) {
@@ -29,10 +33,15 @@
       const id = `${r.date}:${r.track}:${r.raceNo}`;
       if (ids.has(id) || iso(r.date) !== r.date || !['札幌','函館','福島','新潟','東京','中山','中京','京都','阪神','小倉'].includes(r.track) || !Number.isInteger(r.raceNo) || r.raceNo<1 || r.raceNo>12 || !Number.isInteger(r.revision) || r.revision<1 || !Number.isFinite(Date.parse(r.observedAt)) || r.source !== 'https://www.smartrc.jp/v3/' || !Array.isArray(r.horses) || !r.horses.length || r.horses.length>18) throw Error('配信レースの形式が不正です');
       ids.add(id);
+      const isNew = Date.parse(r.observedAt) >= TEN_P_START;
+      if (isNew && typeof r.tenPatternChecked !== 'boolean') throw Error('新しい配信はテンP確認状態が必要です');
+      if (r.tenPatternChecked != null && typeof r.tenPatternChecked !== 'boolean') throw Error('テンP確認状態が不正です');
       const nums = new Set(), names = new Set();
       for (const h of r.horses) {
         if (!Number.isInteger(h.number) || h.number<1 || h.number>18 || !norm(h.name) || nums.has(h.number) || names.has(norm(h.name))) throw Error('配信の馬番・馬名が不正です');
         nums.add(h.number); names.add(norm(h.name));
+        if (r.tenPatternChecked === true && !has(h,'tenPattern')) throw Error('テンP確認済みの馬にテンP値がありません');
+        if (r.tenPatternChecked === false && h.tenPattern != null) throw Error('テンP未確認の配信にテンP値があります');
         for (const f of fields) {
           if (f === 'tenPattern') {
             if (h[f] != null && ![0,15,30,50].includes(h[f])) throw Error('テンPが不正です');
@@ -47,12 +56,20 @@
   function merge(input, feed, now = Date.now()) {
     validate(feed);
     const next = JSON.parse(JSON.stringify(input));
-    const result = { state: next, changed: 0, matched: 0, skipped: 0, labels: [] };
+    const result = { state: next, changed: 0, matched: 0, skipped: 0, labels: [], patternReports: [] };
     for (const packet of feed.races) {
       const roster = packet.horses.map(key).sort().join('|');
       const matches = (next.races || []).filter(r => norm(r.track) === packet.track && Number(r.raceNo) === packet.raceNo && dateMatches(r, packet, now) && Array.isArray(r.horses) && r.horses.map(key).sort().join('|') === roster);
       if (matches.length !== 1) { result.skipped++; continue; }
       result.matched++;
+      if (typeof packet.tenPatternChecked === 'boolean') {
+        result.patternReports.push({
+          date: packet.date, track: packet.track, raceNo: packet.raceNo,
+          checked: packet.tenPatternChecked,
+          present: packet.horses.filter(h => h.tenPattern != null).length,
+          total: packet.horses.length
+        });
+      }
       const race = matches[0], id = `${packet.date}:${packet.track}:${packet.raceNo}`;
       let count = 0;
       for (const horse of race.horses) {
