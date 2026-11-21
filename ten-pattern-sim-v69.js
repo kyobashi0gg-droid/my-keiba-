@@ -122,7 +122,7 @@
         x.h.tenRank??'未確認',
         x.legacyPosition||'不明',
         x.kind
-      ].map(v=>String(v??'—').replace(/[\\r\\n|]+/g,' / ')).join('|')),
+      ].map(v=>String(v??'—').replace(/[\r\n|]+/g,' / ')).join('|')),
       '先行力上位候補：'+(front.join(' / ')||'なし'),
       '旧方式で先行扱いだがテンP先行根拠の弱い馬：'+(changed.join(' / ')||'なし'),
       '脚質メモと不一致：'+(p.horses.filter(x=>x.needsReview).map(x=>(x.h.number||'—')+' '+x.h.name).join(' / ')||'なし'),
