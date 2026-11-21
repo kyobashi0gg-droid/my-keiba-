@@ -31,7 +31,8 @@
       '【情報源と優先順位】',
       '・以下のMY KEIBA LAB資料はサイトの現時点の登録内容。過去走のレベル・総評・相手関係は別途DB Lab原本を確認して評価する。',
       '・CHARANIZE指数はサイトに取り込まない。この会話へ別途送った新聞画像からラップ君が読み取って組み合わせる。画像がなければ「未確認」と明記し、指数や能力を推測しない。',
-      '・テン1Fが欠損でもテン順とCHARANIZEの逃・先指数、過去の実通過順を使って隊列を確認する。テン/上がり順位は33適性へ直接加点しない。',
+      '・テン1Fが欠損でもテン順とテンP、CHARANIZEの逃・先指数、過去の実通過順を使って隊列を確認する。テン/上がり順位は33適性へ直接加点しない。',
+      '・テンPはP15/P30/P50の先行力パターン。非該当・未確認を区別し、Pだけで実際の通過順や逃げ意思を決めない。全出走馬のテンPを確認し、実通過順と照合して初動先行圧を調整する。',
       '・CHARANIZE追走は負荷、脚指数は差し有利の偏りに注意。芝ダを混ぜず、他場・異距離での指数再現性は慎重に扱う。',
       '・33はラスト6Fの前半3F−後半3F。芝1400mは2F目〜4F目が前半3F。',
       '・DBレース総評の「ハイ」「超ハイ」はレースの質で、新聞のペース指数とは別。',
@@ -272,7 +273,10 @@
       readiness.textContent='準備中：DB33と展開シミュレーションのモジュールを確認しています。';
       await Promise.all([
         ensureModule('db-result-bridge-v44.js','MyKeibaDbResultBridgeV44'),
-        ensureModule('pace-sim-v42.js','MyKeibaPaceSimV42')
+        ensureModule('pace-sim-v42.js','MyKeibaPaceSimV42'),
+        ensureModule('ten-pattern-core-v69.js','MyKeibaTenPatternCoreV69'),
+        ensureModule('ten-pattern-persist-v70.js','MyKeibaTenPatternPersistV70'),
+        ensureModule('ten-pattern-sim-v69.js','MyKeibaTenPatternV69')
       ]);
       if(!window.MyKeibaLapkunV6?.buildConsultText){
         throw Error('従来の全馬データ生成機能が未読み込みです。ページを再読み込みしてください。');
@@ -288,7 +292,9 @@
       const saved=window.MyKeibaDbResultBridgeV44?.savedFor?.(r);
       const dbNote=saved?'DB33保存結果あり':'DB33評価はサイト内未保存';
       const missingTen=horses.filter(h=>!h.tenRank).length;
-      readiness.textContent='生成完了：'+horses.length+'頭分・'+dbNote+'・テン順未登録'+missingTen+'頭。';
+      const tenP=window.MyKeibaTenPatternV69?.profile?.(r);
+      const tenPnote=tenP?'・テンP '+tenP.knownCount+'/'+tenP.total+'頭':'・テンP連動未確認';
+      readiness.textContent='生成完了：'+horses.length+'頭分・'+dbNote+'・テン順未登録'+missingTen+'頭'+tenPnote+'。';
       return {data,horses,dbNote};
     }
     async function sendRequest(mode){
