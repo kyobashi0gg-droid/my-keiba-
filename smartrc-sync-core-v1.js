@@ -1,7 +1,7 @@
 /* Pure matching/merge logic. No network, storage, or private-data export. */
 (function (root) {
   'use strict';
-  const fields = ['tenPast1f', 'tenPrev1f', 'tenRank', 'agariRank'];
+  const fields = ['tenPast1f', 'tenPrev1f', 'tenRank', 'agariRank', 'tenPattern'];
   const norm = v => String(v ?? '').normalize('NFKC').replace(/[\s　]/g, '');
   const key = h => `${Number(h.number)}:${norm(h.name)}`;
   function iso(v) {
@@ -34,6 +34,10 @@
         if (!Number.isInteger(h.number) || h.number<1 || h.number>18 || !norm(h.name) || nums.has(h.number) || names.has(norm(h.name))) throw Error('配信の馬番・馬名が不正です');
         nums.add(h.number); names.add(norm(h.name));
         for (const f of fields) {
+          if (f === 'tenPattern') {
+            if (h[f] != null && ![0,15,30,50].includes(h[f])) throw Error('テンPが不正です');
+            continue;
+          }
           if (h[f] == null || h[f] === '') continue;
           if (typeof h[f] !== 'number' || !Number.isFinite(h[f]) || (f.endsWith('Rank') ? !Number.isInteger(h[f]) || h[f]<1 || h[f]>18 : h[f]<8 || h[f]>30)) throw Error('配信の数値が不正です');
         }
