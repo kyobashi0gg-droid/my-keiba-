@@ -275,9 +275,10 @@
         ensureModule('db-result-bridge-v44.js','MyKeibaDbResultBridgeV44'),
         ensureModule('pace-sim-v42.js','MyKeibaPaceSimV42'),
         ensureModule('ten-pattern-core-v69.js','MyKeibaTenPatternCoreV69'),
-        ensureModule('ten-pattern-persist-v70.js','MyKeibaTenPatternPersistV70'),
-        ensureModule('ten-pattern-sim-v69.js','MyKeibaTenPatternV69')
+        ensureModule('ten-pattern-persist-v70.js','MyKeibaTenPatternPersistV70')
       ]);
+      // The comparison module requires both the core and persistence module.
+      await ensureModule('ten-pattern-sim-v69.js','MyKeibaTenPatternV69');
       if(!window.MyKeibaLapkunV6?.buildConsultText){
         throw Error('従来の全馬データ生成機能が未読み込みです。ページを再読み込みしてください。');
       }
