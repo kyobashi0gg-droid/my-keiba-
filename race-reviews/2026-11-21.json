@@ -1,8 +1,8 @@
 {
   "schema": "MYKEIBA_RACE_REVIEW_V1",
   "date": "2026-11-21",
-  "source_policy": "JRA official verified results. User-pre-race fixed A/B/PAIR unavailable; do not mark accuracy.",
-  "forecast_preservation": "pre-race MYKEIBA_PAIRRESULT_V1 unchanged; not retrieved from device localStorage",
+  "source_policy": "JRA official verified results. Nov 20 forecast screenshots from user included for 福島10R and 京都11R only. Unshown forecasts remain unverified.",
+  "forecast_preservation": "No changes to device-local MYKEIBA_PAIRRESULT_V1; only screenshot-visible A/B, MAIN and pairs are scored; missing FAST/SLOW and hidden horses/pairs unscored.",
   "races": [
     {
       "date": "2026-11-21",
@@ -32,7 +32,7 @@
         "prediction": "事前の定量MAIN/FAST/SLOWとA/B・ペアの保存済み原文を確認できず、的中判定は保留。"
       },
       "front3": 35.2,
-      "back3": 33.0,
+      "back3": 33,
       "real33": 2.2,
       "results": [
         {
@@ -83,7 +83,7 @@
             1,
             2
           ],
-          "final3f": 36.0
+          "final3f": 36
         },
         {
           "finish": 6,
@@ -111,6 +111,259 @@
           "name": "サンタンジェロ",
           "passing": [],
           "final3f": null
+        }
+      ]
+    },
+    {
+      "date": "2026-11-21",
+      "track": "福島",
+      "race_no": 10,
+      "name": "福島放送賞",
+      "course": "ダ1150m",
+      "weather": "晴",
+      "going": "不良",
+      "entered": 16,
+      "ran": 16,
+      "source": "https://www.jra.go.jp/JRADB/accessS.html?CNAME=pw01sde0103202603051020261121/58",
+      "laps": [
+        9.5,
+        10.3,
+        10.8,
+        11.5,
+        12.2,
+        12.5
+      ],
+      "first_split_m": 150,
+      "front3": null,
+      "back3": 36.2,
+      "real33": null,
+      "front_segment_m": 550,
+      "front_segment_sec": 30.6,
+      "analysis": {
+        "lead": "②ショウナンラリーは3角先頭で4角2番手、③ビーマックスは2-1から勝利、①ソニックブレイカーは4-4から2着。⑭ゼファーテソーロは9-10から上り35.8秒で3着。",
+        "formation": "ハロン分割は150m(9.5秒)+200m×5本(10.3-10.8-11.5-12.2-12.5)。最初の3区間は550m/30.6秒、最後の3区間は600m/36.2秒で距離が異なる。通常のラスト6F前半3F−後半3Fの実33として直接比較不可。序盤は速く後半ほど減速するラップ構造。",
+        "horses": "③ビーマックス（事前A軸、1着、2-1、上り36.2）と①ソニックブレイカー（事前A本線、2着、4-4、36.0）がA+Aで1-2着。③は7番人気で馬連2,010円。⑪クインズポラリス（事前B、10着、13-13、36.4）はA+Bペア不成立。⑭ゼファーテソーロ（3着、9-10、上り35.8）は後方から好走。",
+        "prediction": "ユーザー提供のMY KEIBA LAB事前分析表示の日付は2026-11-20。本線33−3.5〜−2.9、③ビーマックスA軸・①ソニックブレイカーA本線。A+A本線③+①は1着-2着で成功、A+B本線③+⑪クインズポラリスは1着-10着で不成立。さらに1組の非表示ペアは未照合。ダ1150mは最初のハロン分割が150mであり、通常の実33適中判定は不可。",
+        "lesson": "馬券ペア・順位評価と33予測の採点は分離。ダ1150mは不等区間なので実33を便宜的に算出せず、後半3F36.2秒と先行残り・減速の組み合わせで検証する。2頭同時好走のA+Aは明確な成功事例。"
+      },
+      "forecast": {
+        "displayed_as_of": "2026-11-20",
+        "evidence": "2026-11-21 17:22にユーザーが提供したMY KEIBA LABスクリーンショット（表示にはラップ君の事前分析2026-11-20）",
+        "main_lo": -3.5,
+        "main_hi": -2.9,
+        "horses": [
+          {
+            "number": 3,
+            "name": "ビーマックス",
+            "tier": "A",
+            "role": "軸",
+            "finish": 1
+          },
+          {
+            "number": 1,
+            "name": "ソニックブレイカー",
+            "tier": "A",
+            "role": "本線",
+            "finish": 2
+          },
+          {
+            "number": 11,
+            "name": "クインズポラリス",
+            "tier": "B",
+            "role": "相手（A+Bペアから確定）",
+            "finish": 10
+          }
+        ],
+        "pairs": [
+          {
+            "kind": "A+A",
+            "scenario": "MAIN",
+            "numbers": [
+              3,
+              1
+            ],
+            "names": [
+              "ビーマックス",
+              "ソニックブレイカー"
+            ],
+            "result": "1着＋2着：同時3着内成功"
+          },
+          {
+            "kind": "A+B",
+            "scenario": "MAIN",
+            "numbers": [
+              3,
+              11
+            ],
+            "names": [
+              "ビーマックス",
+              "クインズポラリス"
+            ],
+            "result": "1着＋10着：同時3着内不成立"
+          }
+        ],
+        "unknown": "画面のほか1組は未確認。FAST/SLOWは画像にないため未確認。"
+      },
+      "results": [
+        {
+          "finish": 1,
+          "number": 3,
+          "name": "ビーマックス",
+          "passing": [
+            2,
+            1
+          ],
+          "final3f": 36.2
+        },
+        {
+          "finish": 2,
+          "number": 1,
+          "name": "ソニックブレイカー",
+          "passing": [
+            4,
+            4
+          ],
+          "final3f": 36
+        },
+        {
+          "finish": 3,
+          "number": 14,
+          "name": "ゼファーテソーロ",
+          "passing": [
+            9,
+            10
+          ],
+          "final3f": 35.8
+        },
+        {
+          "finish": 4,
+          "number": 7,
+          "name": "モズオウンゴール",
+          "passing": [
+            3,
+            3
+          ],
+          "final3f": 36.3
+        },
+        {
+          "finish": 5,
+          "number": 16,
+          "name": "ナムラモモ",
+          "passing": [
+            6,
+            6
+          ],
+          "final3f": 36.3
+        },
+        {
+          "finish": 6,
+          "number": 9,
+          "name": "レイアポポ",
+          "passing": [
+            16,
+            13
+          ],
+          "final3f": 35.7
+        },
+        {
+          "finish": 7,
+          "number": 6,
+          "name": "ペルセポネ",
+          "passing": [
+            6,
+            6
+          ],
+          "final3f": 36.5
+        },
+        {
+          "finish": 8,
+          "number": 15,
+          "name": "コックピットサイト",
+          "passing": [
+            9,
+            10
+          ],
+          "final3f": 36.3
+        },
+        {
+          "finish": 9,
+          "number": 8,
+          "name": "パルプフィクション",
+          "passing": [
+            9,
+            6
+          ],
+          "final3f": 36.5
+        },
+        {
+          "finish": 10,
+          "number": 11,
+          "name": "クインズポラリス",
+          "passing": [
+            13,
+            13
+          ],
+          "final3f": 36.4
+        },
+        {
+          "finish": 11,
+          "number": 10,
+          "name": "フェデルミエール",
+          "passing": [
+            13,
+            13
+          ],
+          "final3f": 36.6
+        },
+        {
+          "finish": 12,
+          "number": 4,
+          "name": "インディゴアスール",
+          "passing": [
+            4,
+            5
+          ],
+          "final3f": 37.3
+        },
+        {
+          "finish": 13,
+          "number": 2,
+          "name": "ショウナンラリー",
+          "passing": [
+            1,
+            2
+          ],
+          "final3f": 37.8
+        },
+        {
+          "finish": 14,
+          "number": 13,
+          "name": "ビーグラッド",
+          "passing": [
+            13,
+            13
+          ],
+          "final3f": 37
+        },
+        {
+          "finish": 15,
+          "number": 5,
+          "name": "ニシノラヴァンダ",
+          "passing": [
+            12,
+            9
+          ],
+          "final3f": 37.2
+        },
+        {
+          "finish": 16,
+          "number": 12,
+          "name": "ペイシャヴァルツー",
+          "passing": [
+            6,
+            10
+          ],
+          "final3f": 39.4
         }
       ]
     },
@@ -352,8 +605,8 @@
         12.6,
         12.5,
         12.4,
-        12.0,
-        12.0
+        12,
+        12
       ],
       "analysis": {
         "lead": "⑦シリウスコルトは1角・3角先頭、③ゼンダンハヤブサは2角・4角先頭で2着。⑭サヴォーナは3-3-2-4から大きく失速。⑬マリアイリダータは6-6-4-2から勝利。",
@@ -366,7 +619,7 @@
       },
       "front3": 38.4,
       "back3": 36.4,
-      "real33": 2.0,
+      "real33": 2,
       "results": [
         {
           "finish": 1,
@@ -552,6 +805,295 @@
           "finish": "取消",
           "number": 5,
           "name": "フィーリウス",
+          "passing": [],
+          "final3f": null
+        }
+      ]
+    },
+    {
+      "date": "2026-11-21",
+      "track": "京都",
+      "race_no": 11,
+      "name": "シトリンステークス",
+      "course": "ダ1900m",
+      "weather": "晴",
+      "going": "良",
+      "entered": 16,
+      "ran": 15,
+      "source": "https://own.jra.jp/JRADB/accessS.html?CNAME=pw01sde0108202605051120261121/E1",
+      "laps": [
+        7,
+        11,
+        11.4,
+        12.8,
+        12.9,
+        12.7,
+        12.6,
+        12.3,
+        12.2,
+        11.9
+      ],
+      "first_split_m": 100,
+      "front3": 38.2,
+      "back3": 36.4,
+      "real33": 1.8,
+      "analysis": {
+        "lead": "④ポッドロゴが1-1-1-2で逃げ、⑫メルカントゥールが2-2-2-1で4角先頭に立ち押し切り勝ち。⑭チェリヴェントは3-3-7-7と中盤に後退。③メリークリスマスは8-8-8-9、②ゼットリアンは8-11-10-10。",
+        "formation": "最初100m(7.0秒)のあと200m×9本。ラスト6Fの前半3Fは5〜7分割目12.9+12.7+12.6=38.2秒、後半3Fは8〜10分割目12.3+12.2+11.9=36.4秒。実33+1.8。33区間は12.9から11.9へ連続加速する構造で、先行2番手の⑫メルカントゥールが脚を維持。",
+        "horses": "⑫メルカントゥール（事前A軸、1着、2-2-2-1、36.2）は勝利で軸馬評価成功。⑭チェリヴェント（A軸、5着、3-3-7-7、36.9）と③メリークリスマス（A本線、4着、8-8-8-9、36.6）は3着内を逃し、⑫とのA+Aペア2組は不成立。②ゼットリアン（相手候補、6着、8-11-10-10、36.5）。②③⑭は能力だけでなく実際の位置取りと再加速区間での対応を再検証。",
+        "prediction": "スクリーンショット内のラップ君事前分析2026-11-20は本線33+0.2〜+0.9。JRA実33は+1.8で本線上限から+0.9秒プラス側にズレ。⑫メルカントゥールをA軸に挙げたのは成功。一方、注目A+Aの⑫＋⑭（1着+5着）と⑫＋③（1着+4着）は不成立。表示上は軸・本線・相手候補5頭と記載だが、画像では4頭しか確認できないため第5の候補は未照合。ほか4組のペアも未照合。",
+        "lesson": "「逃げ候補が競り合う」かどうかと、33区間の大きな緩み・段階加速を分けて予測。⑫の能力克服と⑭の途中後退を混同しない。初動先行圧だけでは+1.8の33を説明できない。"
+      },
+      "forecast": {
+        "displayed_as_of": "2026-11-20",
+        "evidence": "2026-11-21 17:23にユーザーが提供したMY KEIBA LABスクリーンショット（表示にはラップ君の事前分析2026-11-20）",
+        "main_lo": 0.2,
+        "main_hi": 0.9,
+        "horses": [
+          {
+            "number": 12,
+            "name": "メルカントゥール",
+            "tier": "A",
+            "role": "軸",
+            "finish": 1
+          },
+          {
+            "number": 14,
+            "name": "チェリヴェント",
+            "tier": "A",
+            "role": "軸",
+            "finish": 5
+          },
+          {
+            "number": 3,
+            "name": "メリークリスマス",
+            "tier": "A",
+            "role": "本線",
+            "finish": 4
+          },
+          {
+            "number": 2,
+            "name": "ゼットリアン",
+            "tier": "A",
+            "role": "相手",
+            "finish": 6
+          }
+        ],
+        "pairs": [
+          {
+            "kind": "A+A",
+            "scenario": "MAIN",
+            "numbers": [
+              12,
+              14
+            ],
+            "names": [
+              "メルカントゥール",
+              "チェリヴェント"
+            ],
+            "result": "1着＋5着：同時3着内不成立"
+          },
+          {
+            "kind": "A+A",
+            "scenario": "MAIN",
+            "numbers": [
+              12,
+              3
+            ],
+            "names": [
+              "メルカントゥール",
+              "メリークリスマス"
+            ],
+            "result": "1着＋4着：同時3着内不成立"
+          }
+        ],
+        "unknown": "画面の5頭目のA候補とほか4組のペアは未確認。FAST/SLOWは画像にないため未確認。"
+      },
+      "results": [
+        {
+          "finish": 1,
+          "number": 12,
+          "name": "メルカントゥール",
+          "passing": [
+            2,
+            2,
+            2,
+            1
+          ],
+          "final3f": 36.2
+        },
+        {
+          "finish": 2,
+          "number": 10,
+          "name": "テーオーマルコーニ",
+          "passing": [
+            6,
+            6,
+            6,
+            4
+          ],
+          "final3f": 36.2
+        },
+        {
+          "finish": 3,
+          "number": 9,
+          "name": "レッドプロフェシー",
+          "passing": [
+            8,
+            8,
+            8,
+            7
+          ],
+          "final3f": 36.4
+        },
+        {
+          "finish": 4,
+          "number": 3,
+          "name": "メリークリスマス",
+          "passing": [
+            8,
+            8,
+            8,
+            9
+          ],
+          "final3f": 36.6
+        },
+        {
+          "finish": 5,
+          "number": 14,
+          "name": "チェリヴェント",
+          "passing": [
+            3,
+            3,
+            7,
+            7
+          ],
+          "final3f": 36.9
+        },
+        {
+          "finish": 6,
+          "number": 2,
+          "name": "ゼットリアン",
+          "passing": [
+            8,
+            11,
+            10,
+            10
+          ],
+          "final3f": 36.5
+        },
+        {
+          "finish": 7,
+          "number": 15,
+          "name": "リビアングラス",
+          "passing": [
+            5,
+            5,
+            3,
+            4
+          ],
+          "final3f": 37.3
+        },
+        {
+          "finish": 8,
+          "number": 11,
+          "name": "ハヤテノフクノスケ",
+          "passing": [
+            8,
+            8,
+            3,
+            3
+          ],
+          "final3f": 37.5
+        },
+        {
+          "finish": 9,
+          "number": 1,
+          "name": "ヒルノハンブルク",
+          "passing": [
+            13,
+            13,
+            13,
+            12
+          ],
+          "final3f": 36.8
+        },
+        {
+          "finish": 10,
+          "number": 5,
+          "name": "センツブラッド",
+          "passing": [
+            3,
+            3,
+            3,
+            6
+          ],
+          "final3f": 38.5
+        },
+        {
+          "finish": 11,
+          "number": 6,
+          "name": "ヤマニンブークリエ",
+          "passing": [
+            6,
+            6,
+            12,
+            14
+          ],
+          "final3f": 37.6
+        },
+        {
+          "finish": 12,
+          "number": 8,
+          "name": "アスクデビューモア",
+          "passing": [
+            15,
+            15,
+            15,
+            14
+          ],
+          "final3f": 36.8
+        },
+        {
+          "finish": 13,
+          "number": 7,
+          "name": "マキシ",
+          "passing": [
+            14,
+            14,
+            14,
+            12
+          ],
+          "final3f": 37.5
+        },
+        {
+          "finish": 14,
+          "number": 4,
+          "name": "ポッドロゴ",
+          "passing": [
+            1,
+            1,
+            1,
+            2
+          ],
+          "final3f": 39.2
+        },
+        {
+          "finish": 15,
+          "number": 13,
+          "name": "カネフラ",
+          "passing": [
+            12,
+            12,
+            10,
+            11
+          ],
+          "final3f": 38.2
+        },
+        {
+          "finish": "除外",
+          "number": 16,
+          "name": "サイモンシュバリエ",
           "passing": [],
           "final3f": null
         }
