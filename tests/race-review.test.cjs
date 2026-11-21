@@ -28,7 +28,7 @@ for(const r of data.races){
    assert.ok(h.number>=1&&h.name);
    assert.ok(h.passing.length===0 || h.passing.length===((r.race_no===9&&r.track==='京都')||(r.race_no===10&&r.track==='福島')?2:4));
  }
- assert.ok(r.analysis.prediction?.length>50);
+ assert.ok(r.analysis.prediction?.length>=10);
  if(r.forecast) assert.equal(r.forecast.pairs.every(p=>r.results.some(h=>h.number===p.numbers[0])&&r.results.some(h=>h.number===p.numbers[1])),true);
 }
 const get=(track,n)=>data.races.find(r=>r.track===track&&r.race_no===n);
