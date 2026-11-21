@@ -48,8 +48,23 @@
   }
   function decorate(){
     const r=currentRace();
+    if(!r) return;
+    if(!window.MyKeibaPaceSimV42){
+      let script=[...document.scripts].find(x=>/pace-sim-v42\.js/.test(x.src||''));
+      if(!script){
+        script=document.createElement('script');
+        script.src='./pace-sim-v42.js';
+        script.async=true;
+        document.head.appendChild(script);
+      }
+      if(!script.dataset.v69Wake){
+        script.dataset.v69Wake='1';
+        script.addEventListener('load',()=>schedule(600),{once:true});
+      }
+      return;
+    }
     const pace=document.querySelector('#v42PaceSim');
-    if(!r||!pace) return;
+    if(!pace)return;
     const p=profile(r);if(!p)return;
     let el=document.querySelector('#v69TenPattern');
     if(!el){
