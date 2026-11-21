@@ -1,11 +1,12 @@
 // Keep PWA caches separate from DB Lab and other apps on the same origin.
-const CACHE = 'my-keiba-lab-v70-tenp-restore';
+const CACHE = 'my-keiba-lab-v71-jra-review';
 const CACHE_PREFIX = 'my-keiba-lab-';
 const CORE_ASSETS = [
   './', './index.html', './styles.css', './integrated-v4.css',
   './lapkun-v5.css', './lapkun-v6.css', './editorial-v8.css',
   './app.js', './data-model-v16.js', './editorial-ui-v14-fix.js',
   './ten-pattern-core-v69.js', './ten-pattern-persist-v70.js', './ten-pattern-sim-v69.js',
+  './race-review-v71.js', './race-reviews/2026-11-21.json',
   './manifest.webmanifest', './icons/icon-192.png',
   './icons/icon-512.png', './icons/icon-maskable-512.png'
 ];
