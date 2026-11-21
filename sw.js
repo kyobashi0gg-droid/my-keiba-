@@ -1,5 +1,5 @@
 // Keep PWA caches separate from DB Lab and other apps on the same origin.
-const CACHE = 'my-keiba-lab-v71-jra-review-prefinal';
+const CACHE = 'my-keiba-lab-v72-tenp-consult-full';
 const CACHE_PREFIX = 'my-keiba-lab-';
 const CORE_ASSETS = [
   './', './index.html', './styles.css', './integrated-v4.css',
