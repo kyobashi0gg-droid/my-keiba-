@@ -6,7 +6,7 @@ assert.equal(data.races.length,3);
 assert.deepEqual(data.races.map(r=>r.track+r.race_no),['京都9','京都10','福島11']);
 for(const r of data.races){
  assert.equal(r.date,'2026-11-21');
- assert.match(r.source,/^https:\/\/(?:www\.)?jra\.jp\/JRADB\/accessS\.html/);
+ assert.match(r.source,/^https:\/\/(?:www\.)?jra(?:\.go)?\.jp\/JRADB\/accessS\.html/);
  assert.ok(r.laps.every(v=>Number.isFinite(v)&&v>9&&v<20));
  assert.equal(r.laps.length*200,Number((r.course.match(/\d+/)||[])[0]));
  const decimalSum=a=>Math.round(a.reduce((x,y)=>x+y,0)*10)/10;
