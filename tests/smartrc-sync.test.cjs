@@ -34,5 +34,22 @@ assert.equal(pResult.state.races[0].horses[1].tenPattern,0);
 const missingP=structuredClone(feed);missingP.races[0].revision=4;
 assert.equal(merge(pResult.state,missingP,now).state.races[0].horses[0].tenPattern,15);
 for(const invalid of [-1,14,51,'15',1.5]){const bad=structuredClone(withP);bad.races[0].horses[0].tenPattern=invalid;assert.throws(()=>merge(input,bad,now));}
+// From 2026-11-21 15:15 JST onward, new packets declare ten-P capture completeness.
+const future=structuredClone(feed);
+future.races[0].observedAt='2026-11-22T01:00:00Z';
+assert.throws(()=>merge(input,future,now),/テンP確認状態/);
+future.races[0].tenPatternChecked=true;
+assert.throws(()=>merge(input,future,now),/テンP値/);
+future.races[0].horses[0].tenPattern=15;
+future.races[0].horses[1].tenPattern=null;
+const futureResult=merge(input,future,now);
+assert.equal(futureResult.patternReports[0].present,1);
+assert.equal(futureResult.patternReports[0].total,2);
+assert.equal(futureResult.state.races[0].horses[0].tenPattern,15);
+assert.equal(futureResult.state.races[0].horses[1].tenPattern,undefined);
+future.races[0].tenPatternChecked=false;
+assert.throws(()=>merge(input,future,now),/未確認/);
+delete future.races[0].horses[0].tenPattern;
+assert.equal(merge(input,future,now).patternReports[0].checked,false);
 assert.throws(()=>merge(input,{...feed,races:[packet,packet]},now));
 console.log('PASS: merge, identity/date/roster guards, missing values, replay/manual edits, revisions, tenPattern, invalid data');
