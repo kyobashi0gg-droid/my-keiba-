@@ -1,0 +1,36 @@
+name: Ten-pattern simulation checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ten-pattern-core-v69.js"
+      - "ten-pattern-sim-v69.js"
+      - "smartrc-sync-core-v1.js"
+      - "lapkun-roundtrip-v61.js"
+      - "index.html"
+      - "tests/ten-pattern.test.cjs"
+      - "tests/smartrc-sync.test.cjs"
+      - ".github/workflows/ten-pattern-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ten-pattern:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check affected JavaScript syntax
+        run: |
+          node --check ten-pattern-core-v69.js
+          node --check ten-pattern-sim-v69.js
+          node --check smartrc-sync-core-v1.js
+          node --check lapkun-roundtrip-v61.js
+      - name: Run pace and sync regression tests
+        run: node --test tests/ten-pattern.test.cjs tests/smartrc-sync.test.cjs
