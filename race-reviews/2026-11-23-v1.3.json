@@ -1,0 +1,1529 @@
+{
+  "schema": "MYKEIBA_RACE_REVIEW_V1",
+  "date": "2026-11-23",
+  "version": "v1.3",
+  "source_policy": "2026-11-22固定の事前v1.0と2026-11-23確定結果を分離し、事前A/B/X・MAIN/FAST/SLOW・PAIRは一切変更しない。",
+  "forecast_preservation": "MYKEIBA_PAIRRESULT_V1原本を上書きせず、レビュー別保存。サイト端末内には未反映。",
+  "summary": {
+    "races": 5,
+    "runners": 71,
+    "main_hits": 0,
+    "any_scenario_hits": 3,
+    "winning_horse_A": 1,
+    "winning_horse_B": 1,
+    "winning_horse_X": 3,
+    "top3_A_horses": 6,
+    "top3_B_horses": 4,
+    "top3_X_horses": 5,
+    "win5_two_horse_priority_wins": 1,
+    "pairs_total": 21,
+    "pair_both_top3": 3,
+    "pair_full_hit": 0,
+    "reported_bet_result_scope": "東京11Rの添付照会画面のみ。5レース全体の収支は算出不可。"
+  },
+  "notes": {
+    "source_policy": "JRA確定結果と前日固定の5事前予想原本を照合。競馬ラボ、東スポ競馬、netkeibaで通過順等補完。",
+    "metric": "正しいラスト6Fの前半3F−後半3Fで独立算出。2100m、1700mの冒頭100m区間は含まない",
+    "horse_name_policy": "表記は馬番＋正式馬名。予想ラベル変更なし。",
+    "library_predata": "2026年11月17日書き出しを元に週中の予習で照合。今ターンにMHT/JSONを全71頭再開封したとは主張しない。",
+    "v1_8": "CHARANIZE ①展開②能力通用③予測33の有効タイプ→タイプ内で指数比較 の3つを毎レース並行して事後検証。事前版の後付け更新はしない。",
+    "forecast_source_files": [
+      "MYKEIBA_20261123_TOKYO09_LEGEND_v1.0.md",
+      "MYKEIBA_20261123_FUKUSHIMA10_GOSHIKINUMA_v1.0.md",
+      "MYKEIBA_20261123_TOKYO10_LEGEND_v1.0.md",
+      "MYKEIBA_20261123_FUKUSHIMA11_OKUU_v1.0.md",
+      "MYKEIBA_20261123_TOKYO11_LEGEND_v1.0.md"
+    ],
+    "user_bet_addendum": "2026-11-23に本人から東京11R⑫オンユアマークス本命・単勝的中申告および即PAT照会画像が送付された。事前AI予想のX評価は固定のまま。",
+    "post_race_lap_insight": "⑫オンユアマークスをユーザーが本命にした理由は、前走京都芝2000mのハイペースH−2.8、5番手、終盤個別ラップ加速の両立。事前ラップ君は超スロー帯実33+4.6を重視しすぎ、H−2.8時の前受け＋再加速能力を見逃した。仮説として記録し固定加点は未設定。",
+    "win5_user_bets": "ユーザー提示のJRA即PAT WIN5詳細：54組×100円＝5,400円、的中0組、払戻0円。東京11R通常馬券と別集計。"
+  },
+  "races": [
+    {
+      "track": "東京",
+      "num": 9,
+      "name": "レジェンドジョッキーカップ",
+      "course": "芝2400m",
+      "going": "良",
+      "official": "https://own.jra.jp/JRADB/accessS.html?CNAME=pw01sde0105202605060920261123%2F46",
+      "laps": [
+        12.9,
+        11.9,
+        12.3,
+        12.7,
+        12.5,
+        11.9,
+        11.8,
+        11.8,
+        11.8,
+        11.5,
+        11.9,
+        11.5
+      ],
+      "front_laps": [
+        11.8,
+        11.8,
+        11.8
+      ],
+      "back_laps": [
+        11.5,
+        11.9,
+        11.5
+      ],
+      "front3": 35.4,
+      "back3": 34.9,
+      "real33": 0.5,
+      "matched_scenarios": [
+        "FAST"
+      ],
+      "main": [
+        1.9,
+        2.9
+      ],
+      "fast": [
+        0.4,
+        1.7
+      ],
+      "slow": [
+        3.1,
+        4.3
+      ],
+      "winner_num": 4,
+      "priority": [
+        2,
+        5
+      ],
+      "optional": [
+        11
+      ],
+      "ranking_rows": [
+        {
+          "finish": 1,
+          "num": 4,
+          "name": "スカイスプレンダー",
+          "prior_grade": "B",
+          "corner": "3-3-5-7",
+          "last3": 34.0,
+          "popularity": 4
+        },
+        {
+          "finish": 2,
+          "num": 2,
+          "name": "アロンズロッド",
+          "prior_grade": "A",
+          "corner": "6-5-9-7",
+          "last3": 34.2,
+          "popularity": 2
+        },
+        {
+          "finish": 3,
+          "num": 7,
+          "name": "ニュークレド",
+          "prior_grade": "B",
+          "corner": "10-9-11-11",
+          "last3": 33.9,
+          "popularity": 5
+        },
+        {
+          "finish": 4,
+          "num": 6,
+          "name": "リポサンテ",
+          "prior_grade": "A",
+          "corner": "6-6-9-7",
+          "last3": 34.1,
+          "popularity": null
+        },
+        {
+          "finish": 5,
+          "num": 5,
+          "name": "エリプティクカーブ",
+          "prior_grade": "A",
+          "corner": "3-3-5-4",
+          "last3": 34.9,
+          "popularity": null
+        },
+        {
+          "finish": 6,
+          "num": 9,
+          "name": "カレンラップスター",
+          "prior_grade": "B",
+          "corner": "12-11-1-1",
+          "last3": 35.7,
+          "popularity": null
+        },
+        {
+          "finish": 7,
+          "num": 3,
+          "name": "レイデラルース",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 8,
+          "num": 12,
+          "name": "リュクスパトロール",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 9,
+          "num": 8,
+          "name": "ドナルンバ",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 10,
+          "num": 11,
+          "name": "スカイサーベイ",
+          "prior_grade": "A",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 11,
+          "num": 10,
+          "name": "モルトマエストーソ",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 12,
+          "num": 1,
+          "name": "マーゴットソラーレ",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        }
+      ],
+      "pairs": [
+        {
+          "type": "A+A",
+          "a": 2,
+          "b": 5,
+          "scenario": "MAIN",
+          "basis": "⑤が好位で折り合い②が中団から直線で進出する中盤緩みと再加速なら両者の好走が共存",
+          "finish_a": 2,
+          "finish_b": 5,
+          "both_top3": false,
+          "scenario_hit": false,
+          "full_hit": false
+        },
+        {
+          "type": "A+A",
+          "a": 2,
+          "b": 6,
+          "scenario": "MAIN",
+          "basis": "②の2400同級好走と⑥の2000同級好走および+2.5下級勝ちを根拠に中団差しが複数届く展開で共存",
+          "finish_a": 2,
+          "finish_b": 4,
+          "both_top3": false,
+          "scenario_hit": false,
+          "full_hit": false
+        },
+        {
+          "type": "A+A",
+          "a": 5,
+          "b": 11,
+          "scenario": "SLOW",
+          "basis": "⑤は芝2400+4.3を好位勝ち⑪は+3.1を5-4-3で同級2着。緩んだ中盤から好位で直線加速に対応する条件",
+          "finish_a": 5,
+          "finish_b": 10,
+          "both_top3": false,
+          "scenario_hit": false,
+          "full_hit": false
+        },
+        {
+          "type": "A+B",
+          "a": 2,
+          "b": 4,
+          "scenario": "SLOW",
+          "basis": "②同級+3.2で2着と④下級+3.3勝利。④がF7からF9で早仕掛けせず折り合えば両馬の脚を温存できる",
+          "finish_a": 2,
+          "finish_b": 1,
+          "both_top3": true,
+          "scenario_hit": false,
+          "full_hit": false
+        }
+      ],
+      "date": "2026-11-23",
+      "pre_forecast_file": "MYKEIBA_20261123_TOKYO09_LEGEND_v1.0.md",
+      "A_numbers": [
+        2,
+        5,
+        6,
+        11
+      ],
+      "B_numbers": [
+        4,
+        7,
+        9
+      ],
+      "X_numbers": [
+        1,
+        3,
+        8,
+        10,
+        12
+      ],
+      "win5_winner_name": "スカイスプレンダー",
+      "review_notes": "**33形成・位置取り**：初動先行圧よりも⑨カレンラップスターの12-11-1-1という大きな位置上昇が重要。事前に早仕掛け候補としていたのは④スカイスプレンダー・⑩モルトマエストーソ中心で、⑨カレンラップスターの変数を見落とした。結果はFASTの最もプラス寄り+0.5。④スカイスプレンダーは3-3-5-7で直線差し切り、前走の途中進出型の再現を**今回の実際の進出動作**と取り違えない。\n\n**CHARANIZE 3役**：①逃・先の強い①マーゴットソラーレ、④スカイスプレンダー、⑤エリプティクカーブだけでなく、テンP非該当でも捲りが可能な⑩モルトマエストーソ、そして⑨カレンラップスター（実際の早仕掛け）を33区間の動き候補として比較すべきだった。②④スカイスプレンダーは1勝級東京2400m+3.3を6-6-2-2から勝ち、同級直接3着内なしのリスクがあったが、Aの②アロンズロッドと競り合える能力を示した。③MAIN+1.9〜+2.9からB/SLOWへ置いた④スカイスプレンダーは、出走馬内逃62/先61/脚55/ギ62というタイプの幅、勝負どころでの位置取りが生きた可能性があり、**「SLOW専用」認定を再考**。B⑦ニュークレドは後方から上がり33.9で3着で、同級上積みと直線到達を再評価する。\n\n**実際と見逃し**：④スカイスプレンダーB1着、②アロンズロッドA2着、⑦ニュークレドB3着。A軸②アロンズロッドは勝てなかったが2着、A本線⑤エリプティクカーブ5着。④スカイスプレンダーはWIN5優先2頭に入っていなかった。②アロンズロッド+④スカイスプレンダーの**SLOW指定A+Bペア**は両馬上位もFAST条件不一致。"
+    },
+    {
+      "track": "福島",
+      "num": 10,
+      "name": "五色沼特別",
+      "course": "芝2000m",
+      "going": "良",
+      "official": "https://sp.jra.jp/JRADB/accessS.html?CNAME=sw01sde0103202603061020261123%2FD2",
+      "laps": [
+        12.9,
+        11.6,
+        12.3,
+        12.2,
+        12.5,
+        12.1,
+        12.1,
+        12.6,
+        12.7,
+        12.6
+      ],
+      "front_laps": [
+        12.5,
+        12.1,
+        12.1
+      ],
+      "back_laps": [
+        12.6,
+        12.7,
+        12.6
+      ],
+      "front3": 36.7,
+      "back3": 37.9,
+      "real33": -1.2,
+      "matched_scenarios": [],
+      "main": [
+        0.3,
+        1.1
+      ],
+      "fast": [
+        -0.7,
+        0.2
+      ],
+      "slow": [
+        1.3,
+        2.0
+      ],
+      "winner_num": 4,
+      "priority": [
+        16,
+        3
+      ],
+      "optional": [
+        13
+      ],
+      "ranking_rows": [
+        {
+          "finish": 1,
+          "num": 4,
+          "name": "アイドクレース",
+          "prior_grade": "X",
+          "corner": "5-6-3-3",
+          "last3": 37.1,
+          "popularity": 13
+        },
+        {
+          "finish": 2,
+          "num": 11,
+          "name": "ロートホルン",
+          "prior_grade": "X",
+          "corner": "1-1-1-1",
+          "last3": 38.0,
+          "popularity": 9
+        },
+        {
+          "finish": 3,
+          "num": 3,
+          "name": "アストリル",
+          "prior_grade": "A",
+          "corner": "3-2-2-2",
+          "last3": 37.4,
+          "popularity": 1
+        },
+        {
+          "finish": 4,
+          "num": 8,
+          "name": "オモイヲノセテ",
+          "prior_grade": "B",
+          "corner": "8-10-8-9",
+          "last3": 37.0,
+          "popularity": null
+        },
+        {
+          "finish": 5,
+          "num": 2,
+          "name": "レッセパッセ",
+          "prior_grade": "X",
+          "corner": "16-16-15-15",
+          "last3": 36.1,
+          "popularity": null
+        },
+        {
+          "finish": 6,
+          "num": 1,
+          "name": "シルバーリム",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 7,
+          "num": 9,
+          "name": "グランセゾン",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 8,
+          "num": 6,
+          "name": "トレミニョン",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 9,
+          "num": 5,
+          "name": "ヴォワラクテ",
+          "prior_grade": "B",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 10,
+          "num": 7,
+          "name": "デファイ",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 11,
+          "num": 10,
+          "name": "アンディムジーク",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 12,
+          "num": 13,
+          "name": "ホウオウシンデレラ",
+          "prior_grade": "A",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 13,
+          "num": 12,
+          "name": "グランカンタンテ",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 14,
+          "num": 15,
+          "name": "ジェルブロア",
+          "prior_grade": "B",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 15,
+          "num": 16,
+          "name": "コスモイシュタル",
+          "prior_grade": "A",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 16,
+          "num": 14,
+          "name": "ベンヴェヌータ",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        }
+      ],
+      "pairs": [
+        {
+          "type": "A+A",
+          "a": 3,
+          "b": 16,
+          "scenario": "MAIN",
+          "basis": "③は中団から3角までに進出し⑯は好位で流れに乗る。③は同級+0.2で2着、⑯は福島同級+0.3で3着があり小幅プラス33の同時好走余地",
+          "finish_a": 3,
+          "finish_b": 15,
+          "both_top3": false,
+          "scenario_hit": false,
+          "full_hit": false
+        },
+        {
+          "type": "A+A",
+          "a": 3,
+          "b": 13,
+          "scenario": "MAIN",
+          "basis": "③は中団前まで進出し⑬は中団後ろから徐々に脚を使う。両馬に同級+0.2から+1.1での好走歴があり前が楽すぎない小幅プラス33で共存",
+          "finish_a": 3,
+          "finish_b": 12,
+          "both_top3": false,
+          "scenario_hit": false,
+          "full_hit": false
+        },
+        {
+          "type": "A+B",
+          "a": 3,
+          "b": 5,
+          "scenario": "MAIN",
+          "basis": "③と⑤は2勝級で実33+0.2と+0.5の2着歴。⑤が好位中団で休み明けの力を出し③が直線で伸びるなら同時好走",
+          "finish_a": 3,
+          "finish_b": 9,
+          "both_top3": false,
+          "scenario_hit": false,
+          "full_hit": false
+        },
+        {
+          "type": "A+B",
+          "a": 3,
+          "b": 15,
+          "scenario": "FAST",
+          "basis": "③は同級+0.2で2着歴、⑮は同級全体33-0.2で2着歴。前の争いがF5以降まで続く場合に中団の両者が浮上。ただし⑮の好走時は大逃隊列で実効33差に注意",
+          "finish_a": 3,
+          "finish_b": 14,
+          "both_top3": false,
+          "scenario_hit": false,
+          "full_hit": false
+        },
+        {
+          "type": "A+B",
+          "a": 16,
+          "b": 8,
+          "scenario": "SLOW",
+          "basis": "⑯が福島2000の同級+1.9で3着の好位持続力を使い⑧が1勝級+1.7で勝った後半加速を発揮。先行競争が沈静化して中盤が緩む場合に共存",
+          "finish_a": 15,
+          "finish_b": 4,
+          "both_top3": false,
+          "scenario_hit": false,
+          "full_hit": false
+        }
+      ],
+      "date": "2026-11-23",
+      "pre_forecast_file": "MYKEIBA_20261123_FUKUSHIMA10_GOSHIKINUMA_v1.0.md",
+      "A_numbers": [
+        3,
+        13,
+        16
+      ],
+      "B_numbers": [
+        5,
+        8,
+        15
+      ],
+      "X_numbers": [
+        1,
+        2,
+        4,
+        6,
+        7,
+        9,
+        10,
+        11,
+        12,
+        14
+      ],
+      "win5_winner_name": "アイドクレース",
+      "review_notes": "**33形成・位置取り**：F5〜F7は36.7、F8〜F10は37.9。後半で大きく失速し実33−1.2、事前FAST下限−0.7を0.5超過。逃げた⑪ロートホルンは1-1-1-1のまま2着、⑨グランセゾンは2-2-3-3から7着。前への負荷が強くても**前が全滅したわけではない**。④アイドクレースは5-6-3-3と途中で位置を上げて押し切った。\n\n**CHARANIZE 3役**：①当初①シルバーリム・⑪ロートホルン・⑨グランセゾンの先行圧は把握していたが、先頭⑪ロートホルンの耐久と④アイドクレースの早め進出が有効な位置に来る因果まで評価できず、速い側の33幅が不足。②④アイドクレースは出走馬内逃53先48追39脚52ギ54、馬自身直近逃22先22追48脚38ギ57。**高指数による自動抜擢はできない**が、同級経験がなくても位置取り自在性と複数33幅での下級勝ち（−0.3〜+2.5）を能力通用の仮説として保留→警戒する価値があった。③この消耗寄りの競馬で、逃げ一辺倒でない**好位〜中団からの途中進出・持続型**を先に抽出していれば、④アイドクレースをX次点から再審査できた可能性がある。⑪ロートホルンは出走馬内脚39ギ36でも単騎先行時は粘れた。\n\n**実際と見逃し**：④アイドクレースX1着、⑪ロートホルンX2着、③アストリルA3着。WIN5優先の⑯コスモイシュタル15着。A/Bの格付けだけで勝ち切りまで決める方式に改善余地。"
+    },
+    {
+      "track": "東京",
+      "num": 10,
+      "name": "レジェンドトレーナーカップ",
+      "course": "ダート2100m",
+      "going": "良",
+      "official": "https://jra.jp/JRADB/accessS.html?CNAME=pw01sde0105202605061020261123%2F3B",
+      "laps": [
+        7.2,
+        11.1,
+        11.7,
+        12.3,
+        11.9,
+        12.1,
+        12.5,
+        12.2,
+        12.7,
+        12.5,
+        12.7
+      ],
+      "front_laps": [
+        12.1,
+        12.5,
+        12.2
+      ],
+      "back_laps": [
+        12.7,
+        12.5,
+        12.7
+      ],
+      "front3": 36.8,
+      "back3": 37.9,
+      "real33": -1.1,
+      "matched_scenarios": [
+        "FAST"
+      ],
+      "main": [
+        0.5,
+        1.3
+      ],
+      "fast": [
+        -1.4,
+        0.3
+      ],
+      "slow": [
+        1.4,
+        2.8
+      ],
+      "winner_num": 11,
+      "priority": [
+        1,
+        14
+      ],
+      "optional": [
+        6
+      ],
+      "ranking_rows": [
+        {
+          "finish": 1,
+          "num": 11,
+          "name": "シャルクハフト",
+          "prior_grade": "X",
+          "corner": "11-11-9-5",
+          "last3": 37.0,
+          "popularity": 10
+        },
+        {
+          "finish": 2,
+          "num": 1,
+          "name": "ペンナヴェローチェ",
+          "prior_grade": "A",
+          "corner": "8-9-4-3",
+          "last3": 37.4,
+          "popularity": 4
+        },
+        {
+          "finish": 3,
+          "num": 7,
+          "name": "ビービーアジャイル",
+          "prior_grade": "X",
+          "corner": "7-7-8-8",
+          "last3": 37.2,
+          "popularity": 5
+        },
+        {
+          "finish": 4,
+          "num": 6,
+          "name": "コズミックダンサー",
+          "prior_grade": "A",
+          "corner": "5-4-2-2",
+          "last3": 38.2,
+          "popularity": null
+        },
+        {
+          "finish": 5,
+          "num": 4,
+          "name": "タイセイカイザー",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 6,
+          "num": 3,
+          "name": "サンライズオスカー",
+          "prior_grade": "B",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 7,
+          "num": 5,
+          "name": "インペリアルライン",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 8,
+          "num": 15,
+          "name": "ブレトワルダ",
+          "prior_grade": "B",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 9,
+          "num": 13,
+          "name": "メイショウフジ",
+          "prior_grade": "B",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 10,
+          "num": 2,
+          "name": "インジケーター",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 11,
+          "num": 8,
+          "name": "ラフエイジアン",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 12,
+          "num": 10,
+          "name": "ホウオウバリスタ",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 13,
+          "num": 14,
+          "name": "ロングウェイホーム",
+          "prior_grade": "A",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 14,
+          "num": 9,
+          "name": "サークルオブジョイ",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 15,
+          "num": 12,
+          "name": "ガルダイア",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 16,
+          "num": 16,
+          "name": "ルーラーリッチ",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        }
+      ],
+      "pairs": [
+        {
+          "type": "A+A",
+          "a": 1,
+          "b": 14,
+          "scenario": "MAIN",
+          "basis": "①は3勝クラス+0.9で2着実績があり⑭は同級東京2100で2着を重ねる。①4から5番手と⑭好位からの持続脚が並存可能",
+          "finish_a": 2,
+          "finish_b": 13,
+          "both_top3": false,
+          "scenario_hit": false,
+          "full_hit": false
+        },
+        {
+          "type": "A+A",
+          "a": 1,
+          "b": 6,
+          "scenario": "MAIN",
+          "basis": "⑥が逃げ馬を見ながら番手で+0.8に近い負荷を保ち①が好位で脚を温存する流れ。⑥の昇級通用が条件",
+          "finish_a": 2,
+          "finish_b": 4,
+          "both_top3": false,
+          "scenario_hit": false,
+          "full_hit": false
+        },
+        {
+          "type": "A+B",
+          "a": 14,
+          "b": 13,
+          "scenario": "FAST",
+          "basis": "2026年10月17日東京ダ2100の3勝クラスで実33-1.3を共に経験し⑭2着と⑬3着。速い側で同時好走の直接実績あり",
+          "finish_a": 13,
+          "finish_b": 9,
+          "both_top3": false,
+          "scenario_hit": true,
+          "full_hit": false
+        }
+      ],
+      "date": "2026-11-23",
+      "pre_forecast_file": "MYKEIBA_20261123_TOKYO10_LEGEND_v1.0.md",
+      "A_numbers": [
+        1,
+        6,
+        14
+      ],
+      "B_numbers": [
+        3,
+        13,
+        15
+      ],
+      "X_numbers": [
+        2,
+        4,
+        5,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        16
+      ],
+      "win5_winner_name": "シャルクハフト",
+      "review_notes": "**33形成・位置取り**：実33−1.1で事前FAST−1.4〜+0.3に一致。⑪シャルクハフトは11-11-9-5と向正面〜4角のポジションを改善、上がり37.0。②インジケーターの逃げ前提と、③サンライズオスカーや④タイセイカイザーの早仕掛けが成り立つFAST側の予想幅は有効だったが、どの馬が位置を押し上げられるかで誤り。\n\n**CHARANIZE 3役**：①出走馬内逃52先55の⑪シャルクハフトは逃げ候補ではないが、実通過11-11-9-5を確認した以上、展開を作る「逃げタイプ」だけでなく位置取りを押し上げるタイプも事前に調べる必要がある。②出走馬内脚41ギ39、自己直近追92脚37ギ31という指数面で過大評価の理由はない。一方、以前のL2着や直近東京2100の現級−1.3で7着という格と条件から、**同級通用の復活余地をXの外で横断点検できなかった**。③FASTで有効な「脚力絶対上位」ではなく「中団後方から早めに好位へ進出し、長い脚を持続する型」を優先抽出する仮説が適切。斤量54kgは事実だが勝因の確定説明にはしない。\n\n**実際と見逃し**：⑪シャルクハフトX1着、①ペンナヴェローチェA2着、⑦ビービーアジャイルX3着。⑦ビービーアジャイルも前走3勝級13着からの浮上で、同級の好走可能性を指数だけで一律減点できない。A本線⑭ロングウェイホーム13着。WIN5最優先2頭から勝ち馬を拾えず。"
+    },
+    {
+      "track": "福島",
+      "num": 11,
+      "name": "奥羽ステークス",
+      "course": "ダート1700m",
+      "going": "稍重",
+      "official": "https://sp.jra.jp/JRADB/accessS.html?CNAME=sw01sde0103202603061120261123%2F87",
+      "laps": [
+        7.1,
+        10.8,
+        11.6,
+        12.3,
+        12.4,
+        12.3,
+        12.2,
+        12.7,
+        12.2
+      ],
+      "front_laps": [
+        12.3,
+        12.4,
+        12.3
+      ],
+      "back_laps": [
+        12.2,
+        12.7,
+        12.2
+      ],
+      "front3": 37.0,
+      "back3": 37.1,
+      "real33": -0.1,
+      "matched_scenarios": [
+        "SLOW"
+      ],
+      "main": [
+        -0.9,
+        -0.3
+      ],
+      "fast": [
+        -1.8,
+        -1.0
+      ],
+      "slow": [
+        -0.2,
+        0.5
+      ],
+      "winner_num": 3,
+      "priority": [
+        3,
+        8
+      ],
+      "optional": [
+        12
+      ],
+      "ranking_rows": [
+        {
+          "finish": 1,
+          "num": 3,
+          "name": "ジェイエルモーダル",
+          "prior_grade": "A",
+          "corner": "11-10-9-9",
+          "last3": 36.4,
+          "popularity": 1
+        },
+        {
+          "finish": 2,
+          "num": 8,
+          "name": "ディーズゴールド",
+          "prior_grade": "A",
+          "corner": "4-5-4-2",
+          "last3": 37.0,
+          "popularity": 2
+        },
+        {
+          "finish": 3,
+          "num": 10,
+          "name": "プロミシングスター",
+          "prior_grade": "B",
+          "corner": "7-6-7-5",
+          "last3": 37.0,
+          "popularity": 8
+        },
+        {
+          "finish": 4,
+          "num": 12,
+          "name": "モリノアミーゴ",
+          "prior_grade": "A",
+          "corner": "14-13-5-5",
+          "last3": 37.4,
+          "popularity": null
+        },
+        {
+          "finish": 5,
+          "num": 5,
+          "name": "アレナパラシオ",
+          "prior_grade": "X",
+          "corner": "2-2-2-2",
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 6,
+          "num": 11,
+          "name": "ハイクオリティ",
+          "prior_grade": "B",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 7,
+          "num": 9,
+          "name": "マンオブザマッチ",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 8,
+          "num": 6,
+          "name": "ハリウッドブルース",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 9,
+          "num": 14,
+          "name": "ドゥラリス",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 10,
+          "num": 7,
+          "name": "クロースコンバット",
+          "prior_grade": "B",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 11,
+          "num": 13,
+          "name": "プルートマスター",
+          "prior_grade": "B",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 12,
+          "num": 4,
+          "name": "プライベートアイズ",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 13,
+          "num": 15,
+          "name": "ケーヴァラ",
+          "prior_grade": "X",
+          "corner": "7-9-12-12",
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 14,
+          "num": 2,
+          "name": "メイショウカシワデ",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 15,
+          "num": 1,
+          "name": "マーシヴィガラス",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        }
+      ],
+      "pairs": [
+        {
+          "type": "A+A",
+          "a": 3,
+          "b": 8,
+          "scenario": "MAIN",
+          "basis": "⑧ディーズゴールドが主導権争いを避けて先行集団の後ろで持続し③ジェイエルモーダルが向正面から早めに進出する。福島での先行残りと差しの共存が可能な小幅マイナス33",
+          "finish_a": 1,
+          "finish_b": 2,
+          "both_top3": true,
+          "scenario_hit": false,
+          "full_hit": false
+        },
+        {
+          "type": "A+A",
+          "a": 3,
+          "b": 12,
+          "scenario": "MAIN",
+          "basis": "③ジェイエルモーダルと⑫モリノアミーゴは前半を中団以降で温存して3角手前から進出する。先行勢の消耗を利用し差し2頭が同時に上位へ来る展開",
+          "finish_a": 1,
+          "finish_b": 4,
+          "both_top3": false,
+          "scenario_hit": false,
+          "full_hit": false
+        },
+        {
+          "type": "A+B",
+          "a": 3,
+          "b": 10,
+          "scenario": "FAST",
+          "basis": "先行競合が33区間前半まで続き後半に減速が大きくなれば③の早め進出と⑩の持続型差しが両立。③には-1.0の勝ち⑩には-1.5の同級3着がある",
+          "finish_a": 1,
+          "finish_b": 3,
+          "both_top3": true,
+          "scenario_hit": false,
+          "full_hit": false
+        },
+        {
+          "type": "A+B",
+          "a": 8,
+          "b": 13,
+          "scenario": "SLOW",
+          "basis": "隊列が早期に落ち着き⑧ディーズゴールドが好位で脚を残し⑬プルートマスターも2列目で競らず運ぶ。⑧の同級+0.4の2着と⑬の同級-0.2から0.0の好走が同時に生きる",
+          "finish_a": 2,
+          "finish_b": 11,
+          "both_top3": false,
+          "scenario_hit": true,
+          "full_hit": false
+        },
+        {
+          "type": "B+B",
+          "a": 7,
+          "b": 13,
+          "scenario": "SLOW",
+          "basis": "⑦クロースコンバットが控える位置を取り⑬プルートマスターが好位で折り合う。両馬とも3勝級の実33ゼロ付近で連対または3着実績があり競り合い回避時のみ同時好走が成立",
+          "finish_a": 10,
+          "finish_b": 11,
+          "both_top3": false,
+          "scenario_hit": true,
+          "full_hit": false
+        }
+      ],
+      "date": "2026-11-23",
+      "pre_forecast_file": "MYKEIBA_20261123_FUKUSHIMA11_OKUU_v1.0.md",
+      "A_numbers": [
+        3,
+        8,
+        12
+      ],
+      "B_numbers": [
+        7,
+        10,
+        11,
+        13
+      ],
+      "X_numbers": [
+        1,
+        2,
+        4,
+        5,
+        6,
+        9,
+        14,
+        15
+      ],
+      "win5_winner_name": "ジェイエルモーダル",
+      "review_notes": "**33形成・位置取り**：実33−0.1で事前SLOW−0.2〜+0.5に一致。先行圧が高いという事前観測は正しくても、その負荷が33区間の全てで続くとは限らない。③ジェイエルモーダルは11-10-9-9、上がり36.4で差し切り。過去の早期進出特性は事前の能力判断に役立ったが、今回は**大きく捲り上がった事実はない**。⑧ディーズゴールドは4-5-4-2で持続し2着、⑩プロミシングスターは7-6-7-5から3着、⑫モリノアミーゴは14-13-5-5の大きな途中進出で4着。\n\n**CHARANIZE 3役**：①逃・先が高い⑤アレナパラシオ、⑪ハイクオリティ、④プライベートアイズ、⑮ケーヴァラ等が多いという先行圧の初期判断に対し、②末脚維持型③ジェイエルモーダル（下級で多様な−33実績）と同級直接能力の⑧ディーズゴールドをAにできた。③本線適合のA/B選択そのものは有効だったが、SLOWで浮上する能力柔軟性（③ジェイエルモーダルはSLOW想定でも勝ち切れるか）をもっと明記すべきだった。⑩プロミシングスターBをFAST限定に狭めたのも能力と適合帯の再検討事項。⑫モリノアミーゴは途中進出成功と最後の粘りを分けて評価する。\n\n**実際と見逃し**：事前A③ジェイエルモーダル1着・A⑧ディーズゴールド2着・B⑩プロミシングスター3着をピックアップ。事前MAIN A+A ③ジェイエルモーダル+⑧ディーズゴールドとFAST A+B ③ジェイエルモーダル+⑩プロミシングスターは**両馬好走のみ成立、33シナリオは不成立**。WIN5優先2頭に勝ち馬あり。"
+    },
+    {
+      "track": "東京",
+      "num": 11,
+      "name": "東京スポーツ杯2歳ステークス",
+      "course": "芝1800m",
+      "going": "良",
+      "official": "https://www.jra.go.jp/datafile/seiseki/replay/2026/106.html",
+      "laps": [
+        12.9,
+        11.0,
+        12.1,
+        12.5,
+        12.8,
+        12.6,
+        11.3,
+        10.9,
+        11.0
+      ],
+      "front_laps": [
+        12.5,
+        12.8,
+        12.6
+      ],
+      "back_laps": [
+        11.3,
+        10.9,
+        11.0
+      ],
+      "front3": 37.9,
+      "back3": 33.2,
+      "real33": 4.7,
+      "matched_scenarios": [],
+      "main": [
+        1.9,
+        2.9
+      ],
+      "fast": [
+        0.2,
+        1.7
+      ],
+      "slow": [
+        3.1,
+        4.3
+      ],
+      "winner_num": 12,
+      "priority": [
+        1,
+        10
+      ],
+      "optional": [
+        5
+      ],
+      "ranking_rows": [
+        {
+          "finish": 1,
+          "num": 12,
+          "name": "オンユアマークス",
+          "prior_grade": "X",
+          "corner": "12-9-10",
+          "last3": 32.5,
+          "popularity": 6
+        },
+        {
+          "finish": 2,
+          "num": 10,
+          "name": "ショウナンガレオン",
+          "prior_grade": "A",
+          "corner": null,
+          "last3": 32.6,
+          "popularity": 1
+        },
+        {
+          "finish": 3,
+          "num": 8,
+          "name": "コラリオン",
+          "prior_grade": "B",
+          "corner": null,
+          "last3": 32.9,
+          "popularity": 4
+        },
+        {
+          "finish": 4,
+          "num": 7,
+          "name": "スローブギ",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": 33.3,
+          "popularity": null
+        },
+        {
+          "finish": 5,
+          "num": 5,
+          "name": "ジョドレルバンク",
+          "prior_grade": "A",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 6,
+          "num": 11,
+          "name": "ビンドゥング",
+          "prior_grade": "B",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 7,
+          "num": 4,
+          "name": "キングリア",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 8,
+          "num": 9,
+          "name": "ニースケンス",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 9,
+          "num": 6,
+          "name": "ティフォシ",
+          "prior_grade": "B",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 10,
+          "num": 1,
+          "name": "ダノンダックス",
+          "prior_grade": "A",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 11,
+          "num": 2,
+          "name": "シルヴァノーブル",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        },
+        {
+          "finish": 12,
+          "num": 3,
+          "name": "テンカタイヘイ",
+          "prior_grade": "X",
+          "corner": null,
+          "last3": null,
+          "popularity": null
+        }
+      ],
+      "pairs": [
+        {
+          "type": "A+A",
+          "a": 1,
+          "b": 10,
+          "scenario": "MAIN",
+          "basis": "⑩が好位で競り合いを避け①が6番手付近で脚を温存。F4からF6で適度に緩み直線で先行持続と中団加速が共存",
+          "finish_a": 10,
+          "finish_b": 2,
+          "both_top3": false,
+          "scenario_hit": false,
+          "full_hit": false
+        },
+        {
+          "type": "A+A",
+          "a": 1,
+          "b": 5,
+          "scenario": "MAIN",
+          "basis": "①は直線再加速型で⑤は途中進出型。両馬とも東京1800勝ちがありF4からF6が適度に緩み前が止まり切らないレースで共存",
+          "finish_a": 10,
+          "finish_b": 5,
+          "both_top3": false,
+          "scenario_hit": false,
+          "full_hit": false
+        },
+        {
+          "type": "A+B",
+          "a": 1,
+          "b": 8,
+          "scenario": "SLOW",
+          "basis": "①は速い末脚で差し⑧は後方からの脚力とギアで同時浮上。F4からF6が大きく緩み直線の速い上がりを両馬が発揮できる条件",
+          "finish_a": 10,
+          "finish_b": 3,
+          "both_top3": false,
+          "scenario_hit": false,
+          "full_hit": false
+        },
+        {
+          "type": "B+B",
+          "a": 8,
+          "b": 11,
+          "scenario": "SLOW",
+          "basis": "⑪は好位から後半2F再加速し⑧は後方から脚力とギアを発揮。実33+4付近の好走経験があり位置取りが異なるため同時好走の余地",
+          "finish_a": 3,
+          "finish_b": 6,
+          "both_top3": false,
+          "scenario_hit": false,
+          "full_hit": false
+        }
+      ],
+      "date": "2026-11-23",
+      "pre_forecast_file": "MYKEIBA_20261123_TOKYO11_LEGEND_v1.0.md",
+      "A_numbers": [
+        1,
+        5,
+        10
+      ],
+      "B_numbers": [
+        6,
+        8,
+        11
+      ],
+      "X_numbers": [
+        2,
+        3,
+        4,
+        7,
+        9,
+        12
+      ],
+      "win5_winner_name": "オンユアマークス",
+      "review_notes": "**33形成・位置取り**：F4〜F6が12.5-12.8-12.6と大きく緩み、F7〜F9が11.3-10.9-11.0へ加速し実33+4.7。事前SLOW+3.1〜+4.3を0.4超過。②シルヴァノーブル・⑥ティフォシ・⑩ショウナンガレオンらの逃先候補の頭数以上に、「いつ隊列が決まり誰が息を入れるか」が予測に効いた。⑫オンユアマークスは12-9-10の後方集団から上がり32.5で勝利、⑩ショウナンガレオン上がり32.6の2着、⑧コラリオン上がり32.9で3着。\n\n**CHARANIZE 3役**：①先行力の見かけ上の分布ではなく、中盤緩みをさらに大きくした場合の分岐を想定すべきだった。②全馬2歳で標本1〜2走のため**両偏差値は全馬保留**。⑫オンユアマークスは前走2000m+1.7をレコード勝ちした一方、DB総評「4着以下弱」。それでも過去の1800m新馬+4.6、脚生指数92.0・ギア103.7があり、今回に近い**超SLOW帯での加速可能性**を独立候補として残せた。前走の生ギア20.8による単純な状態／能力否定は不適切。③テンカタイヘイ+4前後の再加速タイプを抽出するなら、⑧コラリオンの1800mL+3.9・後方差し脚力、⑪ビンドゥングの+4.0・ギア75.3だけでなく、⑫オンユアマークスの+4.6の経験を参照すべきだった。⑩ショウナンガレオンは重賞勝ちの能力で+4.7でも2着と対応し、「33適合外でも能力克服」の例だが勝ち馬に合わせた事前ラベル再定義はしない。\n\n**実際と見逃し**：⑫オンユアマークスX次点1着、⑩ショウナンガレオンA2着、⑧コラリオンB3着。A軸①ダノンダックス10着。**+4.7という予想外のレースで、過去同距離+4.6と高い生末脚/ギアを持つ⑫オンユアマークスを抜かした点が③テンカタイヘイの最大の見逃し**。",
+      "user_bet_report_ref": "user_bet_report",
+      "post_race_addendum_v1_2": {
+        "target": "⑫オンユアマークス",
+        "point": "速いペースH−2.8での5番手追走と終盤個別ラップ加速、相手が弱かった可能性と能力発揮を分離",
+        "status": "事後仮説／事前評価X据え置き"
+      }
+    }
+  ],
+  "user_bet_report": {
+    "reported_on": "2026-11-23",
+    "source": "ユーザー申告と同ターンのJRA即PAT照会結果一覧の画像",
+    "scope": "東京11R 東スポ杯2歳Sの表示された7券種行・8組",
+    "user_main_pick": {
+      "number": 12,
+      "name": "オンユアマークス",
+      "result": "1着",
+      "ai_pre_race_rank": "X次点"
+    },
+    "purchase_yen": 4600,
+    "refund_yen": 26100,
+    "profit_yen": 21500,
+    "return_rate_pct": 567.4,
+    "winning_bet": {
+      "type": "単勝",
+      "number": 12,
+      "name": "オンユアマークス",
+      "stake_yen": 1500,
+      "payout_yen": 26100,
+      "odds": 17.4
+    },
+    "other_visible_bets": [
+      {
+        "type": "馬連",
+        "horses": [
+          "⑪ビンドゥング",
+          "⑫オンユアマークス"
+        ],
+        "stake_yen": 500
+      },
+      {
+        "type": "馬連",
+        "horses": [
+          "①ダノンダックス",
+          "⑪ビンドゥング"
+        ],
+        "stake_yen": 500
+      },
+      {
+        "type": "馬連",
+        "horses": [
+          "①ダノンダックス",
+          "⑫オンユアマークス"
+        ],
+        "stake_yen": 1000
+      },
+      {
+        "type": "ワイド",
+        "horses": [
+          "⑪ビンドゥング",
+          "⑫オンユアマークス"
+        ],
+        "stake_yen": 500
+      },
+      {
+        "type": "3連複",
+        "horses": [
+          "①ダノンダックス",
+          "⑪ビンドゥング",
+          "⑫オンユアマークス"
+        ],
+        "stake_yen": 400
+      },
+      {
+        "type": "3連単フォーメーション",
+        "combinations": 2,
+        "stake_per_combo_yen": 100
+      }
+    ],
+    "scope_limit": "他4レース・WIN5購入分の有無や金額は画像に含まれず、当日全体収支は不明。",
+    "analysis": "事後の本人説明により、選定の主因は2026-10-11京都芝2000mのH−2.8という速いペースを5-5-5から追走し、終盤個別ラップ11.9→11.8→11.5→11.3と加速し続けた内容と判明。芝1800mでの過去実33+4.6と高い生脚力ギアも別途の能力参考だが、ユーザーの主因と混同しない。AIは事前X次点、ユーザーは本命で単勝的中。",
+    "user_selection_reason": {
+      "source": "ユーザー2026-11-23事後説明、netkeiba勝馬個別ラップ2画像、鈴木ショータ新聞過去走画像",
+      "horse": "⑫オンユアマークス",
+      "prior_race": {
+        "date": "2026-10-11",
+        "track": "京都",
+        "surface": "芝",
+        "distance_m": 2000,
+        "class": "2歳未勝利",
+        "finish": 1,
+        "position": "5-5-5",
+        "pace_indicator": "H-2.8",
+        "race_real33": 1.7,
+        "individual_late_furlongs_seconds": [
+          11.9,
+          11.8,
+          11.5,
+          11.3
+        ],
+        "individual_final3_seconds": 34.6,
+        "course_path": "1400〜1600m付近 内③→1800〜2000m付近 外⑦"
+      },
+      "rationale": "速いペースを5番手で追走し、直線からゴールまで終盤の個別ラップを11.9→11.8→11.5→11.3と加速し続けた走りの質を高く評価した。",
+      "interpretation_caveat": "H−2.8は新聞のペース指数で実33+1.7と異なる。先頭馬同等の負荷とは断定しない。F4〜F6には緩む区間があり外回しの距離ロスは未計測。"
+    },
+    "race_video_user_observation": {
+      "horse": "⑫オンユアマークス",
+      "comparison": "⑩ショウナンガレオン",
+      "source": "ユーザー自身による11月23日東京11Rレース観察",
+      "details": "⑩ショウナンガレオンは理想的なレース運び。⑫オンユアマークスは直線で進路が開かず、外へ切り替えるロスを経て勝利。ユーザーは着差以上の価値を評価。",
+      "verification": "公式映像のコマ別再検証・距離ロス計測なし。ユーザー観察と検証仮説を分離。"
+    }
+  },
+  "win5_user_ticket": {
+    "evidence": "JRA即PAT WIN5投票結果詳細（ユーザー2026-11-23共有スクリーンショット）",
+    "date": "2026-11-23",
+    "tickets": 54,
+    "stake_per_ticket_yen": 100,
+    "purchase_yen": 5400,
+    "payout_yen": 0,
+    "profit_yen": -5400,
+    "selections": [
+      {
+        "track": "東京",
+        "race_no": 9,
+        "selected": [
+          "②アロンズロッド",
+          "⑥リポサンテ",
+          "⑧ドナルンバ"
+        ],
+        "winner": "④スカイスプレンダー",
+        "hit": false
+      },
+      {
+        "track": "福島",
+        "race_no": 10,
+        "selected": [
+          "③アストリル",
+          "⑬ホウオウシンデレラ"
+        ],
+        "winner": "④アイドクレース",
+        "hit": false
+      },
+      {
+        "track": "東京",
+        "race_no": 10,
+        "selected": [
+          "①ペンナヴェローチェ",
+          "⑥コズミックダンサー",
+          "⑭ロングウェイホーム"
+        ],
+        "winner": "⑪シャルクハフト",
+        "hit": false
+      },
+      {
+        "track": "福島",
+        "race_no": 11,
+        "selected": [
+          "⑫モリノアミーゴ"
+        ],
+        "winner": "③ジェイエルモーダル",
+        "hit": false
+      },
+      {
+        "track": "東京",
+        "race_no": 11,
+        "selected": [
+          "①ダノンダックス",
+          "⑪ビンドゥング",
+          "⑫オンユアマークス"
+        ],
+        "winner": "⑫オンユアマークス",
+        "hit": true
+      }
+    ],
+    "hit_legs": 1,
+    "total_legs": 5,
+    "note": "東京11R通常馬券の4,600円購入・26,100円払戻とは別。全日購入の完全性は未確認。AIの事前候補ではなくユーザー実購入。"
+  }
+}
