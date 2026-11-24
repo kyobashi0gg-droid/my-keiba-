@@ -13,6 +13,7 @@ const CORE_ASSETS = [
 const APP_PATH = new URL(self.registration.scope).pathname;
 const DB_LAB_PATH = new URL('./db-lab/', self.registration.scope).pathname;
 const CHARANIZE_DB_PATH = new URL('./charanize-db/', self.registration.scope).pathname;
+const KAIKO_DB_PATH = new URL('./kaiko-db-lab/', self.registration.scope).pathname;
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(async cache => {
@@ -57,7 +58,8 @@ self.addEventListener('fetch', event => {
   // Do not intercept external PDF/CDN requests.
   if (url.origin !== self.location.origin || !url.pathname.startsWith(APP_PATH)
       || url.pathname.startsWith(DB_LAB_PATH)
-      || url.pathname.startsWith(CHARANIZE_DB_PATH)) return;
+      || url.pathname.startsWith(CHARANIZE_DB_PATH)
+      || url.pathname.startsWith(KAIKO_DB_PATH)) return;
   // Rank feed must never silently fall back to an older cached revision.
   if (url.pathname.endsWith('/smartrc-ranks-v1.json')) { event.respondWith(fetch(request)); return; }
   event.respondWith(networkFirst(request));
